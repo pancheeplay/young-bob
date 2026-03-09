@@ -264,6 +264,13 @@ namespace YoungBob.Prototype.UI.Pages
                 return;
             }
 
+            if (!string.IsNullOrEmpty(_draggingCardInstanceId) && !HasCardInHand(player, _draggingCardInstanceId))
+            {
+                ClearHighlights();
+                _draggingCardDefinition = null;
+                _draggingCardInstanceId = null;
+            }
+
             var canAct = Session.CanLocalPlayerAct();
 
             for (var i = 0; i < player.hand.Count; i++)
@@ -313,7 +320,7 @@ namespace YoungBob.Prototype.UI.Pages
 
         private void UpdateCardDrag(PointerEventData eventData)
         {
-            if (_draggingCardDefinition == null)
+            if (_draggingCardDefinition == null || _lastState == null)
             {
                 return;
             }
@@ -326,6 +333,15 @@ namespace YoungBob.Prototype.UI.Pages
         {
             if (_draggingCardDefinition == null || string.IsNullOrEmpty(_draggingCardInstanceId))
             {
+                return;
+            }
+
+            var localPlayer = Session.GetLocalBattlePlayer();
+            if (localPlayer == null || !HasCardInHand(localPlayer, _draggingCardInstanceId))
+            {
+                ClearHighlights();
+                _draggingCardDefinition = null;
+                _draggingCardInstanceId = null;
                 return;
             }
 
@@ -353,6 +369,11 @@ namespace YoungBob.Prototype.UI.Pages
 
         private void ApplyHighlight(CardDefinition cardDef, BattleUnitSlotView hoveredSlot)
         {
+            if (_lastState == null)
+            {
+                return;
+            }
+
             var targetType = ParseTargetType(cardDef.targetType);
             for (var i = 0; i < _allySlots.Count; i++)
             {
@@ -503,6 +524,24 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 Object.Destroy(container.GetChild(i).gameObject);
             }
+        }
+
+        private static bool HasCardInHand(PlayerBattleState player, string cardInstanceId)
+        {
+            if (player == null || string.IsNullOrEmpty(cardInstanceId))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < player.hand.Count; i++)
+            {
+                if (player.hand[i].instanceId == cardInstanceId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
