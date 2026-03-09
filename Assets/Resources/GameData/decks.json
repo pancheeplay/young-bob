@@ -1,0 +1,20 @@
+{
+  "decks": [
+    {
+      "id": "co_op_starter",
+      "cards": [
+        "strike",
+        "strike",
+        "cleave",
+        "heal",
+        "team_heal",
+        "guard",
+        "insight",
+        "quick_strike",
+        "painful_lesson",
+        "curse",
+        "borrow_hand"
+      ]
+    }
+  ]
+}

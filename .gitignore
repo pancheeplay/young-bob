@@ -1,0 +1,9 @@
+# .*
+*.meta
+.DS_Store
+.vscode
+Library
+temp
+UserSettings
+Logs
+Release

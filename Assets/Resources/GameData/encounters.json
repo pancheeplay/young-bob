@@ -1,0 +1,21 @@
+{
+  "encounters": [
+    {
+      "id": "slime_intro",
+      "enemies": [
+        {
+          "enemyId": "slime_a",
+          "enemyName": "Training Slime A",
+          "maxHp": 18,
+          "attackDamage": 4
+        },
+        {
+          "enemyId": "slime_b",
+          "enemyName": "Training Slime B",
+          "maxHp": 18,
+          "attackDamage": 4
+        }
+      ]
+    }
+  ]
+}

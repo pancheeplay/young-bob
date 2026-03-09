@@ -1,0 +1,11 @@
+{
+  "encounters": [
+    {
+      "id": "slime_intro",
+      "monsterId": "slime",
+      "monsterName": "Training Slime",
+      "monsterMaxHp": 24,
+      "monsterAttack": 5
+    }
+  ]
+}

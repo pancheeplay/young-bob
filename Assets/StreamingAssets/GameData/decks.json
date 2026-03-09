@@ -1,0 +1,12 @@
+{
+  "decks": [
+    {
+      "id": "co_op_starter",
+      "cards": [
+        "strike",
+        "strike",
+        "heal"
+      ]
+    }
+  ]
+}
