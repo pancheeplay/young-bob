@@ -18,11 +18,15 @@ namespace YoungBob.Prototype.UI.Battle
             Area = area;
         }
 
-        public void SetHighlight(bool highlight)
+        public void SetHighlight(SlotHighlightMode mode)
         {
             if (_highlight != null)
             {
-                _highlight.enabled = highlight;
+                _highlight.enabled = mode != SlotHighlightMode.None;
+                if (_highlight.enabled)
+                {
+                    _highlight.color = mode == SlotHighlightMode.Selected ? new Color(1f, 0.85f, 0f, 0.45f) : new Color(1f, 1f, 1f, 0.2f);
+                }
             }
         }
     }

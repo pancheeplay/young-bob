@@ -157,6 +157,27 @@ namespace YoungBob.Prototype.Battle
             return true;
         }
 
+        public static bool IsPlayerDistanceInRange(string range, BattleArea source, BattleArea target)
+        {
+            if (string.IsNullOrEmpty(range) || string.Equals(range, "Both", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var isNear = source == target || target == BattleArea.Middle;
+            if (string.Equals(range, "Near", StringComparison.OrdinalIgnoreCase))
+            {
+                return isNear;
+            }
+
+            if (string.Equals(range, "Far", StringComparison.OrdinalIgnoreCase))
+            {
+                return !isNear;
+            }
+
+            return true;
+        }
+
         private static float ResolvePartLocalX(MonsterBattleState monster, MonsterPartState part)
         {
             if (part == null)

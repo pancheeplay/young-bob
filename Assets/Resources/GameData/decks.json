@@ -9,11 +9,13 @@
         "warrior_charge",
         "warrior_slash",
         "warrior_slash",
+        "warrior_horizontal_sweep",
         "assassin_stab",
         "assassin_stab",
         "assassin_finisher",
         "assassin_kick",
-        "assassin_kick"
+        "assassin_kick",
+        "assassin_air_kill"
       ]
     }
   ]

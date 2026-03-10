@@ -25,7 +25,7 @@ namespace YoungBob.Prototype.UI.Battle
             }
         }
 
-        public void SetData(MonsterPartState part, bool highlight)
+        public void SetData(MonsterPartState part, SlotHighlightMode highlightMode)
         {
             PartId = part.partId;
             InstanceId = part.instanceId;
@@ -44,7 +44,12 @@ namespace YoungBob.Prototype.UI.Battle
 
             if (_highlightBorder != null)
             {
-                _highlightBorder.gameObject.SetActive(highlight && IsAlive);
+                bool showHighlight = IsAlive && highlightMode != SlotHighlightMode.None;
+                _highlightBorder.gameObject.SetActive(showHighlight);
+                if (showHighlight)
+                {
+                    _highlightBorder.color = highlightMode == SlotHighlightMode.Selected ? new Color(1f, 0.85f, 0f, 1f) : new Color(1f, 1f, 1f, 0.4f);
+                }
             }
         }
     }

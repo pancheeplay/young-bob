@@ -42,7 +42,7 @@ namespace YoungBob.Prototype.Battle
                     break;
 
                 case "MoveArea":
-                    ResolveMoveAreaEffect(state, actingPlayer, command, targetType, result);
+                    ResolveMoveAreaEffect(state, actingPlayer, command, definition, targetType, result);
                     break;
 
                 case "ChargeUp":
@@ -78,7 +78,9 @@ namespace YoungBob.Prototype.Battle
                     if (part == null)
                     {
                         var playerTarget = BattleTargetResolver.ResolvePlayerTarget(state, command, false);
-                        if (playerTarget != null && targetType == BattleTargetType.SingleUnit)
+                        if (playerTarget != null
+                            && targetType == BattleTargetType.SingleUnit
+                            && BattleTargetingRules.CanTargetPlayer(state, actingPlayer, definition, targetType, playerTarget))
                         {
                             var damageToHero = BattleMechanics.ApplyDamage(playerTarget, finalDamage);
                             ConsumeAttackCharge(actingPlayer);
@@ -94,7 +96,7 @@ namespace YoungBob.Prototype.Battle
                         return;
                     }
 
-                    if (!BattleTargetResolver.IsPartInRange(state.monster, part, definition, actingPlayer.area))
+                    if (!BattleTargetingRules.CanTargetPart(state, actingPlayer, definition, targetType, part))
                     {
                         result.error = "Target out of range.";
                         return;
@@ -119,7 +121,7 @@ namespace YoungBob.Prototype.Battle
                             continue;
                         }
 
-                        if (!BattleTargetResolver.IsPartInRange(state.monster, target, definition, actingPlayer.area))
+                        if (!BattleTargetingRules.CanTargetPart(state, actingPlayer, definition, targetType, target))
                         {
                             continue;
                         }
@@ -255,7 +257,7 @@ namespace YoungBob.Prototype.Battle
             }
 
             var playerTarget = BattleTargetResolver.ResolvePlayerTarget(state, command, false);
-            if (playerTarget != null)
+            if (playerTarget != null && BattleTargetingRules.CanTargetPlayer(state, actingPlayer, definition, targetType, playerTarget))
             {
                 var chargeBonus = Math.Max(0, actingPlayer.nextAttackBonus);
                 var damage = BattleMechanics.ApplyDamage(playerTarget, Math.Max(0, definition.value + chargeBonus));
@@ -281,7 +283,7 @@ namespace YoungBob.Prototype.Battle
                 return;
             }
 
-            if (!BattleTargetResolver.IsPartInRange(state.monster, part, definition, actingPlayer.area))
+            if (!BattleTargetingRules.CanTargetPart(state, actingPlayer, definition, targetType, part))
             {
                 result.error = "Target out of range.";
                 return;
@@ -370,7 +372,7 @@ namespace YoungBob.Prototype.Battle
             });
         }
 
-        private static void ResolveMoveAreaEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, BattleTargetType targetType, BattleCommandResult result)
+        private static void ResolveMoveAreaEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
         {
             if (targetType != BattleTargetType.Area)
             {
@@ -378,15 +380,9 @@ namespace YoungBob.Prototype.Battle
                 return;
             }
 
-            if (command.targetArea != BattleArea.West && command.targetArea != BattleArea.East)
+            if (!BattleTargetingRules.CanTargetArea(state, actingPlayer, definition, command.targetArea))
             {
                 result.error = "Invalid target area.";
-                return;
-            }
-
-            if (actingPlayer.area == command.targetArea)
-            {
-                result.error = "Already in that area.";
                 return;
             }
 

@@ -4,6 +4,13 @@ using YoungBob.Prototype.Battle;
 
 namespace YoungBob.Prototype.UI.Battle
 {
+    public enum SlotHighlightMode
+    {
+        None,
+        Potential, // Card can target this unit
+        Selected   // Card is currently targeting this unit (hovered)
+    }
+
     internal sealed class BattleUnitSlotView : MonoBehaviour
     {
         private Image _background;
@@ -35,7 +42,7 @@ namespace YoungBob.Prototype.UI.Battle
             if (_highlightBorder != null) _highlightBorder.gameObject.SetActive(false);
         }
 
-        public void SetData(BattleTargetFaction faction, string unitId, string displayName, int hp, int maxHp, int armor, int charge, int bonus, bool highlight)
+        public void SetData(BattleTargetFaction faction, string unitId, string displayName, int hp, int maxHp, int armor, int charge, int bonus, SlotHighlightMode highlightMode)
         {
             Faction = faction;
             UnitId = unitId;
@@ -103,7 +110,12 @@ namespace YoungBob.Prototype.UI.Battle
 
             if (_highlightBorder != null)
             {
-                _highlightBorder.gameObject.SetActive(highlight && IsAlive);
+                bool showHighlight = IsAlive && highlightMode != SlotHighlightMode.None;
+                _highlightBorder.gameObject.SetActive(showHighlight);
+                if (showHighlight)
+                {
+                    _highlightBorder.color = highlightMode == SlotHighlightMode.Selected ? new Color(1f, 0.85f, 0f, 1f) : new Color(1f, 1f, 1f, 0.4f);
+                }
             }
         }
     }

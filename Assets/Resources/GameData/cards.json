@@ -40,6 +40,17 @@
       "value": 2
     },
     {
+      "id": "warrior_horizontal_sweep",
+      "name": "横斩",
+      "classTag": "Warrior",
+      "effectType": "Damage",
+      "targetType": "AllMonsterParts",
+      "rangeHeights": "Ground",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "value": 2
+    },
+    {
       "id": "assassin_stab",
       "name": "刺击",
       "classTag": "Assassin",
@@ -71,6 +82,17 @@
       "rangeDistance": "Near",
       "energyCost": 1,
       "value": 2
+    },
+    {
+      "id": "assassin_air_kill",
+      "name": "裂空刺",
+      "classTag": "Assassin",
+      "effectType": "Damage",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Air",
+      "rangeDistance": "Near",
+      "energyCost": 1,
+      "value": 4
     }
   ]
 }

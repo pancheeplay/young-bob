@@ -79,7 +79,7 @@
               {
                 "partId": "tail",
                 "relativeZone": "Back",
-                "relativeHeight": "Air",
+                "relativeHeight": "Ground",
                 "offsetX": -1.2,
                 "offsetY": 0.24,
                 "width": 160,
@@ -90,8 +90,8 @@
                 "partId": "legs",
                 "relativeZone": "Front",
                 "relativeHeight": "Ground",
-                "offsetX": 0.4,
-                "offsetY": -0.76,
+                "offsetX": 0.2,
+                "offsetY": -0.35,
                 "width": 140,
                 "height": 80,
                 "shape": "Rect"

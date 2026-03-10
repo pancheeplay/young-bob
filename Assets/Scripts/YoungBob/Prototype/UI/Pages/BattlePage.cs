@@ -316,7 +316,7 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 var player = state.players[i];
                 var container = player.area == BattleArea.East ? _eastPlayerContainer : _westPlayerContainer;
-                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, new Color(0.2f, 0.36f, 0.31f), false);
+                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, new Color(0.2f, 0.36f, 0.31f), SlotHighlightMode.None);
                 _playerSlots.Add(slot);
             }
 
@@ -328,7 +328,7 @@ namespace YoungBob.Prototype.UI.Pages
                 for (var i = 0; i < state.monster.parts.Count; i++)
                 {
                     var part = state.monster.parts[i];
-                    var slot = CreateMonsterPartSlot(_monsterContainer, part, panelRect, state.monster.facing, state.monster.stance, false);
+                    var slot = CreateMonsterPartSlot(_monsterContainer, part, panelRect, state.monster.facing, state.monster.stance, SlotHighlightMode.None);
                     _monsterPartSlots.Add(slot);
                 }
             }
@@ -455,7 +455,8 @@ namespace YoungBob.Prototype.UI.Pages
 
             if (targetType == BattleTargetType.Area)
             {
-                if (hoveredArea != null)
+                if (hoveredArea != null
+                    && BattleTargetingRules.CanTargetArea(_lastState, localPlayer, _draggingCardDefinition, hoveredArea.Area))
                 {
                     Session.PlayCard(_draggingCardInstanceId, BattleTargetFaction.None, string.Empty, hoveredArea.Area);
                 }
@@ -465,19 +466,19 @@ namespace YoungBob.Prototype.UI.Pages
                 targetType == BattleTargetType.OtherAlly || targetType == BattleTargetType.SingleUnit ||
                 targetType == BattleTargetType.AllMonsterParts)
             {
-                if (IsValidPlayerTarget(targetType, hoveredPlayer) || IsValidPartTarget(targetType, hoveredPart))
+                if (IsValidPlayerTarget(_draggingCardDefinition, targetType, hoveredPlayer) || IsValidPartTarget(_draggingCardDefinition, targetType, hoveredPart))
                 {
                     var isAoe = (targetType == BattleTargetType.AllMonsterParts || targetType == BattleTargetType.AllAllies);
                     var unitId = string.Empty;
                     var faction = BattleTargetFaction.None;
                     if (!isAoe)
                     {
-                        if (hoveredPart != null && IsValidPartTarget(targetType, hoveredPart))
+                        if (hoveredPart != null && IsValidPartTarget(_draggingCardDefinition, targetType, hoveredPart))
                         {
                             unitId = hoveredPart.InstanceId;
                             faction = BattleTargetFaction.Enemies;
                         }
-                        else if (hoveredPlayer != null && IsValidPlayerTarget(targetType, hoveredPlayer))
+                        else if (hoveredPlayer != null && IsValidPlayerTarget(_draggingCardDefinition, targetType, hoveredPlayer))
                         {
                             unitId = hoveredPlayer.UnitId;
                             faction = BattleTargetFaction.Allies;
@@ -508,7 +509,7 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 var slot = _playerSlots[i];
                 var player = _lastState.GetPlayer(slot.UnitId);
-                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, ShouldHighlightPlayer(targetType, slot, hoveredPlayer));
+                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, GetHighlightModeForPlayer(cardDef, targetType, slot, hoveredPlayer));
             }
 
             for (var i = 0; i < _monsterPartSlots.Count; i++)
@@ -520,100 +521,101 @@ namespace YoungBob.Prototype.UI.Pages
                     continue;
                 }
 
-                slot.SetData(part, ShouldHighlightPart(targetType, slot, hoveredPart));
+                slot.SetData(part, GetHighlightModeForPart(cardDef, targetType, slot, hoveredPart));
             }
 
             for (var i = 0; i < _areaDropZones.Count; i++)
             {
                 var zone = _areaDropZones[i];
-                var highlight = targetType == BattleTargetType.Area && hoveredArea != null && hoveredArea.Area == zone.Area;
-                zone.SetHighlight(highlight);
+                var mode = GetHighlightModeForArea(cardDef, targetType, zone, hoveredArea);
+                zone.SetHighlight(mode);
             }
         }
 
-        private bool ShouldHighlightPlayer(BattleTargetType targetType, BattleUnitSlotView slot, BattleUnitSlotView hoveredSlot)
+        private SlotHighlightMode GetHighlightModeForArea(CardDefinition cardDef, BattleTargetType targetType, BattleAreaDropZoneView zone, BattleAreaDropZoneView hoveredArea)
         {
-            if (!slot.IsAlive)
+            if (targetType != BattleTargetType.Area || _lastState == null) return SlotHighlightMode.None;
+            
+            var localPlayer = _lastState.GetPlayer(Session.LocalPlayerId);
+            if (localPlayer == null) return SlotHighlightMode.None;
+
+            if (!BattleTargetingRules.CanTargetArea(_lastState, localPlayer, cardDef, zone.Area))
             {
-                return false;
+                return SlotHighlightMode.None;
             }
 
+            return hoveredArea == zone ? SlotHighlightMode.Selected : SlotHighlightMode.Potential;
+        }
+
+        private SlotHighlightMode GetHighlightModeForPlayer(CardDefinition cardDef, BattleTargetType targetType, BattleUnitSlotView slot, BattleUnitSlotView hoveredSlot)
+        {
+            if (!slot.IsAlive || !IsValidPlayerTarget(cardDef, targetType, slot))
+            {
+                return SlotHighlightMode.None;
+            }
+
+            bool isSelected = false;
             switch (targetType)
             {
                 case BattleTargetType.Self:
-                    return slot.UnitId == Session.LocalPlayerId && hoveredSlot == slot;
                 case BattleTargetType.SingleAlly:
-                    return slot.Faction == BattleTargetFaction.Allies && hoveredSlot == slot;
-                case BattleTargetType.AllAllies:
-                    return slot.Faction == BattleTargetFaction.Allies && hoveredSlot != null && IsValidPlayerTarget(targetType, hoveredSlot);
                 case BattleTargetType.OtherAlly:
-                    return slot.Faction == BattleTargetFaction.Allies && slot.UnitId != Session.LocalPlayerId && hoveredSlot == slot;
                 case BattleTargetType.SingleUnit:
-                    return hoveredSlot == slot;
-                default:
-                    return false;
+                    isSelected = (hoveredSlot == slot);
+                    break;
+                case BattleTargetType.AllAllies:
+                    isSelected = (hoveredSlot != null && IsValidPlayerTarget(cardDef, targetType, hoveredSlot));
+                    break;
             }
+
+            return isSelected ? SlotHighlightMode.Selected : SlotHighlightMode.Potential;
         }
 
-        private bool ShouldHighlightPart(BattleTargetType targetType, MonsterPartSlotView slot, MonsterPartSlotView hoveredSlot)
+        private SlotHighlightMode GetHighlightModeForPart(CardDefinition cardDef, BattleTargetType targetType, MonsterPartSlotView slot, MonsterPartSlotView hoveredSlot)
         {
-            if (slot == null || !slot.IsAlive)
+            if (!slot.IsAlive || !IsValidPartTarget(cardDef, targetType, slot))
             {
-                return false;
+                return SlotHighlightMode.None;
             }
 
+            bool isSelected = false;
             switch (targetType)
             {
                 case BattleTargetType.MonsterPart:
-                    return hoveredSlot == slot;
-                case BattleTargetType.AllMonsterParts:
-                    return hoveredSlot != null && IsValidPartTarget(targetType, hoveredSlot);
                 case BattleTargetType.SingleUnit:
-                    return hoveredSlot == slot;
-                default:
-                    return false;
+                    isSelected = (hoveredSlot == slot);
+                    break;
+                case BattleTargetType.AllMonsterParts:
+                    isSelected = (hoveredSlot != null && IsValidPartTarget(cardDef, targetType, hoveredSlot));
+                    break;
             }
+
+            return isSelected ? SlotHighlightMode.Selected : SlotHighlightMode.Potential;
         }
 
-        private bool IsValidPlayerTarget(BattleTargetType targetType, BattleUnitSlotView slot)
+
+        private bool IsValidPlayerTarget(CardDefinition cardDef, BattleTargetType targetType, BattleUnitSlotView slot)
         {
-            if (slot == null || !slot.IsAlive)
+            if (slot == null || !slot.IsAlive || _lastState == null)
             {
                 return false;
             }
 
-            switch (targetType)
-            {
-                case BattleTargetType.Self:
-                    return slot.UnitId == Session.LocalPlayerId;
-                case BattleTargetType.SingleAlly:
-                case BattleTargetType.AllAllies:
-                    return slot.Faction == BattleTargetFaction.Allies;
-                case BattleTargetType.OtherAlly:
-                    return slot.Faction == BattleTargetFaction.Allies && slot.UnitId != Session.LocalPlayerId;
-                case BattleTargetType.SingleUnit:
-                    return true;
-                default:
-                    return false;
-            }
+            var localPlayer = _lastState.GetPlayer(Session.LocalPlayerId);
+            var targetPlayer = _lastState.GetPlayer(slot.UnitId);
+            return BattleTargetingRules.CanTargetPlayer(_lastState, localPlayer, cardDef, targetType, targetPlayer);
         }
 
-        private bool IsValidPartTarget(BattleTargetType targetType, MonsterPartSlotView slot)
+        private bool IsValidPartTarget(CardDefinition cardDef, BattleTargetType targetType, MonsterPartSlotView slot)
         {
-            if (slot == null || !slot.IsAlive)
+            if (slot == null || !slot.IsAlive || _lastState == null)
             {
                 return false;
             }
 
-            switch (targetType)
-            {
-                case BattleTargetType.MonsterPart:
-                case BattleTargetType.AllMonsterParts:
-                case BattleTargetType.SingleUnit:
-                    return true;
-                default:
-                    return false;
-            }
+            var localPlayer = _lastState.GetPlayer(Session.LocalPlayerId);
+            var targetPart = _lastState.GetPart(slot.InstanceId);
+            return BattleTargetingRules.CanTargetPart(_lastState, localPlayer, cardDef, targetType, targetPart);
         }
 
         private void ClearHighlights()
@@ -626,7 +628,7 @@ namespace YoungBob.Prototype.UI.Pages
             RenderBoard(_lastState);
             for (var i = 0; i < _areaDropZones.Count; i++)
             {
-                _areaDropZones[i].SetHighlight(false);
+                _areaDropZones[i].SetHighlight(SlotHighlightMode.None);
             }
         }
 
@@ -681,7 +683,7 @@ namespace YoungBob.Prototype.UI.Pages
             return null;
         }
 
-        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, Color color, bool highlight)
+        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, Color color, SlotHighlightMode highlightMode)
         {
             var slotObject = new GameObject("UnitSlot_" + unitId);
             slotObject.transform.SetParent(parent, false);
@@ -736,11 +738,11 @@ namespace YoungBob.Prototype.UI.Pages
 
             var slotView = slotObject.AddComponent<BattleUnitSlotView>();
             slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, color, highlightImage);
-            slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, highlight);
+            slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, highlightMode);
             return slotView;
         }
 
-        private MonsterPartSlotView CreateMonsterPartSlot(Transform parent, MonsterPartState part, Rect panelRect, BattleFacing facing, BattleStance stance, bool highlight)
+        private MonsterPartSlotView CreateMonsterPartSlot(Transform parent, MonsterPartState part, Rect panelRect, BattleFacing facing, BattleStance stance, SlotHighlightMode highlightMode)
         {
             var slotObject = new GameObject("MonsterPart_" + part.partId);
             slotObject.transform.SetParent(parent, false);
@@ -772,7 +774,7 @@ namespace YoungBob.Prototype.UI.Pages
 
             var slotView = slotObject.AddComponent<MonsterPartSlotView>();
             slotView.Initialize(image, label, highlightImage);
-            slotView.SetData(part, highlight);
+            slotView.SetData(part, highlightMode);
             return slotView;
         }
 
@@ -820,9 +822,10 @@ namespace YoungBob.Prototype.UI.Pages
 
         private static string DescribeCard(CardDefinition cardDef)
         {
-            var range = string.IsNullOrEmpty(cardDef.rangeHeights) && string.IsNullOrEmpty(cardDef.rangeZones)
+            var distance = string.IsNullOrEmpty(cardDef.rangeDistance) ? cardDef.rangeZones : cardDef.rangeDistance;
+            var range = string.IsNullOrEmpty(cardDef.rangeHeights) && string.IsNullOrEmpty(distance)
                 ? ""
-                : "\nRange: " + (string.IsNullOrEmpty(cardDef.rangeZones) ? "" : cardDef.rangeZones + " ") + (string.IsNullOrEmpty(cardDef.rangeHeights) ? "" : cardDef.rangeHeights);
+                : "\nRange: " + (string.IsNullOrEmpty(distance) ? "" : distance + " ") + (string.IsNullOrEmpty(cardDef.rangeHeights) ? "" : cardDef.rangeHeights);
             return "Cost: " + cardDef.energyCost + "\nEffect: " + cardDef.effectType + "\nTarget: " + cardDef.targetType + range + "\nValue: " + cardDef.value;
         }
 

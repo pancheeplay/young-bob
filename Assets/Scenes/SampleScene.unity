@@ -517,7 +517,7 @@ MonoBehaviour:
   uiManager: {fileID: 17140428}
   transportMode: 1
   debugRelayUrl: ws://127.0.0.1:8787
-  localPlayerDisplayName: "\u90ED"
+  localPlayerDisplayName: my
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

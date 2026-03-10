@@ -72,6 +72,7 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTextHelper.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/GameConfig.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/UIManager.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTargetingRules.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/PlayerComponent.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/RoomPage.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/DebugRelayMultiplayerService.cs" />
