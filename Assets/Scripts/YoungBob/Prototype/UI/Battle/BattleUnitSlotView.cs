@@ -15,11 +15,13 @@ namespace YoungBob.Prototype.UI.Battle
         private Text _armorLabel;
         private Color _baseColor;
 
+        private Text _statusLabel;
+
         public string UnitId { get; private set; }
         public BattleTargetFaction Faction { get; private set; }
         public bool IsAlive { get; private set; }
 
-        public void Initialize(Image background, Text nameLabel, Text hpLabel, RectTransform hpFillRect, Text armorLabel, Color baseColor, Image highlightBorder)
+        public void Initialize(Image background, Text nameLabel, Text hpLabel, RectTransform hpFillRect, Text armorLabel, Text statusLabel, Color baseColor, Image highlightBorder)
         {
             _background = background;
             _nameLabel = nameLabel;
@@ -27,12 +29,13 @@ namespace YoungBob.Prototype.UI.Battle
             _hpFillRect = hpFillRect;
             if (_hpFillRect != null) _hpFillImage = _hpFillRect.GetComponent<Image>();
             _armorLabel = armorLabel;
+            _statusLabel = statusLabel;
             _baseColor = baseColor;
             _highlightBorder = highlightBorder;
             if (_highlightBorder != null) _highlightBorder.gameObject.SetActive(false);
         }
 
-        public void SetData(BattleTargetFaction faction, string unitId, string displayName, int hp, int maxHp, int armor, bool highlight)
+        public void SetData(BattleTargetFaction faction, string unitId, string displayName, int hp, int maxHp, int armor, int charge, int bonus, bool highlight)
         {
             Faction = faction;
             UnitId = unitId;
@@ -57,6 +60,15 @@ namespace YoungBob.Prototype.UI.Battle
                 _armorLabel.text = armor > 0 ? "🛡️ " + armor : "";
                 _armorLabel.gameObject.SetActive(armor > 0);
             }
+
+            if (_statusLabel != null)
+            {
+                string status = "";
+                if (charge > 0) status += $"⚡{charge} ";
+                if (bonus > 0) status += $"💥+{bonus}";
+                _statusLabel.text = status;
+                _statusLabel.gameObject.SetActive(!string.IsNullOrEmpty(status) && IsAlive);
+            }
             
             if (IsAlive)
             {
@@ -70,23 +82,23 @@ namespace YoungBob.Prototype.UI.Battle
                 }
                 if (_hpFillRect != null && _hpFillRect.parent != null) _hpFillRect.parent.gameObject.SetActive(true);
                 
-                // var cg = GetComponent<CanvasGroup>();
-                // if (cg != null) cg.alpha = 1.0f;
+                var cg = GetComponent<CanvasGroup>();
+                if (cg != null) cg.alpha = 1.0f;
             }
             else
             {
-                // Very distinct Gray/Dark color
                 _background.color = new Color(0.12f, 0.12f, 0.12f, 0.9f);
                 _nameLabel.color = new Color(0.4f, 0.4f, 0.4f);
                 _hpLabel.color = new Color(0.4f, 0.4f, 0.4f);
                 _hpLabel.text = "DEAD";
                 
                 if (_armorLabel != null) _armorLabel.gameObject.SetActive(false);
+                if (_statusLabel != null) _statusLabel.gameObject.SetActive(false);
                 if (_hpFillRect != null && _hpFillRect.parent != null) _hpFillRect.parent.gameObject.SetActive(false);
                 
-                // var cg = GetComponent<CanvasGroup>();
-                // if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
-                // cg.alpha = 0.6f;
+                var cg = GetComponent<CanvasGroup>();
+                if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+                cg.alpha = 0.6f;
             }
 
             if (_highlightBorder != null)

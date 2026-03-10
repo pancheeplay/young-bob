@@ -1,0 +1,15 @@
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/bin/Debug/net9.0/BattleCli
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/bin/Debug/net9.0/BattleCli.deps.json
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/bin/Debug/net9.0/BattleCli.runtimeconfig.json
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/bin/Debug/net9.0/BattleCli.dll
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/bin/Debug/net9.0/BattleCli.pdb
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/obj/Debug/net9.0/BattleCli.GeneratedMSBuildEditorConfig.editorconfig
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/obj/Debug/net9.0/BattleCli.AssemblyInfoInputs.cache
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/obj/Debug/net9.0/BattleCli.AssemblyInfo.cs
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/obj/Debug/net9.0/BattleCli.csproj.CoreCompileInputs.cache
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/obj/Debug/net9.0/BattleCli.sourcelink.json
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/obj/Debug/net9.0/BattleCli.dll
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/obj/Debug/net9.0/refint/BattleCli.dll
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/obj/Debug/net9.0/BattleCli.pdb
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/obj/Debug/net9.0/BattleCli.genruntimeconfig.cache
+/Users/usr/Documents/unity_projects/young-bob/Tools/BattleCli/obj/Debug/net9.0/ref/BattleCli.dll

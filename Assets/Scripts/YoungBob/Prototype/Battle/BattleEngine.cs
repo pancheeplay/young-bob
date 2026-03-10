@@ -46,7 +46,10 @@ namespace YoungBob.Prototype.Battle
                     energy = BaseEnergyPerTurn,
                     area = BattleArea.West,
                     height = BattleHeight.Ground,
-                    hasEndedTurn = false
+                    hasEndedTurn = false,
+                    cardsPlayedThisTurn = 0,
+                    nextAttackBonus = 0,
+                    attackChargeStage = 0
                 };
 
                 for (var i = 0; i < deck.cards.Length; i++)
@@ -141,6 +144,7 @@ namespace YoungBob.Prototype.Battle
             actingPlayer.energy -= definition.energyCost;
             actingPlayer.hand.Remove(card);
             actingPlayer.discardPile.Add(card);
+            actingPlayer.cardsPlayedThisTurn += 1;
             BattleMechanics.TryResolveBattleEnd(state, result);
             result.success = true;
             return result;
@@ -205,6 +209,7 @@ namespace YoungBob.Prototype.Battle
                 if (state.players[i].hp > 0)
                 {
                     state.players[i].energy = BaseEnergyPerTurn;
+                    state.players[i].cardsPlayedThisTurn = 0;
                     BattleMechanics.DrawCards(state, state.players[i], CardsDrawnPerTurn);
                     BattleMechanics.AddMoveCard(state, state.players[i]);
                 }

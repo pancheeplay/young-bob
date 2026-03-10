@@ -11,9 +11,11 @@ namespace YoungBob.Prototype.Data
     {
         public string id;
         public string name;
+        public string classTag;
         public string effectType;
         public string targetType;
         public string rangeHeights;
+        public string rangeDistance;
         public string rangeZones;
         public int energyCost;
         public int value;

@@ -209,7 +209,7 @@
             "skillId": "charged_claw",
             "name": "蓄力爪击",
             "windupTurns": 1,
-            "cooldownTurns": 2,
+            "cooldownTurns": 3,
             "damage": 6,
             "targetArea": "Any",
             "targetHeight": "Ground"

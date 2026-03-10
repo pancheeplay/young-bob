@@ -34,6 +34,7 @@ namespace YoungBob.Prototype.UI.Pages
         private readonly List<BattleUnitSlotView> _playerSlots = new List<BattleUnitSlotView>();
         private readonly List<MonsterPartSlotView> _monsterPartSlots = new List<MonsterPartSlotView>();
         private readonly List<string> _battleLogs = new List<string>();
+        private readonly Text _energyLabel;
         private bool _isUserScrolling;
 
         private BattleState _lastState;
@@ -163,6 +164,12 @@ namespace YoungBob.Prototype.UI.Pages
             jumpRect.anchorMax = new Vector2(0.98f, 0.22f);
             jumpRect.offsetMin = jumpRect.offsetMax = Vector2.zero;
             _jumpToLatestButton.gameObject.SetActive(false);
+            
+            // --- Energy Area (Above Hand Left) ---
+            _energyLabel = UiFactory.CreateText(Root.transform, "EnergyLabel", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0.28f), new Vector2(0.5f, 0.32f), new Vector2(35f, 0f), new Vector2(0f, 0f));
+            _energyLabel.fontStyle = FontStyle.Bold;
+            _energyLabel.color = new Color(0.4f, 0.7f, 1f);
+            _energyLabel.raycastTarget = false;
 
             // --- Hand ---
             var handPanel = UiFactory.CreatePanel(Root.transform, "HandPanel", new Color(0.12f, 0.14f, 0.18f, 0.7f), new Vector2(0f, 0f), new Vector2(1f, 0.27f), new Vector2(10f, 10f), new Vector2(-10f, 10f));
@@ -309,7 +316,7 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 var player = state.players[i];
                 var container = player.area == BattleArea.East ? _eastPlayerContainer : _westPlayerContainer;
-                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, new Color(0.2f, 0.36f, 0.31f), false);
+                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, new Color(0.2f, 0.36f, 0.31f), false);
                 _playerSlots.Add(slot);
             }
 
@@ -342,8 +349,20 @@ namespace YoungBob.Prototype.UI.Pages
             var player = Session.GetLocalBattlePlayer();
             if (player == null)
             {
+                _energyLabel.text = "";
                 return;
             }
+
+            // Energy display
+            var currentEnergy = player.energy;
+            var maxEnergy = BattleEngine.BaseEnergyPerTurn; // Default fallback
+            var energyIcons = "";
+            for (var i = 1; i <= Math.Max(currentEnergy, maxEnergy); i++)
+            {
+                if (i <= currentEnergy) energyIcons += "💎";
+                else energyIcons += "<color=#2a3c50>💎</color>";
+            }
+            _energyLabel.text = $"ENERGY {energyIcons} ({currentEnergy}/{maxEnergy})";
 
             if (!string.IsNullOrEmpty(_draggingCardInstanceId) && !HasCardInHand(player, _draggingCardInstanceId))
             {
@@ -361,7 +380,7 @@ namespace YoungBob.Prototype.UI.Pages
                 if (cardDef == null) continue;
                 
                 var isPlayable = canAct && player.energy >= cardDef.energyCost;
-                var cardObject = UiFactory.CreateCard(_handContainer, "Card_" + cardState.instanceId, cardDef.name, DescribeCard(cardDef), isPlayable);
+                var cardObject = UiFactory.CreateCard(_handContainer, "Card_" + cardState.instanceId, cardDef, isPlayable);
                 if (cardObject == null) continue;
 
                 var layoutElement = cardObject.AddComponent<LayoutElement>();
@@ -489,7 +508,7 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 var slot = _playerSlots[i];
                 var player = _lastState.GetPlayer(slot.UnitId);
-                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, ShouldHighlightPlayer(targetType, slot, hoveredPlayer));
+                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, ShouldHighlightPlayer(targetType, slot, hoveredPlayer));
             }
 
             for (var i = 0; i < _monsterPartSlots.Count; i++)
@@ -662,59 +681,62 @@ namespace YoungBob.Prototype.UI.Pages
             return null;
         }
 
-        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, Color color, bool highlight)
+        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, Color color, bool highlight)
         {
             var slotObject = new GameObject("UnitSlot_" + unitId);
             slotObject.transform.SetParent(parent, false);
             var rect = slotObject.AddComponent<RectTransform>();
             
-            // Horizon Anchor: Standing on the horizon line (y=0.3 relative to board)
+            // Horizon Anchor
             rect.anchorMin = new Vector2(0.5f, 0.3f);
             rect.anchorMax = new Vector2(0.5f, 0.3f);
-            rect.pivot = new Vector2(0.5f, 0f); // Standing at the base
+            rect.pivot = new Vector2(0.5f, 0f);
             rect.sizeDelta = new Vector2(130f, 160f);
 
             var bg = slotObject.AddComponent<Image>();
             bg.color = color;
             bg.type = Image.Type.Sliced;
-            bg.sprite = GetPartSprite("Unit"); // Uses the null-safe helper
 
-            // Info Container (Below Horizon)
+            // Info Container
             var infoBase = new GameObject("Info");
             infoBase.transform.SetParent(slotObject.transform, false);
             var infoRect = infoBase.AddComponent<RectTransform>();
-            infoRect.anchorMin = new Vector2(0f, -0.65f);
+            infoRect.anchorMin = new Vector2(0f, -0.7f);
             infoRect.anchorMax = new Vector2(1f, -0.05f);
             infoRect.offsetMin = Vector2.zero;
             infoRect.offsetMax = Vector2.zero;
 
             // Name
-            var nameLabel = UiFactory.CreateText(infoBase.transform, "Name", 20, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            var nameLabel = UiFactory.CreateText(infoBase.transform, "Name", 20, TextAnchor.MiddleCenter, new Vector2(0f, 0.65f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             nameLabel.fontStyle = FontStyle.Bold;
 
-            // HP Bar using helper
+            // HP Bar
             var barColor = faction == BattleTargetFaction.Allies ? new Color(0.2f, 0.8f, 0.3f) : new Color(0.8f, 0.2f, 0.2f);
             var (hpBarBg, hpFill) = UiFactory.CreateProgressBar(infoBase.transform, "HPBar", barColor, new Vector2(110f, 14f));
             hpBarBg.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -15f);
 
-            // HP Numeric
             var hpLabel = UiFactory.CreateText(hpBarBg.transform, "HPNumeric", 14, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             hpLabel.color = Color.white;
 
-            // Armor (Floating near unit)
-            var armorLabel = UiFactory.CreateText(slotObject.transform, "Armor", 18, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(0f, 0f), Vector2.zero, Vector2.zero);
-            armorLabel.GetComponent<RectTransform>().anchoredPosition = new Vector2(70f, 20f);
+            // Status (Charge/Bonus)
+            var statusLabel = UiFactory.CreateText(infoBase.transform, "Status", 18, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0.35f), Vector2.zero, Vector2.zero);
+            statusLabel.fontStyle = FontStyle.Bold;
+            statusLabel.color = new Color(1f, 0.8f, 0.2f);
+
+            // Armor
+            var armorLabel = UiFactory.CreateText(slotObject.transform, "Armor", 18, TextAnchor.MiddleCenter, new Vector2(0f, 0.7f), new Vector2(0f, 0.7f), Vector2.zero, Vector2.zero);
+            armorLabel.GetComponent<RectTransform>().anchoredPosition = new Vector2(70f, 0f);
             armorLabel.fontStyle = FontStyle.Bold;
             armorLabel.color = new Color(0.6f, 0.8f, 1f);
 
-            // Highlight Border
+            // Highlight
             var borderObj = UiFactory.CreatePanel(slotObject.transform, "Highlight", new Color(1f, 0.85f, 0f, 1f), Vector2.zero, Vector2.one, new Vector2(-5f, -5f), new Vector2(5f, 5f));
             borderObj.transform.SetAsFirstSibling();
             var highlightImage = borderObj.GetComponent<Image>();
 
             var slotView = slotObject.AddComponent<BattleUnitSlotView>();
-            slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, color, highlightImage);
-            slotView.SetData(faction, unitId, name, hp, maxHp, armor, highlight);
+            slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, color, highlightImage);
+            slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, highlight);
             return slotView;
         }
 

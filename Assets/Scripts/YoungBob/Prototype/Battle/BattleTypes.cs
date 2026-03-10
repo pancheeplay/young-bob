@@ -104,6 +104,9 @@ namespace YoungBob.Prototype.Battle
         public BattleArea area;
         public BattleHeight height;
         public bool hasEndedTurn;
+        public int cardsPlayedThisTurn;
+        public int nextAttackBonus;
+        public int attackChargeStage;
         public List<BattleCardState> drawPile = new List<BattleCardState>();
         public List<BattleCardState> hand = new List<BattleCardState>();
         public List<BattleCardState> discardPile = new List<BattleCardState>();

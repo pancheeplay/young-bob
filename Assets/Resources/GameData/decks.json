@@ -3,17 +3,17 @@
     {
       "id": "co_op_starter",
       "cards": [
-        "strike",
-        "strike",
-        "cleave",
-        "heal",
-        "team_heal",
-        "guard",
-        "insight",
-        "quick_strike",
-        "painful_lesson",
-        "curse",
-        "borrow_hand"
+        "priest_heal",
+        "priest_heal",
+        "warrior_charge",
+        "warrior_charge",
+        "warrior_slash",
+        "warrior_slash",
+        "assassin_stab",
+        "assassin_stab",
+        "assassin_finisher",
+        "assassin_kick",
+        "assassin_kick"
       ]
     }
   ]

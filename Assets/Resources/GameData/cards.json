@@ -3,98 +3,74 @@
     {
       "id": "move",
       "name": "移动",
+      "classTag": "Utility",
       "effectType": "MoveArea",
       "targetType": "Area",
       "energyCost": 1,
       "value": 0
     },
     {
-      "id": "strike",
-      "name": "Strike",
-      "effectType": "Damage",
-      "targetType": "MonsterPart",
-      "rangeHeights": "Both",
-      "rangeZones": "Both",
-      "energyCost": 1,
-      "value": 6
-    },
-    {
-      "id": "cleave",
-      "name": "Cleave",
-      "effectType": "Damage",
-      "targetType": "AllMonsterParts",
-      "rangeHeights": "Both",
-      "rangeZones": "Both",
-      "energyCost": 2,
-      "value": 4
-    },
-    {
-      "id": "heal",
+      "id": "priest_heal",
       "name": "治疗",
+      "classTag": "Priest",
       "effectType": "Heal",
       "targetType": "SingleAlly",
       "energyCost": 1,
       "value": 4
     },
     {
-      "id": "team_heal",
-      "name": "全体治疗",
-      "effectType": "Heal",
-      "targetType": "AllAllies",
+      "id": "warrior_charge",
+      "name": "蓄力",
+      "classTag": "Warrior",
+      "effectType": "ChargeUp",
+      "targetType": "Self",
+      "rangeHeights": "Ground",
       "energyCost": 2,
+      "value": 0
+    },
+    {
+      "id": "warrior_slash",
+      "name": "斩击",
+      "classTag": "Warrior",
+      "effectType": "Damage",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeDistance": "Near",
+      "energyCost": 1,
       "value": 2
     },
     {
-      "id": "guard",
-      "name": "格挡",
-      "effectType": "GainArmor",
-      "targetType": "Self",
-      "energyCost": 1,
-      "value": 1
-    },
-    {
-      "id": "insight",
-      "name": "洞察",
-      "effectType": "DrawCards",
-      "targetType": "Self",
-      "energyCost": 1,
-      "value": 1
-    },
-    {
-      "id": "quick_strike",
-      "name": "疾刺",
+      "id": "assassin_stab",
+      "name": "刺击",
+      "classTag": "Assassin",
       "effectType": "DamageAndDrawSelf",
       "targetType": "MonsterPart",
-      "rangeHeights": "Both",
-      "rangeZones": "Both",
-      "energyCost": 1,
-      "value": 4
-    },
-    {
-      "id": "painful_lesson",
-      "name": "痛苦课程",
-      "effectType": "DamageAndTargetHeroDraw",
-      "targetType": "SingleUnit",
-      "rangeHeights": "Both",
-      "rangeZones": "Both",
-      "energyCost": 1,
-      "value": 3
-    },
-    {
-      "id": "curse",
-      "name": "诅咒",
-      "effectType": "CurseLoseHp",
-      "targetType": "SingleAlly",
+      "rangeHeights": "Ground",
+      "rangeDistance": "Near",
       "energyCost": 0,
       "value": 1
     },
     {
-      "id": "borrow_hand",
-      "name": "借牌",
-      "effectType": "StealRandomCard",
-      "targetType": "OtherAlly",
+      "id": "assassin_finisher",
+      "name": "连击终结",
+      "classTag": "Assassin",
+      "effectType": "ComboFinisherDamage",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
       "energyCost": 1,
-      "value": 0
+      "value": 1
+    },
+    {
+      "id": "assassin_kick",
+      "name": "踢击",
+      "classTag": "Assassin",
+      "effectType": "DamageAndDrawSelf",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Ground",
+      "rangeDistance": "Near",
+      "energyCost": 1,
+      "value": 2
     }
   ]
 }

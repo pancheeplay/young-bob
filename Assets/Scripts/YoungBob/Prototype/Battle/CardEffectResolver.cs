@@ -45,6 +45,14 @@ namespace YoungBob.Prototype.Battle
                     ResolveMoveAreaEffect(state, actingPlayer, command, targetType, result);
                     break;
 
+                case "ChargeUp":
+                    ResolveChargeUpEffect(actingPlayer, definition, targetType, result);
+                    break;
+
+                case "ComboFinisherDamage":
+                    ResolveDamageEffect(state, actingPlayer, command, definition, targetType, result, includeComboBonus: true);
+                    break;
+
                 default:
                     result.error = "Unknown card effect: " + definition.effectType;
                     break;
@@ -53,6 +61,15 @@ namespace YoungBob.Prototype.Battle
 
         private static void ResolveDamageEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
         {
+            ResolveDamageEffect(state, actingPlayer, command, definition, targetType, result, includeComboBonus: false);
+        }
+
+        private static void ResolveDamageEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result, bool includeComboBonus)
+        {
+            var comboBonus = includeComboBonus ? Math.Max(0, actingPlayer.cardsPlayedThisTurn) : 0;
+            var chargeBonus = Math.Max(0, actingPlayer.nextAttackBonus);
+            var finalDamage = Math.Max(0, definition.value + comboBonus + chargeBonus);
+
             switch (targetType)
             {
                 case BattleTargetType.MonsterPart:
@@ -63,11 +80,13 @@ namespace YoungBob.Prototype.Battle
                         var playerTarget = BattleTargetResolver.ResolvePlayerTarget(state, command, false);
                         if (playerTarget != null && targetType == BattleTargetType.SingleUnit)
                         {
-                            var damageToHero = BattleMechanics.ApplyDamage(playerTarget, definition.value);
+                            var damageToHero = BattleMechanics.ApplyDamage(playerTarget, finalDamage);
+                            ConsumeAttackCharge(actingPlayer);
                             result.events.Add(new BattleEvent
                             {
                                 message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(playerTarget.displayName) + " for " + BattleTextHelper.DamageText(damageToHero) + "."
                             });
+                            AppendDamageBonusLog(actingPlayer, comboBonus, chargeBonus, result);
                             return;
                         }
 
@@ -75,17 +94,19 @@ namespace YoungBob.Prototype.Battle
                         return;
                     }
 
-                    if (!BattleTargetResolver.IsPartInRange(state.monster, part, definition))
+                    if (!BattleTargetResolver.IsPartInRange(state.monster, part, definition, actingPlayer.area))
                     {
                         result.error = "Target out of range.";
                         return;
                     }
 
-                    var damageApplied = BattleMechanics.ApplyDamageToPart(state, part, definition.value, result);
+                    var damageApplied = BattleMechanics.ApplyDamageToPart(state, part, finalDamage, result);
+                    ConsumeAttackCharge(actingPlayer);
                     result.events.Add(new BattleEvent
                     {
                         message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(part.displayName) + " for " + BattleTextHelper.DamageText(damageApplied) + "."
                     });
+                    AppendDamageBonusLog(actingPlayer, comboBonus, chargeBonus, result);
                     break;
 
                 case BattleTargetType.AllMonsterParts:
@@ -98,12 +119,12 @@ namespace YoungBob.Prototype.Battle
                             continue;
                         }
 
-                        if (!BattleTargetResolver.IsPartInRange(state.monster, target, definition))
+                        if (!BattleTargetResolver.IsPartInRange(state.monster, target, definition, actingPlayer.area))
                         {
                             continue;
                         }
 
-                        BattleMechanics.ApplyDamageToPart(state, target, definition.value, result);
+                        BattleMechanics.ApplyDamageToPart(state, target, finalDamage, result);
                         hitCount += 1;
                     }
 
@@ -113,10 +134,12 @@ namespace YoungBob.Prototype.Battle
                         return;
                     }
 
+                    ConsumeAttackCharge(actingPlayer);
                     result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " and hit all parts for " + BattleTextHelper.DamageText(definition.value) + "."
+                        message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " and hit all parts for " + BattleTextHelper.DamageText(finalDamage) + "."
                     });
+                    AppendDamageBonusLog(actingPlayer, comboBonus, chargeBonus, result);
                     break;
 
                 default:
@@ -234,11 +257,14 @@ namespace YoungBob.Prototype.Battle
             var playerTarget = BattleTargetResolver.ResolvePlayerTarget(state, command, false);
             if (playerTarget != null)
             {
-                var damage = BattleMechanics.ApplyDamage(playerTarget, definition.value);
+                var chargeBonus = Math.Max(0, actingPlayer.nextAttackBonus);
+                var damage = BattleMechanics.ApplyDamage(playerTarget, Math.Max(0, definition.value + chargeBonus));
+                ConsumeAttackCharge(actingPlayer);
                 result.events.Add(new BattleEvent
                 {
                     message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(playerTarget.displayName) + " for " + BattleTextHelper.DamageText(damage) + "."
                 });
+                AppendDamageBonusLog(actingPlayer, 0, chargeBonus, result);
 
                 var drawn = BattleMechanics.DrawCards(state, playerTarget, 1);
                 result.events.Add(new BattleEvent
@@ -255,17 +281,20 @@ namespace YoungBob.Prototype.Battle
                 return;
             }
 
-            if (!BattleTargetResolver.IsPartInRange(state.monster, part, definition))
+            if (!BattleTargetResolver.IsPartInRange(state.monster, part, definition, actingPlayer.area))
             {
                 result.error = "Target out of range.";
                 return;
             }
 
-            var enemyDamage = BattleMechanics.ApplyDamageToPart(state, part, definition.value, result);
+            var partChargeBonus = Math.Max(0, actingPlayer.nextAttackBonus);
+            var enemyDamage = BattleMechanics.ApplyDamageToPart(state, part, Math.Max(0, definition.value + partChargeBonus), result);
+            ConsumeAttackCharge(actingPlayer);
             result.events.Add(new BattleEvent
             {
                 message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(part.displayName) + " for " + BattleTextHelper.DamageText(enemyDamage) + "."
             });
+            AppendDamageBonusLog(actingPlayer, 0, partChargeBonus, result);
         }
 
         private static void ResolveCurseLoseHpEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
@@ -365,6 +394,62 @@ namespace YoungBob.Prototype.Battle
             result.events.Add(new BattleEvent
             {
                 message = BattleTextHelper.Actor(actingPlayer.displayName) + " moved to " + BattleTextHelper.AreaText(command.targetArea) + "."
+            });
+        }
+
+        private static void ResolveChargeUpEffect(PlayerBattleState actingPlayer, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
+        {
+            if (targetType != BattleTargetType.Self)
+            {
+                result.error = "ChargeUp requires Self target.";
+                return;
+            }
+
+            if (actingPlayer.attackChargeStage < 3)
+            {
+                actingPlayer.attackChargeStage += 1;
+            }
+
+            switch (actingPlayer.attackChargeStage)
+            {
+                case 1:
+                    actingPlayer.nextAttackBonus = 1;
+                    break;
+                case 2:
+                    actingPlayer.nextAttackBonus = 3;
+                    break;
+                default:
+                    actingPlayer.nextAttackBonus = 5;
+                    break;
+            }
+
+            result.events.Add(new BattleEvent
+            {
+                message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + ", next attack bonus is " + BattleTextHelper.DamageText(actingPlayer.nextAttackBonus) + "."
+            });
+        }
+
+        private static void ConsumeAttackCharge(PlayerBattleState actingPlayer)
+        {
+            if (actingPlayer == null || actingPlayer.nextAttackBonus <= 0)
+            {
+                return;
+            }
+
+            actingPlayer.nextAttackBonus = 0;
+            actingPlayer.attackChargeStage = 0;
+        }
+
+        private static void AppendDamageBonusLog(PlayerBattleState actingPlayer, int comboBonus, int chargeBonus, BattleCommandResult result)
+        {
+            if (comboBonus <= 0 && chargeBonus <= 0)
+            {
+                return;
+            }
+
+            result.events.Add(new BattleEvent
+            {
+                message = "<color=#8A8A8A>Damage bonus:</color> combo +" + comboBonus + ", charge +" + chargeBonus + "."
             });
         }
     }

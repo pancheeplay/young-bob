@@ -68,7 +68,7 @@ namespace YoungBob.Prototype.Battle
             return (BattleHeight)Enum.Parse(typeof(BattleHeight), raw, true);
         }
 
-        public static bool IsPartInRange(MonsterBattleState monster, MonsterPartState part, CardDefinition definition)
+        public static bool IsPartInRange(MonsterBattleState monster, MonsterPartState part, CardDefinition definition, BattleArea actingPlayerArea)
         {
             var resolved = ResolvePartPosition(monster, part);
             if (!IsHeightInRange(definition.rangeHeights, resolved.height))
@@ -76,7 +76,10 @@ namespace YoungBob.Prototype.Battle
                 return false;
             }
 
-            return true;
+            var distanceRange = string.IsNullOrEmpty(definition.rangeDistance)
+                ? ConvertZoneRangeToDistanceRange(definition.rangeZones)
+                : definition.rangeDistance;
+            return IsDistanceInRange(distanceRange, monster, part, actingPlayerArea);
         }
 
         public static (BattleHeight height, BattleZone zone) ResolvePartPosition(MonsterBattleState monster, MonsterPartState part)
@@ -125,6 +128,79 @@ namespace YoungBob.Prototype.Battle
             }
 
             return string.Equals(range, zone.ToString(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsDistanceInRange(string range, MonsterBattleState monster, MonsterPartState part, BattleArea actingPlayerArea)
+        {
+            if (string.IsNullOrEmpty(range) || string.Equals(range, "Both", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var localX = ResolvePartLocalX(monster, part);
+            if (Math.Abs(localX) <= 0.05f)
+            {
+                return true;
+            }
+
+            var isNear = IsNearSide(localX, actingPlayerArea);
+            if (string.Equals(range, "Near", StringComparison.OrdinalIgnoreCase))
+            {
+                return isNear;
+            }
+
+            if (string.Equals(range, "Far", StringComparison.OrdinalIgnoreCase))
+            {
+                return !isNear;
+            }
+
+            return true;
+        }
+
+        private static float ResolvePartLocalX(MonsterBattleState monster, MonsterPartState part)
+        {
+            if (part == null)
+            {
+                return 0f;
+            }
+
+            var x = part.offsetX;
+            if (monster != null && monster.facing == BattleFacing.West)
+            {
+                x = -x;
+            }
+
+            return x;
+        }
+
+        private static bool IsNearSide(float localX, BattleArea actingPlayerArea)
+        {
+            if (actingPlayerArea == BattleArea.East)
+            {
+                return localX >= 0f;
+            }
+
+            return localX <= 0f;
+        }
+
+        private static string ConvertZoneRangeToDistanceRange(string zoneRange)
+        {
+            if (string.IsNullOrEmpty(zoneRange))
+            {
+                return "Both";
+            }
+
+            if (string.Equals(zoneRange, "Front", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Far";
+            }
+
+            if (string.Equals(zoneRange, "Back", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Near";
+            }
+
+            return zoneRange;
         }
 
         public static PlayerBattleState FindLowestHpAlivePlayer(List<PlayerBattleState> players)

@@ -75,7 +75,7 @@ namespace YoungBob.Prototype.UI
             return button;
         }
 
-        public static GameObject CreateCard(Transform parent, string name, string title, string description, bool isPlayable)
+        public static GameObject CreateCard(Transform parent, string name, Data.CardDefinition cardDef, bool isPlayable)
         {
             if (parent == null) return null;
 
@@ -84,36 +84,77 @@ namespace YoungBob.Prototype.UI
             var rect = cardRoot.AddComponent<RectTransform>();
             rect.sizeDelta = new Vector2(200f, 280f);
 
-            // Glow for playable state
-            var glow = CreatePanel(cardRoot.transform, "Glow", new Color(0.1f, 0.8f, 0.1f, 0.5f), Vector2.zero, Vector2.one, new Vector2(-8f, -8f), new Vector2(8f, 8f));
+            // Glow for playable state (purely visual)
+            var glow = CreatePanel(cardRoot.transform, "Glow", new Color(1f, 1f, 1f, 0.4f), Vector2.zero, Vector2.one, new Vector2(-8f, -8f), new Vector2(8f, 8f));
+            glow.GetComponent<Image>().raycastTarget = false;
             glow.SetActive(isPlayable);
 
-            // Border
-            var border = CreatePanel(cardRoot.transform, "Border", new Color(0.5f, 0.44f, 0.35f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            // Border (purely visual)
+            var border = CreatePanel(cardRoot.transform, "Border", new Color(0.1f, 0.1f, 0.1f, 1f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            border.GetComponent<Image>().raycastTarget = false;
             
-            // Content Bg
-            var bg = CreatePanel(border.transform, "Background", new Color(0.15f, 0.17f, 0.2f), Vector2.zero, Vector2.one, new Vector2(4f, 4f), new Vector2(-4f, -4f));
+            // Content Bg - Color based on class. This is the ONLY raycast target for dragging.
+            Color bgColor = GetClassColor(cardDef.classTag);
+            var bg = CreatePanel(border.transform, "Background", bgColor, Vector2.zero, Vector2.one, new Vector2(4f, 4f), new Vector2(-4f, -4f));
             var bgImage = bg.GetComponent<Image>();
-            if (bgImage != null) bgImage.raycastTarget = true; // For dragging
+            bgImage.raycastTarget = true;
 
-            // Header/Title area
-            var header = CreatePanel(bg.transform, "Header", new Color(0.24f, 0.22f, 0.18f), new Vector2(0f, 0.7f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            // Height/Distance Labels (Top corners) - decorative, no raycasts
+            var heightTag = CreateText(bg.transform, "HeightTag", 14, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0.5f, 1f), new Vector2(8f, -25f), new Vector2(0f, -5f));
+            heightTag.text = cardDef.rangeHeights ?? "";
+            heightTag.color = new Color(0.9f, 0.9f, 1f);
+            heightTag.fontStyle = FontStyle.Bold;
+            heightTag.raycastTarget = false;
+
+            var distTag = CreateText(bg.transform, "DistTag", 14, TextAnchor.UpperRight, new Vector2(0.5f, 1f), new Vector2(1f, 1f), new Vector2(0f, -25f), new Vector2(-8f, -5f));
+            distTag.text = cardDef.rangeDistance ?? "";
+            distTag.color = new Color(1f, 0.9f, 0.7f);
+            distTag.fontStyle = FontStyle.Bold;
+            distTag.raycastTarget = false;
+
+            // Header/Title area - decorative
+            var header = CreatePanel(bg.transform, "Header", new Color(0f, 0f, 0f, 0.3f), new Vector2(0f, 0.72f), new Vector2(1f, 0.9f), Vector2.zero, Vector2.zero);
+            header.GetComponent<Image>().raycastTarget = false;
             var titleText = CreateText(header.transform, "Title", 22, TextAnchor.MiddleCenter);
-            titleText.text = title;
+            titleText.text = cardDef.name;
             titleText.fontStyle = FontStyle.Bold;
-            titleText.color = new Color(0.95f, 0.85f, 0.6f);
+            titleText.color = Color.white;
+            titleText.raycastTarget = false;
 
-            // Cost/Icon placeholder
-            var icon = CreatePanel(bg.transform, "Icon", new Color(0.4f, 0.34f, 0.25f), new Vector2(0.5f, 0.55f), new Vector2(0.5f, 0.55f), Vector2.zero, Vector2.zero);
-            icon.GetComponent<RectTransform>().sizeDelta = new Vector2(60f, 60f);
+            // Icon area - decorative
+            var iconRoot = CreatePanel(bg.transform, "IconRoot", new Color(0f, 0f, 0f, 0.2f), new Vector2(0.5f, 0.55f), new Vector2(0.5f, 0.55f), new Vector2(-40f, -40f), new Vector2(40f, 40f));
+            iconRoot.GetComponent<Image>().raycastTarget = false;
 
-            // Description area
-            var descArea = CreatePanel(bg.transform, "DescArea", new Color(0.1f, 0.11f, 0.13f, 0.8f), new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.45f), Vector2.zero, Vector2.zero);
+            // Description area - decorative
+            var descArea = CreatePanel(bg.transform, "DescArea", new Color(0f, 0f, 0f, 0.4f), new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.42f), Vector2.zero, Vector2.zero);
+            descArea.GetComponent<Image>().raycastTarget = false;
             var descText = CreateText(descArea.transform, "Description", 17, TextAnchor.MiddleCenter);
-            descText.text = description;
-            descText.color = new Color(0.85f, 0.85f, 0.85f);
+            descText.text = $"<b>{cardDef.effectType}</b>\nVal: {cardDef.value}";
+            descText.color = new Color(0.95f, 0.95f, 0.95f);
+            descText.raycastTarget = false;
+
+            // Energy Cost - decorative
+            var costPanel = CreatePanel(bg.transform, "Cost", new Color(0.15f, 0.4f, 0.8f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(-10f, -40f), new Vector2(30f, 0f));
+            costPanel.GetComponent<Image>().raycastTarget = false;
+            var costText = CreateText(costPanel.transform, "CostText", 24, TextAnchor.MiddleCenter);
+            costText.text = cardDef.energyCost.ToString();
+            costText.fontStyle = FontStyle.Bold;
+            costText.raycastTarget = false;
 
             return cardRoot;
+        }
+
+        private static Color GetClassColor(string classTag)
+        {
+            if (string.IsNullOrEmpty(classTag)) return new Color(0.2f, 0.22f, 0.25f);
+            switch (classTag.ToLower())
+            {
+                case "warrior": return new Color(0.5f, 0.15f, 0.15f); // Reddish
+                case "mage": return new Color(0.15f, 0.25f, 0.5f); // Blueish
+                case "rogue": return new Color(0.15f, 0.4f, 0.15f); // Greenish
+                case "priest": return new Color(0.45f, 0.45f, 0.2f); // Yellowish
+                default: return new Color(0.25f, 0.25f, 0.28f);
+            }
         }
 
         public static (GameObject root, RectTransform fillRect) CreateProgressBar(Transform parent, string name, Color fillColor, Vector2 size)
