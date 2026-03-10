@@ -14,7 +14,7 @@ namespace YoungBob.Prototype.UI
         private readonly GameObject _root;
         private readonly Text _text;
         private readonly Button _openButton;
-        private readonly Button _closeButton;
+        private readonly Text _openButtonLabel;
         private bool _isExpanded;
 
         public RuntimeConsolePanel(Transform parent)
@@ -26,8 +26,13 @@ namespace YoungBob.Prototype.UI
             openRect.pivot = new Vector2(1f, 1f);
             openRect.anchoredPosition = new Vector2(-20f, -20f);
             openRect.sizeDelta = new Vector2(200f, 60f);
+            _openButtonLabel = _openButton.GetComponentInChildren<Text>();
 
-            _root = UiFactory.CreatePanel(parent, "ConsolePanel", new Color(0.03f, 0.04f, 0.05f, 0.98f), new Vector2(0f, 0f), new Vector2(1f, 0.6f), new Vector2(20f, 120f), new Vector2(-20f, -200f));
+            _root = UiFactory.CreatePanel(parent, "ConsolePanel", new Color(0.03f, 0.04f, 0.05f, 0.98f), new Vector2(1f, 1f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            var rootRect = _root.GetComponent<RectTransform>();
+            rootRect.pivot = new Vector2(1f, 1f);
+            rootRect.anchoredPosition = new Vector2(-20f, -90f);
+            rootRect.sizeDelta = new Vector2(560f, 720f);
             
             // Create Scroll View
             var scrollView = new GameObject("ScrollView");
@@ -65,13 +70,6 @@ namespace YoungBob.Prototype.UI
             scrollRect.horizontal = false;
             scrollRect.vertical = true;
             scrollRect.movementType = ScrollRect.MovementType.Clamped;
-
-            _closeButton = UiFactory.CreateButton(_root.transform, "ConsoleToggle", "Hide Console", new Vector2(0f, -60f), Toggle);
-            var closeRect = _closeButton.GetComponent<RectTransform>();
-            closeRect.anchorMin = new Vector2(0.5f, 1f);
-            closeRect.anchorMax = new Vector2(0.5f, 1f);
-            closeRect.pivot = new Vector2(0.5f, 1f);
-            closeRect.sizeDelta = new Vector2(300f, 60f);
 
             _isExpanded = false;
             ApplyVisibility();
@@ -189,7 +187,7 @@ namespace YoungBob.Prototype.UI
         private void ApplyVisibility()
         {
             _root.SetActive(_isExpanded);
-            _openButton.gameObject.SetActive(!_isExpanded);
+            _openButtonLabel.text = _isExpanded ? "Console ▲" : "Console ▼";
             _root.transform.SetAsLastSibling();
             _openButton.transform.SetAsLastSibling();
         }

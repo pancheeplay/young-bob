@@ -165,8 +165,8 @@ namespace YoungBob.Prototype.UI.Pages
             jumpRect.offsetMin = jumpRect.offsetMax = Vector2.zero;
             _jumpToLatestButton.gameObject.SetActive(false);
             
-            // --- Energy Area (Above Hand Left) ---
-            _energyLabel = UiFactory.CreateText(Root.transform, "EnergyLabel", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0.28f), new Vector2(0.5f, 0.32f), new Vector2(35f, 0f), new Vector2(0f, 0f));
+            // --- Energy Area (Inside Hand Panel Top Left) ---
+            _energyLabel = UiFactory.CreateText(Root.transform, "EnergyLabel", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0.235f), new Vector2(0.4f, 0.27f), new Vector2(35f, 0f), new Vector2(0f, -6f));
             _energyLabel.fontStyle = FontStyle.Bold;
             _energyLabel.color = new Color(0.4f, 0.7f, 1f);
             _energyLabel.raycastTarget = false;

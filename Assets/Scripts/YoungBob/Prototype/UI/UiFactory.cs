@@ -146,13 +146,15 @@ namespace YoungBob.Prototype.UI
 
         private static Color GetClassColor(string classTag)
         {
-            if (string.IsNullOrEmpty(classTag)) return new Color(0.2f, 0.22f, 0.25f);
+            if (string.IsNullOrEmpty(classTag)) return new Color(0.25f, 0.25f, 0.28f);
             switch (classTag.ToLower())
             {
-                case "warrior": return new Color(0.5f, 0.15f, 0.15f); // Reddish
+                case "warrior": return new Color(0.62f, 0.18f, 0.18f);
+                case "assassin": return new Color(0.45f, 0.24f, 0.62f);
+                case "rogue": return new Color(0.45f, 0.24f, 0.62f);
                 case "mage": return new Color(0.15f, 0.25f, 0.5f); // Blueish
-                case "rogue": return new Color(0.15f, 0.4f, 0.15f); // Greenish
-                case "priest": return new Color(0.45f, 0.45f, 0.2f); // Yellowish
+                case "priest": return new Color(0.72f, 0.64f, 0.22f);
+                case "utility": return new Color(0.25f, 0.25f, 0.28f);
                 default: return new Color(0.25f, 0.25f, 0.28f);
             }
         }
@@ -170,6 +172,5 @@ namespace YoungBob.Prototype.UI
         }
     }
 }
-
 
 
