@@ -55,7 +55,6 @@ namespace YoungBob.Prototype.Multiplayer
 #if UNITY_WEBGL && !UNITY_EDITOR
             _pendingDisplayName = displayName;
             _webGlBridge = DebugRelayWebGlBridgeCallbacks.Create(this);
-            Debug.Log("[DebugRelay] Connecting to " + _serverUri + " via WebGL bridge.");
             DebugRelayWebGlBridge.Connect(_serverUri.ToString(), _webGlBridge.gameObject.name);
             return;
 #else
@@ -63,9 +62,7 @@ namespace YoungBob.Prototype.Multiplayer
             _socket = new ClientWebSocket();
             try
             {
-                Debug.Log("[DebugRelay] Connecting to " + _serverUri);
                 await _socket.ConnectAsync(_serverUri, _cts.Token);
-                Debug.Log("[DebugRelay] Socket connected.");
                 _ = ReceiveLoopAsync(_cts.Token);
                 await SendPacketAsync("connect", new Dictionary<string, object>
                 {
@@ -164,7 +161,6 @@ namespace YoungBob.Prototype.Multiplayer
                 { "payload", payload }
             };
             var webJson = JsonMapper.ToJson(webPacket);
-            Debug.Log("[DebugRelay] Sending packet: " + webJson);
             DebugRelayWebGlBridge.Send(webJson);
             _hasReportedSocketNotOpen = false;
             await System.Threading.Tasks.Task.CompletedTask;
@@ -393,7 +389,6 @@ namespace YoungBob.Prototype.Multiplayer
         public void HandleWebGlMessage(string json)
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
-            Debug.Log("[DebugRelay] Received packet: " + json);
             HandlePacket(json);
 #endif
         }
@@ -426,7 +421,6 @@ namespace YoungBob.Prototype.Multiplayer
                     Scheme = scheme,
                     Host = pageUri.Host
                 };
-                Debug.Log("[DebugRelay] Rewriting loopback relay URL for WebGL from " + uri + " to " + builder.Uri);
                 return builder.Uri;
             }
 #endif

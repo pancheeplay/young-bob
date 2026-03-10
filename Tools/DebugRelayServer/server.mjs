@@ -2,6 +2,7 @@ import { WebSocketServer } from 'ws';
 
 const port = Number(process.env.PORT || 8787);
 const wss = new WebSocketServer({ port });
+const verboseLogging = process.env.DEBUG_RELAY_VERBOSE === '1';
 
 let nextPlayerId = 1;
 let nextRoomId = 1;
@@ -9,13 +10,62 @@ let nextRoomId = 1;
 const clients = new Map();
 const rooms = new Map();
 
-function send(ws, type, payload) {
-  if (ws.readyState !== ws.OPEN) {
-    console.warn(`[relay] skip send ${type}, socket not open`);
+function timestamp() {
+  return new Date().toISOString().slice(11, 19);
+}
+
+function log(level, scope, message, details = null) {
+  const line = `[${timestamp()}] [${level}] [${scope}] ${message}`;
+  if (details == null) {
+    console.log(line);
     return;
   }
 
-  console.log(`[relay] -> ${type}`, payload);
+  console.log(`${line}\n${JSON.stringify(details, null, 2)}`);
+}
+
+function info(scope, message, details = null) {
+  log('INFO', scope, message, details);
+}
+
+function warn(scope, message, details = null) {
+  log('WARN', scope, message, details);
+}
+
+function error(scope, message, details = null) {
+  log('ERROR', scope, message, details);
+}
+
+function verbose(scope, message, details = null) {
+  if (!verboseLogging) {
+    return;
+  }
+
+  log('DEBUG', scope, message, details);
+}
+
+function summarizeMessage(message) {
+  if (!message) {
+    return { type: 'unknown' };
+  }
+
+  return {
+    messageId: message.messageId ?? '-',
+    type: message.type ?? 'unknown',
+    senderPlayerId: message.senderPlayerId ?? '-',
+    roomId: message.roomId ?? '-',
+    seq: message.seq ?? '-',
+    payloadBytes: typeof message.payloadJson === 'string' ? message.payloadJson.length : 0
+  };
+}
+
+function send(ws, type, payload) {
+  if (ws.readyState !== ws.OPEN) {
+    warn('send', `skip ${type}, socket not open`);
+    return;
+  }
+
+  verbose('send', `-> ${type}`, payload);
   ws.send(JSON.stringify({ type, payload }));
 }
 
@@ -89,7 +139,7 @@ function createRoomFor(player, roomName = 'Debug Room') {
 
   player.roomId = room.roomId;
   rooms.set(room.roomId, room);
-  console.log(`[relay] room created ${room.roomId} by ${player.playerId}`);
+  info('room', `created room=${room.roomId} host=${player.playerId} name="${room.roomName}"`);
   broadcastRoom(room);
 }
 
@@ -103,7 +153,7 @@ function matchRoomFor(player) {
   if (openRoom) {
     openRoom.players.push(player);
     player.roomId = openRoom.roomId;
-    console.log(`[relay] matched ${player.playerId} into room ${openRoom.roomId}`);
+    info('match', `player=${player.playerId} joined existing room=${openRoom.roomId} players=${openRoom.players.length}/${openRoom.maxPlayerCount}`);
     broadcastRoom(openRoom);
     return;
   }
@@ -126,25 +176,26 @@ function joinRoom(player, roomId) {
   removePlayerFromRoom(player);
   room.players.push(player);
   player.roomId = room.roomId;
-  console.log(`[relay] joined room ${room.roomId}: ${player.playerId}`);
+  info('room', `player=${player.playerId} joined room=${room.roomId} players=${room.players.length}/${room.maxPlayerCount}`);
   broadcastRoom(room);
 }
 
 function forwardRoomMessage(player, message) {
   if (!player.roomId) {
-    console.error(`[relay] send_message rejected, player ${player.playerId} is not in a room`);
+    error('message', `rejected send_message, player=${player.playerId} is not in a room`);
     send(player.ws, 'error', { message: 'Player is not in a room.' });
     return;
   }
 
   const room = rooms.get(player.roomId);
   if (!room) {
-    console.error(`[relay] send_message rejected, room missing ${player.roomId}`);
+    error('message', `rejected send_message, room missing room=${player.roomId}`);
     send(player.ws, 'error', { message: `Room not found: ${player.roomId}` });
     return;
   }
 
-  console.log(`[relay] room_message from ${player.playerId} in room ${room.roomId}`, message);
+  info('message', `forward room=${room.roomId} from=${player.playerId} to=${Math.max(0, room.players.length - 1)} peers type=${message?.type ?? 'unknown'} seq=${message?.seq ?? '-'} bytes=${typeof message?.payloadJson === 'string' ? message.payloadJson.length : 0}`);
+  verbose('message', 'payload', summarizeMessage(message));
 
   for (const peer of room.players) {
     if (peer.playerId === player.playerId) {
@@ -158,7 +209,7 @@ function forwardRoomMessage(player, message) {
 }
 
 wss.on('connection', ws => {
-  console.log('[relay] client connected');
+  info('socket', 'client connected');
   const player = {
     ws,
     playerId: null,
@@ -170,9 +221,9 @@ wss.on('connection', ws => {
     let packet;
     try {
       packet = JSON.parse(raw.toString());
-      console.log('[relay] <- packet', packet);
+      verbose('recv', '<- packet', packet);
     } catch {
-      console.error('[relay] invalid json packet');
+      error('recv', 'invalid json packet');
       send(ws, 'error', { message: 'Invalid JSON packet.' });
       return;
     }
@@ -183,7 +234,7 @@ wss.on('connection', ws => {
         player.playerId = `debug_player_${nextPlayerId++}`;
         player.displayName = payload?.displayName || player.playerId;
         clients.set(ws, player);
-        console.log(`[relay] player connected ${player.playerId} (${player.displayName})`);
+        info('player', `connected id=${player.playerId} name="${player.displayName}" activeClients=${clients.size}`);
         send(ws, 'connected', {
           playerId: player.playerId,
           displayName: player.displayName
@@ -222,21 +273,23 @@ wss.on('connection', ws => {
         break;
 
       default:
-        console.error(`[relay] unknown packet type ${type}`);
+        error('recv', `unknown packet type=${type}`);
         send(ws, 'error', { message: `Unknown packet type: ${type}` });
         break;
     }
   });
 
   ws.on('close', () => {
-    console.log(`[relay] client closed ${player.playerId ?? 'unknown'}`);
+    info('socket', `client closed player=${player.playerId ?? 'unknown'}`);
     removePlayerFromRoom(player);
     clients.delete(ws);
   });
 
   ws.on('error', error => {
-    console.error('[relay] websocket error', error);
+    error('socket', 'websocket error', {
+      message: error?.message ?? String(error)
+    });
   });
 });
 
-console.log(`Young Bob debug relay listening on ws://0.0.0.0:${port}`);
+info('server', `listening on ws://0.0.0.0:${port} verbose=${verboseLogging ? 'on' : 'off'}`);
