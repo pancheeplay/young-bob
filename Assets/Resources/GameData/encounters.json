@@ -2,20 +2,229 @@
   "encounters": [
     {
       "id": "slime_intro",
-      "enemies": [
-        {
-          "enemyId": "slime_a",
-          "enemyName": "Training Slime A",
-          "maxHp": 18,
-          "attackDamage": 4
-        },
-        {
-          "enemyId": "slime_b",
-          "enemyName": "Training Slime B",
-          "maxHp": 18,
-          "attackDamage": 4
-        }
-      ]
+      "monster": {
+        "monsterId": "training_dragon",
+        "monsterName": "Training Dragon",
+        "coreMaxHp": 60,
+        "facing": "East",
+        "stance": "Normal",
+        "defaultPose": "idle",
+        "poses": [
+          {
+            "poseId": "idle",
+            "parts": [
+              {
+                "partId": "head",
+                "relativeZone": "Front",
+                "relativeHeight": "Air",
+                "offsetX": 0.55,
+                "offsetY": 0.35,
+                "radius": 50,
+                "shape": "Circle"
+              },
+              {
+                "partId": "body",
+                "relativeZone": "Front",
+                "relativeHeight": "Ground",
+                "offsetX": 0.0,
+                "offsetY": 0.05,
+                "width": 200,
+                "height": 120,
+                "shape": "Rect"
+              },
+              {
+                "partId": "tail",
+                "relativeZone": "Back",
+                "relativeHeight": "Ground",
+                "offsetX": -0.6,
+                "offsetY": -0.05,
+                "width": 160,
+                "height": 70,
+                "shape": "Rect"
+              },
+              {
+                "partId": "legs",
+                "relativeZone": "Front",
+                "relativeHeight": "Ground",
+                "offsetX": 0.2,
+                "offsetY": -0.35,
+                "width": 140,
+                "height": 80,
+                "shape": "Rect"
+              }
+            ]
+          },
+          {
+            "poseId": "charge",
+            "parts": [
+              {
+                "partId": "head",
+                "relativeZone": "Front",
+                "relativeHeight": "Air",
+                "offsetX": 1.1,
+                "offsetY": 0.6,
+                "radius": 50,
+                "shape": "Circle"
+              },
+              {
+                "partId": "body",
+                "relativeZone": "Front",
+                "relativeHeight": "Ground",
+                "offsetX": 0.0,
+                "offsetY": 0.0,
+                "width": 200,
+                "height": 120,
+                "shape": "Rect"
+              },
+              {
+                "partId": "tail",
+                "relativeZone": "Back",
+                "relativeHeight": "Air",
+                "offsetX": -1.2,
+                "offsetY": 0.24,
+                "width": 160,
+                "height": 70,
+                "shape": "Rect"
+              },
+              {
+                "partId": "legs",
+                "relativeZone": "Front",
+                "relativeHeight": "Ground",
+                "offsetX": 0.4,
+                "offsetY": -0.76,
+                "width": 140,
+                "height": 80,
+                "shape": "Rect"
+              }
+            ]
+          },
+          {
+            "poseId": "attack",
+            "parts": [
+              {
+                "partId": "head",
+                "relativeZone": "Front",
+                "relativeHeight": "Air",
+                "offsetX": 1.1,
+                "offsetY": 0.76,
+                "radius": 50,
+                "shape": "Circle"
+              },
+              {
+                "partId": "body",
+                "relativeZone": "Front",
+                "relativeHeight": "Ground",
+                "offsetX": 0.0,
+                "offsetY": 0.16,
+                "width": 200,
+                "height": 120,
+                "shape": "Rect"
+              },
+              {
+                "partId": "tail",
+                "relativeZone": "Back",
+                "relativeHeight": "Air",
+                "offsetX": -1.2,
+                "offsetY": 0.5,
+                "width": 160,
+                "height": 70,
+                "shape": "Rect"
+              },
+              {
+                "partId": "legs",
+                "relativeZone": "Front",
+                "relativeHeight": "Ground",
+                "offsetX": 0.4,
+                "offsetY": -0.64,
+                "width": 140,
+                "height": 80,
+                "shape": "Rect"
+              }
+            ]
+          }
+        ],
+        "parts": [
+          {
+            "partId": "head",
+            "displayName": "Head",
+            "maxHp": 12,
+            "relativeZone": "Front",
+            "relativeHeight": "Air",
+            "offsetX": 0.55,
+            "offsetY": 0.35,
+            "radius": 50,
+            "shape": "Circle",
+            "lootOnBreak": [
+              "DragonHorn"
+            ]
+          },
+          {
+            "partId": "body",
+            "displayName": "Body",
+            "maxHp": 26,
+            "relativeZone": "Front",
+            "relativeHeight": "Ground",
+            "offsetX": 0.0,
+            "offsetY": 0.05,
+            "width": 200,
+            "height": 120,
+            "shape": "Rect",
+            "lootOnBreak": [
+              "DragonHide"
+            ]
+          },
+          {
+            "partId": "tail",
+            "displayName": "Tail",
+            "maxHp": 14,
+            "relativeZone": "Back",
+            "relativeHeight": "Ground",
+            "offsetX": -0.6,
+            "offsetY": -0.05,
+            "width": 160,
+            "height": 70,
+            "shape": "Rect",
+            "lootOnBreak": [
+              "DragonTail"
+            ]
+          },
+          {
+            "partId": "legs",
+            "displayName": "Legs",
+            "maxHp": 18,
+            "relativeZone": "Front",
+            "relativeHeight": "Ground",
+            "offsetX": 0.2,
+            "offsetY": -0.35,
+            "width": 140,
+            "height": 80,
+            "shape": "Rect",
+            "lootOnBreak": [
+              "DragonClaw"
+            ]
+          }
+        ],
+        "skills": [
+          {
+            "skillId": "charged_claw",
+            "name": "蓄力爪击",
+            "windupTurns": 1,
+            "cooldownTurns": 2,
+            "damage": 6,
+            "targetArea": "Any",
+            "targetHeight": "Ground"
+          },
+          {
+            "skillId": "normal_attack",
+            "name": "普通攻击",
+            "windupTurns": 0,
+            "cooldownTurns": 0,
+            "damage": 4,
+            "targetArea": "Any",
+            "targetHeight": "Ground"
+          }
+        ]
+      }
     }
   ]
 }

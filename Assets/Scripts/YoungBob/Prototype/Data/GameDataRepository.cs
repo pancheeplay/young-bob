@@ -13,6 +13,9 @@ namespace YoungBob.Prototype.Data
         public string name;
         public string effectType;
         public string targetType;
+        public string rangeHeights;
+        public string rangeZones;
+        public int energyCost;
         public int value;
     }
 
@@ -20,7 +23,7 @@ namespace YoungBob.Prototype.Data
     public sealed class EncounterDefinition
     {
         public string id;
-        public EncounterEnemyDefinition[] enemies;
+        public MonsterDefinition monster;
     }
 
     [Serializable]

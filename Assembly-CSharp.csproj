@@ -66,19 +66,23 @@
   <ItemGroup>
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleHandCardDragView.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/AvatarManager.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleMechanics.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/TapTapMultiplayerService.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/NetworkLatencyStats.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTextHelper.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/GameConfig.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/UIManager.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/PlayerComponent.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/RoomPage.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/DebugRelayMultiplayerService.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/MonsterAI.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/FrameSyncManager.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/PingData.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/LoopbackMultiplayerService.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/TapBattleEventHandler.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/StateSyncManager.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/PlayerCustomProperties.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleAreaSlotView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTypes.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/TapTapRuntimeMultiplayerService.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/LobbyPage.cs" />
@@ -90,6 +94,10 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/BattlePage.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/BattleInteraction.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleUnitSlotView.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/CardEffectResolver.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleAreaDropZoneView.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/MonsterPartSlotView.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTargetResolver.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/App/PrototypeSessionController.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/UiFactory.cs" />

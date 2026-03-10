@@ -1,17 +1,31 @@
 {
   "cards": [
     {
+      "id": "move",
+      "name": "移动",
+      "effectType": "MoveArea",
+      "targetType": "Area",
+      "energyCost": 1,
+      "value": 0
+    },
+    {
       "id": "strike",
       "name": "Strike",
       "effectType": "Damage",
-      "targetType": "SingleEnemy",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeZones": "Both",
+      "energyCost": 1,
       "value": 6
     },
     {
       "id": "cleave",
       "name": "Cleave",
       "effectType": "Damage",
-      "targetType": "AllEnemies",
+      "targetType": "AllMonsterParts",
+      "rangeHeights": "Both",
+      "rangeZones": "Both",
+      "energyCost": 2,
       "value": 4
     },
     {
@@ -19,6 +33,7 @@
       "name": "治疗",
       "effectType": "Heal",
       "targetType": "SingleAlly",
+      "energyCost": 1,
       "value": 4
     },
     {
@@ -26,6 +41,7 @@
       "name": "全体治疗",
       "effectType": "Heal",
       "targetType": "AllAllies",
+      "energyCost": 2,
       "value": 2
     },
     {
@@ -33,6 +49,7 @@
       "name": "格挡",
       "effectType": "GainArmor",
       "targetType": "Self",
+      "energyCost": 1,
       "value": 1
     },
     {
@@ -40,13 +57,17 @@
       "name": "洞察",
       "effectType": "DrawCards",
       "targetType": "Self",
+      "energyCost": 1,
       "value": 1
     },
     {
       "id": "quick_strike",
       "name": "疾刺",
       "effectType": "DamageAndDrawSelf",
-      "targetType": "SingleEnemy",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeZones": "Both",
+      "energyCost": 1,
       "value": 4
     },
     {
@@ -54,6 +75,9 @@
       "name": "痛苦课程",
       "effectType": "DamageAndTargetHeroDraw",
       "targetType": "SingleUnit",
+      "rangeHeights": "Both",
+      "rangeZones": "Both",
+      "energyCost": 1,
       "value": 3
     },
     {
@@ -61,6 +85,7 @@
       "name": "诅咒",
       "effectType": "CurseLoseHp",
       "targetType": "SingleAlly",
+      "energyCost": 0,
       "value": 1
     },
     {
@@ -68,6 +93,7 @@
       "name": "借牌",
       "effectType": "StealRandomCard",
       "targetType": "OtherAlly",
+      "energyCost": 1,
       "value": 0
     }
   ]

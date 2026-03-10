@@ -24,6 +24,7 @@ namespace YoungBob.Prototype.App
         public string cardInstanceId;
         public BattleTargetFaction targetFaction;
         public string targetUnitId;
+        public BattleArea targetArea;
     }
 
     [Serializable]
@@ -163,7 +164,7 @@ namespace YoungBob.Prototype.App
             Broadcast("battle.start", JsonUtility.ToJson(payload));
         }
 
-        public void PlayCard(string cardInstanceId, BattleTargetFaction targetFaction, string targetUnitId)
+        public void PlayCard(string cardInstanceId, BattleTargetFaction targetFaction, string targetUnitId, BattleArea targetArea)
         {
             if (CurrentBattleState == null)
             {
@@ -182,7 +183,8 @@ namespace YoungBob.Prototype.App
                 action = "play_card",
                 cardInstanceId = cardInstanceId,
                 targetFaction = targetFaction,
-                targetUnitId = targetUnitId
+                targetUnitId = targetUnitId,
+                targetArea = targetArea
             };
             Broadcast("battle.command", JsonUtility.ToJson(payload));
         }
@@ -327,7 +329,8 @@ namespace YoungBob.Prototype.App
             }
 
             CurrentBattleState = _battleEngine.CreateInitialState(setup);
-            LogAdded?.Invoke("Battle started against " + CurrentBattleState.enemies.Count + " enemies.");
+            var monsterName = CurrentBattleState.monster == null ? "unknown" : CurrentBattleState.monster.displayName;
+            LogAdded?.Invoke("Battle started against " + monsterName + ".");
             BattleStateChanged?.Invoke(CurrentBattleState);
         }
 
@@ -346,7 +349,8 @@ namespace YoungBob.Prototype.App
                 action = payload.action,
                 cardInstanceId = payload.cardInstanceId,
                 targetFaction = payload.targetFaction,
-                targetUnitId = payload.targetUnitId
+                targetUnitId = payload.targetUnitId,
+                targetArea = payload.targetArea
             });
 
             if (!result.success && !string.IsNullOrEmpty(result.error))

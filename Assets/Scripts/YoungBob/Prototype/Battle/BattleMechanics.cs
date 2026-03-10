@@ -1,0 +1,142 @@
+using System;
+using System.Collections.Generic;
+
+namespace YoungBob.Prototype.Battle
+{
+    internal static class BattleMechanics
+    {
+        public static int ApplyDamage(PlayerBattleState target, int amount)
+        {
+            var mitigatedByArmor = Math.Min(target.armor, amount);
+            target.armor -= mitigatedByArmor;
+            var remainingDamage = amount - mitigatedByArmor;
+            target.hp = Math.Max(0, target.hp - remainingDamage);
+            return remainingDamage;
+        }
+
+        public static int ApplyDamageToPart(BattleState state, MonsterPartState part, int amount, BattleCommandResult result)
+        {
+            var previousHp = part.hp;
+            part.hp = Math.Max(0, part.hp - amount);
+            var applied = previousHp - part.hp;
+            state.monster.coreHp = Math.Max(0, state.monster.coreHp - amount);
+
+            if (!part.isBroken && part.hp <= 0)
+            {
+                part.isBroken = true;
+                if (part.lootOnBreak != null)
+                {
+                    for (var i = 0; i < part.lootOnBreak.Length; i++)
+                    {
+                        state.loot.Add(part.lootOnBreak[i]);
+                    }
+                }
+
+                result.events.Add(new BattleEvent
+                {
+                    message = "<color=#FFC874>Part broken:</color> " + BattleTextHelper.Unit(part.displayName)
+                });
+            }
+
+            return applied;
+        }
+
+        public static int Heal(PlayerBattleState player, int amount)
+        {
+            var previousHp = player.hp;
+            player.hp = Math.Min(player.maxHp, player.hp + amount);
+            return player.hp - previousHp;
+        }
+
+        public static int DrawCards(BattleState state, PlayerBattleState player, int count)
+        {
+            var drawn = 0;
+            for (var i = 0; i < count; i++)
+            {
+                if (!TryDrawOne(state, player, out var addedToHand))
+                {
+                    break;
+                }
+
+                if (addedToHand)
+                {
+                    drawn += 1;
+                }
+            }
+
+            return drawn;
+        }
+
+        public static bool TryDrawOne(BattleState state, PlayerBattleState player, out bool addedToHand)
+        {
+            addedToHand = false;
+            if (player.drawPile.Count == 0 && player.discardPile.Count > 0)
+            {
+                player.drawPile.AddRange(player.discardPile);
+                player.discardPile.Clear();
+                Shuffle(player.drawPile, state.randomSeed ^ state.turnIndex ^ player.playerId.GetHashCode());
+            }
+
+            if (player.drawPile.Count == 0)
+            {
+                return false;
+            }
+
+            var nextCard = player.drawPile[0];
+            player.drawPile.RemoveAt(0);
+            if (player.hand.Count >= BattleEngine.MaxHandSize)
+            {
+                player.discardPile.Add(nextCard);
+                return true;
+            }
+
+            player.hand.Add(nextCard);
+            addedToHand = true;
+            return true;
+        }
+
+        public static void AddMoveCard(BattleState state, PlayerBattleState player)
+        {
+            var moveCard = new BattleCardState
+            {
+                instanceId = player.playerId + "_" + BattleEngine.MoveCardId + "_" + state.turnIndex + "_" + Guid.NewGuid().ToString("N"),
+                cardId = BattleEngine.MoveCardId
+            };
+
+            if (player.hand.Count >= BattleEngine.MaxHandSize)
+            {
+                player.discardPile.Add(moveCard);
+                return;
+            }
+
+            player.hand.Add(moveCard);
+        }
+
+        public static void Shuffle(List<BattleCardState> list, int seed)
+        {
+            var random = new Random(seed);
+            for (var i = list.Count - 1; i > 0; i--)
+            {
+                var swapIndex = random.Next(i + 1);
+                var temp = list[i];
+                list[i] = list[swapIndex];
+                list[swapIndex] = temp;
+            }
+        }
+
+        public static void TryResolveBattleEnd(BattleState state, BattleCommandResult result)
+        {
+            if (state.monster != null && state.monster.coreHp > 0)
+            {
+                return;
+            }
+
+            state.phase = BattlePhase.Victory;
+            state.currentPrompt = "Victory";
+            result.events.Add(new BattleEvent
+            {
+                message = "<color=#7FD67F>The monster was defeated. Victory.</color>"
+            });
+        }
+    }
+}

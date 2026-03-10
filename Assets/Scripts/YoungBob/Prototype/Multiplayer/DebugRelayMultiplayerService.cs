@@ -136,7 +136,7 @@ namespace YoungBob.Prototype.Multiplayer
 
         public void Send(MultiplayerMessage message)
         {
-            Debug.Log("[DebugRelay] Queue local echo for message " + message.type + " seq=" + message.seq);
+            // Debug.Log("[DebugRelay] Queue local echo for message " + message.type + " seq=" + message.seq);
             _pendingSends[message.messageId] = message;
             Post(() => MessageReceived?.Invoke(message));
             try
@@ -184,7 +184,7 @@ namespace YoungBob.Prototype.Multiplayer
 
             var json = JsonMapper.ToJson(packet);
             var bytes = Encoding.UTF8.GetBytes(json);
-            Debug.Log("[DebugRelay] Sending packet: " + json);
+            // Debug.Log("[DebugRelay] Sending packet: " + json);
             try
             {
                 await _socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, _cts.Token);
@@ -227,7 +227,7 @@ namespace YoungBob.Prototype.Multiplayer
                     }
 
                     var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    Debug.Log("[DebugRelay] Received packet: " + json);
+                    // Debug.Log("[DebugRelay] Received packet: " + json);
                     HandlePacket(json);
                 }
             }
@@ -382,7 +382,7 @@ namespace YoungBob.Prototype.Multiplayer
 #if UNITY_WEBGL && !UNITY_EDITOR
             _isSocketOpen = true;
             _hasReportedSocketNotOpen = false;
-            Debug.Log("[DebugRelay] WebGL socket opened.");
+            // Debug.Log("[DebugRelay] WebGL socket opened.");
             _ = SendPacketAsync("connect", new Dictionary<string, object>
             {
                 { "displayName", _pendingDisplayName ?? "Host Bob" }

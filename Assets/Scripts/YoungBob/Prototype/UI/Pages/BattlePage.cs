@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -18,14 +19,20 @@ namespace YoungBob.Prototype.UI.Pages
         private readonly Text _battleLogText;
         private readonly ScrollRect _logScrollRect;
         private readonly Button _jumpToLatestButton;
-        private readonly Transform _alliesContainer;
-        private readonly Transform _enemiesContainer;
+        private readonly RectTransform _monsterPanelRect;
+        private readonly Transform _monsterContainer;
+        private readonly Transform _westPlayerContainer;
+        private readonly Transform _eastPlayerContainer;
+        private readonly RectTransform _boardPanelRect;
+        private readonly List<BattleAreaDropZoneView> _areaDropZones = new List<BattleAreaDropZoneView>();
         private readonly RectTransform _handPanelRect;
         private readonly Transform _handContainer;
+        private readonly RectTransform _monsterHpFillRect;
+        private readonly Text _monsterHpText;
         private readonly Button _endTurnButton;
         private readonly Button _exitBattleButton;
-        private readonly List<BattleUnitSlotView> _allySlots = new List<BattleUnitSlotView>();
-        private readonly List<BattleUnitSlotView> _enemySlots = new List<BattleUnitSlotView>();
+        private readonly List<BattleUnitSlotView> _playerSlots = new List<BattleUnitSlotView>();
+        private readonly List<MonsterPartSlotView> _monsterPartSlots = new List<MonsterPartSlotView>();
         private readonly List<string> _battleLogs = new List<string>();
         private bool _isUserScrolling;
 
@@ -40,58 +47,87 @@ namespace YoungBob.Prototype.UI.Pages
 
             // --- Top Header (Turn Info & End Turn) ---
             var headerPanel = UiFactory.CreatePanel(Root.transform, "Header", new Color(0.18f, 0.2f, 0.23f), new Vector2(0f, 0.9f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-            _summaryText = UiFactory.CreateText(headerPanel.transform, "Summary", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(0.65f, 1f), new Vector2(40f, 0f), new Vector2(-20f, 0f));
+            _summaryText = UiFactory.CreateText(headerPanel.transform, "Summary", 24, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(0.65f, 1f), new Vector2(30f, 0f), new Vector2(-10f, 0f));
             _summaryText.fontStyle = FontStyle.Bold;
             _summaryText.supportRichText = true;
 
-            _endTurnButton = UiFactory.CreateButton(headerPanel.transform, "EndTurn", "END TURN", Session.EndTurn);
+            _endTurnButton = UiFactory.CreateButton(headerPanel.transform, "EndTurn", "END", Session.EndTurn);
             var etRect = _endTurnButton.GetComponent<RectTransform>();
-            etRect.anchorMin = new Vector2(0.68f, 0.15f);
-            etRect.anchorMax = new Vector2(0.96f, 0.85f);
+            etRect.anchorMin = new Vector2(0.7f, 0.2f);
+            etRect.anchorMax = new Vector2(0.95f, 0.8f);
             etRect.offsetMin = Vector2.zero;
             etRect.offsetMax = Vector2.zero;
             var etText = _endTurnButton.GetComponentInChildren<Text>();
-            etText.fontSize = 34;
+            etText.fontSize = 28;
             etText.fontStyle = FontStyle.Bold;
             _endTurnButton.image.color = new Color(0.25f, 0.55f, 0.35f);
 
             _exitBattleButton = UiFactory.CreateButton(Root.transform, "ExitBattle", "Exit", Session.EndBattleAndReturnToLobby);
             var exRect = _exitBattleButton.GetComponent<RectTransform>();
-            exRect.anchorMin = new Vector2(0.44f, 0.92f);
-            exRect.anchorMax = new Vector2(0.56f, 0.98f);
+            exRect.anchorMin = new Vector2(0.42f, 0.94f);
+            exRect.anchorMax = new Vector2(0.58f, 0.98f);
             exRect.offsetMin = Vector2.zero;
             exRect.offsetMax = Vector2.zero;
             _exitBattleButton.image.color = new Color(0.4f, 0.2f, 0.2f, 0.6f);
 
-            // --- Board Panel ---
-            var boardPanel = UiFactory.CreatePanel(Root.transform, "BoardPanel", new Color(0.08f, 0.1f, 0.12f), new Vector2(0f, 0.55f), new Vector2(1f, 0.88f), new Vector2(30f, 10f), new Vector2(-30f, -10f));
-            
-            var alliesPanel = UiFactory.CreatePanel(boardPanel.transform, "AlliesPanel", Color.clear, new Vector2(0f, 0f), new Vector2(0.49f, 1f), new Vector2(10f, 10f), new Vector2(-10f, -10f));
-            var alliesLayout = alliesPanel.AddComponent<HorizontalLayoutGroup>();
-            alliesLayout.spacing = 15f;
-            alliesLayout.childAlignment = TextAnchor.MiddleCenter;
-            alliesLayout.childControlWidth = alliesLayout.childControlHeight = false;
-            alliesLayout.childForceExpandWidth = alliesLayout.childForceExpandHeight = false;
-            _alliesContainer = alliesPanel.transform;
+            // --- Board Panel (Portrait, Horizon-based) ---
+            var boardPanel = UiFactory.CreatePanel(Root.transform, "BoardPanel", new Color(0.08f, 0.1f, 0.12f), new Vector2(0f, 0.45f), new Vector2(1f, 0.88f), new Vector2(20f, 0f), new Vector2(-20f, 0f));
+            _boardPanelRect = boardPanel.GetComponent<RectTransform>();
 
-            var enemiesPanel = UiFactory.CreatePanel(boardPanel.transform, "EnemiesPanel", Color.clear, new Vector2(0.51f, 0f), new Vector2(1f, 1f), new Vector2(10f, 10f), new Vector2(-10f, -10f));
-            var enemiesLayout = enemiesPanel.AddComponent<HorizontalLayoutGroup>();
-            enemiesLayout.spacing = 15f;
-            enemiesLayout.childAlignment = TextAnchor.MiddleCenter;
-            enemiesLayout.childControlWidth = enemiesLayout.childControlHeight = false;
-            enemiesLayout.childForceExpandWidth = enemiesLayout.childForceExpandHeight = false;
-            _enemiesContainer = enemiesPanel.transform;
+            // Invisible drop zones (Created at the back, but in front of board panel itself)
+            CreateAreaDropZone(boardPanel.transform, "DropZone_West", BattleArea.West, new Vector2(0f, 0f), new Vector2(0.5f, 1f));
+            CreateAreaDropZone(boardPanel.transform, "DropZone_East", BattleArea.East, new Vector2(0.5f, 0f), new Vector2(1f, 1f));
+
+            // Global Monster HP Bar (Top of Board)
+            var monsterHpBase = UiFactory.CreatePanel(boardPanel.transform, "MonsterHpBar", new Color(0.15f, 0.15f, 0.18f, 0.8f), new Vector2(0.1f, 0.9f), new Vector2(0.9f, 0.98f), Vector2.zero, Vector2.zero);
+            var hpFillObj = UiFactory.CreatePanel(monsterHpBase.transform, "Fill", new Color(0.85f, 0.2f, 0.2f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            _monsterHpFillRect = hpFillObj.GetComponent<RectTransform>();
+            _monsterHpFillRect.pivot = new Vector2(0f, 0.5f);
+            _monsterHpText = UiFactory.CreateText(monsterHpBase.transform, "Label", 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            _monsterHpText.fontStyle = FontStyle.Bold;
+
+            // Ground Visual (Behind units)
+            var ground = UiFactory.CreatePanel(boardPanel.transform, "Ground", new Color(0.15f, 0.17f, 0.2f, 0.8f), new Vector2(0f, 0f), new Vector2(1f, 0.3f), Vector2.zero, Vector2.zero);
+            ground.GetComponent<Image>().raycastTarget = false;
+
+            // Horizon Line
+            var horizonLine = UiFactory.CreatePanel(boardPanel.transform, "Horizon", new Color(1f, 1f, 1f, 0.3f), new Vector2(0.05f, 0.3f), new Vector2(0.95f, 0.305f), Vector2.zero, Vector2.zero);
+            horizonLine.GetComponent<Image>().raycastTarget = false;
+
+            // West Players (Left side, standing on horizon)
+            var westPanel = UiFactory.CreatePanel(boardPanel.transform, "WestPlayers", Color.clear, new Vector2(0f, 0.3f), new Vector2(0.28f, 0.8f), Vector2.zero, Vector2.zero);
+            westPanel.GetComponent<Image>().raycastTarget = false;
+            var westLayout = westPanel.AddComponent<HorizontalLayoutGroup>();
+            westLayout.childAlignment = TextAnchor.LowerCenter;
+            westLayout.spacing = 10f;
+            westLayout.childControlHeight = westLayout.childControlWidth = false;
+            _westPlayerContainer = westPanel.transform;
+
+            // Monster Area (Center, standing on horizon)
+            var monsterPanel = UiFactory.CreatePanel(boardPanel.transform, "MonsterPanel", Color.clear, new Vector2(0.3f, 0f), new Vector2(0.7f, 1f), Vector2.zero, Vector2.zero);
+            monsterPanel.GetComponent<Image>().raycastTarget = false;
+            _monsterPanelRect = monsterPanel.GetComponent<RectTransform>();
+            _monsterContainer = monsterPanel.transform;
+
+            // East Players (Right side, standing on horizon)
+            var eastPanel = UiFactory.CreatePanel(boardPanel.transform, "EastPlayers", Color.clear, new Vector2(0.72f, 0.3f), new Vector2(1f, 0.8f), Vector2.zero, Vector2.zero);
+            eastPanel.GetComponent<Image>().raycastTarget = false;
+            var eastLayout = eastPanel.AddComponent<HorizontalLayoutGroup>();
+            eastLayout.childAlignment = TextAnchor.LowerCenter;
+            eastLayout.spacing = 10f;
+            eastLayout.childControlHeight = eastLayout.childControlWidth = false;
+            _eastPlayerContainer = eastPanel.transform;
 
             // --- Battle Log (Scrollable) ---
-            var logBase = UiFactory.CreatePanel(Root.transform, "LogBase", new Color(0.05f, 0.05f, 0.06f, 0.9f), new Vector2(0f, 0.34f), new Vector2(1f, 0.53f), new Vector2(40f, 5f), new Vector2(-40f, -5f));
+            var logBase = UiFactory.CreatePanel(Root.transform, "LogBase", new Color(0.05f, 0.05f, 0.06f, 0.92f), new Vector2(0f, 0.28f), new Vector2(1f, 0.44f), new Vector2(25f, 5f), new Vector2(-25f, -5f));
             
             var scrollView = new GameObject("LogScroll");
             scrollView.transform.SetParent(logBase.transform, false);
             var svRect = scrollView.AddComponent<RectTransform>();
             svRect.anchorMin = Vector2.zero;
             svRect.anchorMax = Vector2.one;
-            svRect.offsetMin = new Vector2(15f, 15f);
-            svRect.offsetMax = new Vector2(-15f, -15f);
+            svRect.offsetMin = new Vector2(10f, 10f);
+            svRect.offsetMax = new Vector2(-10f, -10f);
 
             _logScrollRect = scrollView.AddComponent<ScrollRect>();
             var viewport = new GameObject("Viewport");
@@ -102,7 +138,7 @@ namespace YoungBob.Prototype.UI.Pages
             vpRect.sizeDelta = Vector2.zero;
             viewport.AddComponent<RectMask2D>();
             
-            _battleLogText = UiFactory.CreateText(viewport.transform, "LogText", 22, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            _battleLogText = UiFactory.CreateText(viewport.transform, "LogText", 20, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             _battleLogText.supportRichText = true;
             var logTextRect = _battleLogText.GetComponent<RectTransform>();
             logTextRect.pivot = new Vector2(0.5f, 1f);
@@ -117,31 +153,53 @@ namespace YoungBob.Prototype.UI.Pages
             _logScrollRect.vertical = true;
             _logScrollRect.onValueChanged.AddListener(_ => OnLogScrollChanged());
 
-            _jumpToLatestButton = UiFactory.CreateButton(logBase.transform, "JumpToLatest", "↓ Latest", () => {
+            _jumpToLatestButton = UiFactory.CreateButton(logBase.transform, "JumpToLatest", "Log ↓", () => {
                 _logScrollRect.verticalNormalizedPosition = 0f;
                 _isUserScrolling = false;
                 _jumpToLatestButton.gameObject.SetActive(false);
             });
             var jumpRect = _jumpToLatestButton.GetComponent<RectTransform>();
-            jumpRect.anchorMin = new Vector2(0.85f, 0.05f);
-            jumpRect.anchorMax = new Vector2(0.98f, 0.25f);
+            jumpRect.anchorMin = new Vector2(0.82f, 0.04f);
+            jumpRect.anchorMax = new Vector2(0.98f, 0.22f);
             jumpRect.offsetMin = jumpRect.offsetMax = Vector2.zero;
             _jumpToLatestButton.gameObject.SetActive(false);
 
             // --- Hand ---
-            var handTitle = UiFactory.CreateText(Root.transform, "HandTitle", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0.29f), new Vector2(1f, 0.33f), new Vector2(40f, 0f), new Vector2(-40f, 0f));
-            handTitle.text = "Your Hand";
-            handTitle.fontStyle = FontStyle.Bold;
-
-            var handPanel = UiFactory.CreatePanel(Root.transform, "HandPanel", new Color(0.1f, 0.12f, 0.15f, 0.5f), new Vector2(0f, 0f), new Vector2(1f, 0.28f), new Vector2(20f, 20f), new Vector2(-20f, 20f));
+            var handPanel = UiFactory.CreatePanel(Root.transform, "HandPanel", new Color(0.12f, 0.14f, 0.18f, 0.7f), new Vector2(0f, 0f), new Vector2(1f, 0.27f), new Vector2(10f, 10f), new Vector2(-10f, 10f));
             _handPanelRect = handPanel.GetComponent<RectTransform>();
-            var handLayout = handPanel.AddComponent<HorizontalLayoutGroup>();
-            handLayout.spacing = 20f;
+            var handScrollArea = new GameObject("HandScroll");
+            handScrollArea.transform.SetParent(handPanel.transform, false);
+            var hsRect = handScrollArea.AddComponent<RectTransform>();
+            hsRect.anchorMin = Vector2.zero;
+            hsRect.anchorMax = Vector2.one;
+            hsRect.offsetMin = hsRect.offsetMax = Vector2.zero;
+
+            var handScroll = handScrollArea.AddComponent<ScrollRect>();
+            var handViewport = new GameObject("Viewport");
+            handViewport.transform.SetParent(handScrollArea.transform, false);
+            var hvRect = handViewport.AddComponent<RectTransform>();
+            hvRect.anchorMin = Vector2.zero;
+            hvRect.anchorMax = Vector2.one;
+            hvRect.sizeDelta = Vector2.zero;
+            handViewport.AddComponent<RectMask2D>();
+
+            var handContent = UiFactory.CreatePanel(handViewport.transform, "HandContent", Color.clear, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            var handContentRect = handContent.GetComponent<RectTransform>();
+            handContentRect.pivot = new Vector2(0f, 0.5f);
+            var handLayout = handContent.AddComponent<HorizontalLayoutGroup>();
+            handLayout.spacing = 15f;
             handLayout.padding = new RectOffset(20, 20, 20, 20);
-            handLayout.childAlignment = TextAnchor.MiddleCenter;
+            handLayout.childAlignment = TextAnchor.MiddleLeft;
             handLayout.childControlWidth = handLayout.childControlHeight = false;
             handLayout.childForceExpandWidth = handLayout.childForceExpandHeight = false;
-            _handContainer = handPanel.transform;
+            var hFitter = handContent.AddComponent<ContentSizeFitter>();
+            hFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            handScroll.viewport = hvRect;
+            handScroll.content = handContentRect;
+            handScroll.vertical = false;
+            handScroll.horizontal = true;
+            _handContainer = handContent.transform;
 
             Hide();
         }
@@ -225,27 +283,50 @@ namespace YoungBob.Prototype.UI.Pages
 
         private void RenderBoard(BattleState state)
         {
-            ClearContainer(_alliesContainer);
-            ClearContainer(_enemiesContainer);
-            _allySlots.Clear();
-            _enemySlots.Clear();
+            ClearContainer(_monsterContainer);
+            ClearContainer(_westPlayerContainer);
+            ClearContainer(_eastPlayerContainer);
+            _playerSlots.Clear();
+            _monsterPartSlots.Clear();
+            // Drop zones are static, no need to clear
 
             if (state == null)
             {
                 return;
             }
 
-            for (var i = state.players.Count - 1; i >= 0; i--)
+            // Update Monster HP Bar
+            if (state.monster != null)
             {
-                var player = state.players[i];
-                _allySlots.Add(CreateUnitSlot(_alliesContainer, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, new Color(0.2f, 0.36f, 0.31f), false));
+                float ratio = state.monster.coreMaxHp > 0 ? Mathf.Clamp01((float)state.monster.coreHp / state.monster.coreMaxHp) : 0f;
+                _monsterHpFillRect.anchorMax = new Vector2(ratio, 1f);
+                string pose = !string.IsNullOrEmpty(state.monster.currentPoseId) ? $" [{state.monster.currentPoseId}]" : "";
+                _monsterHpText.text = $"MONSTER HP: {state.monster.coreHp} / {state.monster.coreMaxHp}{pose}";
             }
 
-            for (var i = 0; i < state.enemies.Count; i++)
+            // Render Players in their respective areas
+            for (var i = 0; i < state.players.Count; i++)
             {
-                var enemy = state.enemies[i];
-                _enemySlots.Add(CreateUnitSlot(_enemiesContainer, BattleTargetFaction.Enemies, enemy.instanceId, enemy.displayName, enemy.hp, enemy.maxHp, enemy.armor, new Color(0.42f, 0.22f, 0.22f), false));
+                var player = state.players[i];
+                var container = player.area == BattleArea.East ? _eastPlayerContainer : _westPlayerContainer;
+                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, new Color(0.2f, 0.36f, 0.31f), false);
+                _playerSlots.Add(slot);
             }
+
+            // Render Monster Parts (manual placement)
+            if (state.monster != null)
+            {
+                Canvas.ForceUpdateCanvases();
+                var panelRect = _monsterPanelRect.rect;
+                for (var i = 0; i < state.monster.parts.Count; i++)
+                {
+                    var part = state.monster.parts[i];
+                    var slot = CreateMonsterPartSlot(_monsterContainer, part, panelRect, state.monster.facing, state.monster.stance, false);
+                    _monsterPartSlots.Add(slot);
+                }
+            }
+
+            // Drop zones are already created in constructor
         }
 
         private void RenderHand(BattleState state)
@@ -279,7 +360,8 @@ namespace YoungBob.Prototype.UI.Pages
                 var cardDef = Session.GetCardDefinition(cardState.cardId);
                 if (cardDef == null) continue;
                 
-                var cardObject = UiFactory.CreateCard(_handContainer, "Card_" + cardState.instanceId, cardDef.name, DescribeCard(cardDef), canAct);
+                var isPlayable = canAct && player.energy >= cardDef.energyCost;
+                var cardObject = UiFactory.CreateCard(_handContainer, "Card_" + cardState.instanceId, cardDef.name, DescribeCard(cardDef), isPlayable);
                 if (cardObject == null) continue;
 
                 var layoutElement = cardObject.AddComponent<LayoutElement>();
@@ -293,7 +375,7 @@ namespace YoungBob.Prototype.UI.Pages
                 dragView.EndedDrag += (_, eventData) => EndCardDrag(eventData);
 
                 // Dim if not playable
-                if (!canAct)
+                if (!isPlayable)
                 {
                     var canvasGroup = cardObject.GetComponent<CanvasGroup>();
                     if (canvasGroup == null) canvasGroup = cardObject.AddComponent<CanvasGroup>();
@@ -315,7 +397,7 @@ namespace YoungBob.Prototype.UI.Pages
 
             _draggingCardDefinition = cardDef;
             _draggingCardInstanceId = cardInstanceId;
-            ApplyHighlight(cardDef, null);
+            ApplyHighlight(cardDef, null, null, null);
         }
 
         private void UpdateCardDrag(PointerEventData eventData)
@@ -325,8 +407,10 @@ namespace YoungBob.Prototype.UI.Pages
                 return;
             }
 
-            var hoveredSlot = FindHoveredSlot(eventData);
-            ApplyHighlight(_draggingCardDefinition, hoveredSlot);
+            var hoveredPlayer = FindHoveredPlayerSlot(eventData);
+            var hoveredPart = FindHoveredPartSlot(eventData);
+            var hoveredArea = FindHoveredAreaDropZone(eventData);
+            ApplyHighlight(_draggingCardDefinition, hoveredPlayer, hoveredPart, hoveredArea);
         }
 
         private void EndCardDrag(PointerEventData eventData)
@@ -346,19 +430,45 @@ namespace YoungBob.Prototype.UI.Pages
             }
 
             var targetType = ParseTargetType(_draggingCardDefinition.targetType);
-            var hoveredSlot = FindHoveredSlot(eventData);
+            var hoveredPlayer = FindHoveredPlayerSlot(eventData);
+            var hoveredPart = FindHoveredPartSlot(eventData);
+            var hoveredArea = FindHoveredAreaDropZone(eventData);
 
-            if (targetType == BattleTargetType.SingleEnemy || targetType == BattleTargetType.SingleAlly || 
-                targetType == BattleTargetType.AllEnemies || targetType == BattleTargetType.AllAllies ||
-                targetType == BattleTargetType.Self || targetType == BattleTargetType.OtherAlly ||
-                targetType == BattleTargetType.SingleUnit)
+            if (targetType == BattleTargetType.Area)
             {
-                if (hoveredSlot != null && IsValidTargetForType(targetType, hoveredSlot))
+                if (hoveredArea != null)
                 {
-                    var isAoe = (targetType == BattleTargetType.AllEnemies || targetType == BattleTargetType.AllAllies);
-                    var unitId = isAoe ? string.Empty : hoveredSlot.UnitId;
-                    var faction = hoveredSlot.Faction;
-                    Session.PlayCard(_draggingCardInstanceId, faction, unitId);
+                    Session.PlayCard(_draggingCardInstanceId, BattleTargetFaction.None, string.Empty, hoveredArea.Area);
+                }
+            }
+            else if (targetType == BattleTargetType.MonsterPart || targetType == BattleTargetType.SingleAlly ||
+                targetType == BattleTargetType.AllAllies || targetType == BattleTargetType.Self ||
+                targetType == BattleTargetType.OtherAlly || targetType == BattleTargetType.SingleUnit ||
+                targetType == BattleTargetType.AllMonsterParts)
+            {
+                if (IsValidPlayerTarget(targetType, hoveredPlayer) || IsValidPartTarget(targetType, hoveredPart))
+                {
+                    var isAoe = (targetType == BattleTargetType.AllMonsterParts || targetType == BattleTargetType.AllAllies);
+                    var unitId = string.Empty;
+                    var faction = BattleTargetFaction.None;
+                    if (!isAoe)
+                    {
+                        if (hoveredPart != null && IsValidPartTarget(targetType, hoveredPart))
+                        {
+                            unitId = hoveredPart.InstanceId;
+                            faction = BattleTargetFaction.Enemies;
+                        }
+                        else if (hoveredPlayer != null && IsValidPlayerTarget(targetType, hoveredPlayer))
+                        {
+                            unitId = hoveredPlayer.UnitId;
+                            faction = BattleTargetFaction.Allies;
+                        }
+                    }
+                    else
+                    {
+                        faction = targetType == BattleTargetType.AllAllies ? BattleTargetFaction.Allies : BattleTargetFaction.Enemies;
+                    }
+                    Session.PlayCard(_draggingCardInstanceId, faction, unitId, BattleArea.Middle);
                 }
             }
 
@@ -367,7 +477,7 @@ namespace YoungBob.Prototype.UI.Pages
             _draggingCardInstanceId = null;
         }
 
-        private void ApplyHighlight(CardDefinition cardDef, BattleUnitSlotView hoveredSlot)
+        private void ApplyHighlight(CardDefinition cardDef, BattleUnitSlotView hoveredPlayer, MonsterPartSlotView hoveredPart, BattleAreaDropZoneView hoveredArea)
         {
             if (_lastState == null)
             {
@@ -375,22 +485,34 @@ namespace YoungBob.Prototype.UI.Pages
             }
 
             var targetType = ParseTargetType(cardDef.targetType);
-            for (var i = 0; i < _allySlots.Count; i++)
+            for (var i = 0; i < _playerSlots.Count; i++)
             {
-                var slot = _allySlots[i];
+                var slot = _playerSlots[i];
                 var player = _lastState.GetPlayer(slot.UnitId);
-                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, ShouldHighlightSlot(targetType, slot, hoveredSlot));
+                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, ShouldHighlightPlayer(targetType, slot, hoveredPlayer));
             }
 
-            for (var i = 0; i < _enemySlots.Count; i++)
+            for (var i = 0; i < _monsterPartSlots.Count; i++)
             {
-                var slot = _enemySlots[i];
-                var enemy = _lastState.GetEnemy(slot.UnitId);
-                slot.SetData(BattleTargetFaction.Enemies, slot.UnitId, enemy.displayName, enemy.hp, enemy.maxHp, enemy.armor, ShouldHighlightSlot(targetType, slot, hoveredSlot));
+                var slot = _monsterPartSlots[i];
+                var part = _lastState.GetPart(slot.InstanceId);
+                if (part == null)
+                {
+                    continue;
+                }
+
+                slot.SetData(part, ShouldHighlightPart(targetType, slot, hoveredPart));
+            }
+
+            for (var i = 0; i < _areaDropZones.Count; i++)
+            {
+                var zone = _areaDropZones[i];
+                var highlight = targetType == BattleTargetType.Area && hoveredArea != null && hoveredArea.Area == zone.Area;
+                zone.SetHighlight(highlight);
             }
         }
 
-        private bool ShouldHighlightSlot(BattleTargetType targetType, BattleUnitSlotView slot, BattleUnitSlotView hoveredSlot)
+        private bool ShouldHighlightPlayer(BattleTargetType targetType, BattleUnitSlotView slot, BattleUnitSlotView hoveredSlot)
         {
             if (!slot.IsAlive)
             {
@@ -401,14 +523,10 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 case BattleTargetType.Self:
                     return slot.UnitId == Session.LocalPlayerId && hoveredSlot == slot;
-                case BattleTargetType.SingleEnemy:
-                    return slot.Faction == BattleTargetFaction.Enemies && hoveredSlot == slot;
-                case BattleTargetType.AllEnemies:
-                    return slot.Faction == BattleTargetFaction.Enemies && hoveredSlot != null && IsValidTargetForType(targetType, hoveredSlot);
                 case BattleTargetType.SingleAlly:
                     return slot.Faction == BattleTargetFaction.Allies && hoveredSlot == slot;
                 case BattleTargetType.AllAllies:
-                    return slot.Faction == BattleTargetFaction.Allies && hoveredSlot != null && IsValidTargetForType(targetType, hoveredSlot);
+                    return slot.Faction == BattleTargetFaction.Allies && hoveredSlot != null && IsValidPlayerTarget(targetType, hoveredSlot);
                 case BattleTargetType.OtherAlly:
                     return slot.Faction == BattleTargetFaction.Allies && slot.UnitId != Session.LocalPlayerId && hoveredSlot == slot;
                 case BattleTargetType.SingleUnit:
@@ -418,7 +536,27 @@ namespace YoungBob.Prototype.UI.Pages
             }
         }
 
-        private bool IsValidTargetForType(BattleTargetType targetType, BattleUnitSlotView slot)
+        private bool ShouldHighlightPart(BattleTargetType targetType, MonsterPartSlotView slot, MonsterPartSlotView hoveredSlot)
+        {
+            if (slot == null || !slot.IsAlive)
+            {
+                return false;
+            }
+
+            switch (targetType)
+            {
+                case BattleTargetType.MonsterPart:
+                    return hoveredSlot == slot;
+                case BattleTargetType.AllMonsterParts:
+                    return hoveredSlot != null && IsValidPartTarget(targetType, hoveredSlot);
+                case BattleTargetType.SingleUnit:
+                    return hoveredSlot == slot;
+                default:
+                    return false;
+            }
+        }
+
+        private bool IsValidPlayerTarget(BattleTargetType targetType, BattleUnitSlotView slot)
         {
             if (slot == null || !slot.IsAlive)
             {
@@ -429,14 +567,29 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 case BattleTargetType.Self:
                     return slot.UnitId == Session.LocalPlayerId;
-                case BattleTargetType.SingleEnemy:
-                case BattleTargetType.AllEnemies:
-                    return slot.Faction == BattleTargetFaction.Enemies;
                 case BattleTargetType.SingleAlly:
                 case BattleTargetType.AllAllies:
                     return slot.Faction == BattleTargetFaction.Allies;
                 case BattleTargetType.OtherAlly:
                     return slot.Faction == BattleTargetFaction.Allies && slot.UnitId != Session.LocalPlayerId;
+                case BattleTargetType.SingleUnit:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private bool IsValidPartTarget(BattleTargetType targetType, MonsterPartSlotView slot)
+        {
+            if (slot == null || !slot.IsAlive)
+            {
+                return false;
+            }
+
+            switch (targetType)
+            {
+                case BattleTargetType.MonsterPart:
+                case BattleTargetType.AllMonsterParts:
                 case BattleTargetType.SingleUnit:
                     return true;
                 default:
@@ -452,9 +605,13 @@ namespace YoungBob.Prototype.UI.Pages
             }
 
             RenderBoard(_lastState);
+            for (var i = 0; i < _areaDropZones.Count; i++)
+            {
+                _areaDropZones[i].SetHighlight(false);
+            }
         }
 
-        private BattleUnitSlotView FindHoveredSlot(PointerEventData eventData)
+        private BattleUnitSlotView FindHoveredPlayerSlot(PointerEventData eventData)
         {
             var hoveredObject = eventData.pointerEnter;
             while (hoveredObject != null)
@@ -471,29 +628,82 @@ namespace YoungBob.Prototype.UI.Pages
             return null;
         }
 
+        private MonsterPartSlotView FindHoveredPartSlot(PointerEventData eventData)
+        {
+            var hoveredObject = eventData.pointerEnter;
+            while (hoveredObject != null)
+            {
+                var slot = hoveredObject.GetComponent<MonsterPartSlotView>();
+                if (slot != null)
+                {
+                    return slot;
+                }
+
+                hoveredObject = hoveredObject.transform.parent == null ? null : hoveredObject.transform.parent.gameObject;
+            }
+
+            return null;
+        }
+
+        private BattleAreaDropZoneView FindHoveredAreaDropZone(PointerEventData eventData)
+        {
+            var hoveredObject = eventData.pointerEnter;
+            while (hoveredObject != null)
+            {
+                var slot = hoveredObject.GetComponent<BattleAreaDropZoneView>();
+                if (slot != null)
+                {
+                    return slot;
+                }
+
+                hoveredObject = hoveredObject.transform.parent == null ? null : hoveredObject.transform.parent.gameObject;
+            }
+
+            return null;
+        }
+
         private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, Color color, bool highlight)
         {
-            var slotObject = UiFactory.CreatePanel(parent, "UnitSlot_" + unitId, color, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            var layoutElement = slotObject.AddComponent<LayoutElement>();
-            layoutElement.preferredWidth = 220f;
-            layoutElement.preferredHeight = 160f;
-            slotObject.GetComponent<RectTransform>().sizeDelta = new Vector2(220f, 160f);
+            var slotObject = new GameObject("UnitSlot_" + unitId);
+            slotObject.transform.SetParent(parent, false);
+            var rect = slotObject.AddComponent<RectTransform>();
             
-            // Name at top
-            var nameLabel = UiFactory.CreateText(slotObject.transform, "Name", 24, TextAnchor.UpperCenter, new Vector2(0f, 0.65f), new Vector2(1f, 0.95f), new Vector2(5f, 0f), new Vector2(-5f, 0f));
+            // Horizon Anchor: Standing on the horizon line (y=0.3 relative to board)
+            rect.anchorMin = new Vector2(0.5f, 0.3f);
+            rect.anchorMax = new Vector2(0.5f, 0.3f);
+            rect.pivot = new Vector2(0.5f, 0f); // Standing at the base
+            rect.sizeDelta = new Vector2(130f, 160f);
+
+            var bg = slotObject.AddComponent<Image>();
+            bg.color = color;
+            bg.type = Image.Type.Sliced;
+            bg.sprite = GetPartSprite("Unit"); // Uses the null-safe helper
+
+            // Info Container (Below Horizon)
+            var infoBase = new GameObject("Info");
+            infoBase.transform.SetParent(slotObject.transform, false);
+            var infoRect = infoBase.AddComponent<RectTransform>();
+            infoRect.anchorMin = new Vector2(0f, -0.65f);
+            infoRect.anchorMax = new Vector2(1f, -0.05f);
+            infoRect.offsetMin = Vector2.zero;
+            infoRect.offsetMax = Vector2.zero;
+
+            // Name
+            var nameLabel = UiFactory.CreateText(infoBase.transform, "Name", 20, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             nameLabel.fontStyle = FontStyle.Bold;
 
             // HP Bar using helper
             var barColor = faction == BattleTargetFaction.Allies ? new Color(0.2f, 0.8f, 0.3f) : new Color(0.8f, 0.2f, 0.2f);
-            var (hpBarBg, hpFill) = UiFactory.CreateProgressBar(slotObject.transform, "HPBar", barColor, new Vector2(180f, 24f));
+            var (hpBarBg, hpFill) = UiFactory.CreateProgressBar(infoBase.transform, "HPBar", barColor, new Vector2(110f, 14f));
             hpBarBg.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -15f);
 
             // HP Numeric
-            var hpLabel = UiFactory.CreateText(hpBarBg.transform, "HPNumeric", 18, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            var hpLabel = UiFactory.CreateText(hpBarBg.transform, "HPNumeric", 14, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             hpLabel.color = Color.white;
 
-            // Armor Display (Below HP)
-            var armorLabel = UiFactory.CreateText(slotObject.transform, "Armor", 22, TextAnchor.MiddleCenter, new Vector2(0f, 0.05f), new Vector2(1f, 0.35f), Vector2.zero, Vector2.zero);
+            // Armor (Floating near unit)
+            var armorLabel = UiFactory.CreateText(slotObject.transform, "Armor", 18, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(0f, 0f), Vector2.zero, Vector2.zero);
+            armorLabel.GetComponent<RectTransform>().anchoredPosition = new Vector2(70f, 20f);
             armorLabel.fontStyle = FontStyle.Bold;
             armorLabel.color = new Color(0.6f, 0.8f, 1f);
 
@@ -503,14 +713,95 @@ namespace YoungBob.Prototype.UI.Pages
             var highlightImage = borderObj.GetComponent<Image>();
 
             var slotView = slotObject.AddComponent<BattleUnitSlotView>();
-            slotView.Initialize(slotObject.GetComponent<Image>(), nameLabel, hpLabel, hpFill, armorLabel, color, highlightImage);
+            slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, color, highlightImage);
             slotView.SetData(faction, unitId, name, hp, maxHp, armor, highlight);
             return slotView;
         }
 
+        private MonsterPartSlotView CreateMonsterPartSlot(Transform parent, MonsterPartState part, Rect panelRect, BattleFacing facing, BattleStance stance, bool highlight)
+        {
+            var slotObject = new GameObject("MonsterPart_" + part.partId);
+            slotObject.transform.SetParent(parent, false);
+            var rect = slotObject.AddComponent<RectTransform>();
+            
+            // Horizon Anchor: Monster center is standing on the horizon
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.3f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+
+            var size = ResolvePartSize(part);
+            rect.sizeDelta = size;
+
+            var position = ResolvePartPosition(part, panelRect, facing, stance);
+            rect.anchoredPosition = position;
+
+            var image = slotObject.AddComponent<Image>();
+            image.sprite = GetPartSprite(part.shape);
+            image.type = Image.Type.Sliced;
+            image.raycastTarget = true;
+
+            // Label Below Part
+            var label = UiFactory.CreateText(slotObject.transform, "Label", 18, TextAnchor.MiddleCenter, new Vector2(0f, -0.5f), new Vector2(1f, 0f), Vector2.zero, Vector2.zero);
+            label.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -20f);
+            label.supportRichText = true;
+
+            var borderObj = UiFactory.CreatePanel(slotObject.transform, "Highlight", new Color(1f, 0.85f, 0f, 1f), Vector2.zero, Vector2.one, new Vector2(-4f, -4f), new Vector2(4f, 4f));
+            borderObj.transform.SetAsFirstSibling();
+            var highlightImage = borderObj.GetComponent<Image>();
+
+            var slotView = slotObject.AddComponent<MonsterPartSlotView>();
+            slotView.Initialize(image, label, highlightImage);
+            slotView.SetData(part, highlight);
+            return slotView;
+        }
+
+        private static Vector2 ResolvePartSize(MonsterPartState part)
+        {
+            if (string.Equals(part.shape, "Circle", System.StringComparison.OrdinalIgnoreCase) && part.radius > 0f)
+            {
+                var diameter = part.radius * 2f;
+                return new Vector2(diameter, diameter);
+            }
+
+            if (part.width > 0f && part.height > 0f)
+            {
+                return new Vector2(part.width, part.height);
+            }
+
+            return new Vector2(120f, 90f);
+        }
+
+        private static Vector2 ResolvePartPosition(MonsterPartState part, Rect panelRect, BattleFacing facing, BattleStance stance)
+        {
+            const float scale = 0.45f;
+            var x = part.offsetX * panelRect.width * scale;
+            var y = part.offsetY * panelRect.height * scale;
+
+            if (facing == BattleFacing.West)
+            {
+                x = -x;
+            }
+
+            if (stance == BattleStance.Prone)
+            {
+                y = Mathf.Min(y, 0f);
+            }
+
+            return new Vector2(x, y);
+        }
+
+        private static Sprite GetPartSprite(string shape)
+        {
+            // Builtin resources like "UI/Skin/Knob.psd" often fail to load in runtime environments
+            // returning null here is safe; Unity will use the default white texture for the Image.
+            return null;
+        }
+
         private static string DescribeCard(CardDefinition cardDef)
         {
-            return "Effect: " + cardDef.effectType + "\nTarget: " + cardDef.targetType + "\nValue: " + cardDef.value;
+            var range = string.IsNullOrEmpty(cardDef.rangeHeights) && string.IsNullOrEmpty(cardDef.rangeZones)
+                ? ""
+                : "\nRange: " + (string.IsNullOrEmpty(cardDef.rangeZones) ? "" : cardDef.rangeZones + " ") + (string.IsNullOrEmpty(cardDef.rangeHeights) ? "" : cardDef.rangeHeights);
+            return "Cost: " + cardDef.energyCost + "\nEffect: " + cardDef.effectType + "\nTarget: " + cardDef.targetType + range + "\nValue: " + cardDef.value;
         }
 
         private static BattleTargetType ParseTargetType(string raw)
@@ -518,11 +809,36 @@ namespace YoungBob.Prototype.UI.Pages
             return (BattleTargetType)System.Enum.Parse(typeof(BattleTargetType), raw, true);
         }
 
+        private void CreateAreaDropZone(Transform parent, string name, BattleArea area, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            var zoneObject = new GameObject(name);
+            zoneObject.transform.SetParent(parent, false);
+            var rect = zoneObject.AddComponent<RectTransform>();
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var image = zoneObject.AddComponent<Image>();
+            image.color = new Color(1f, 1f, 1f, 0f);
+            image.raycastTarget = true;
+
+            var border = UiFactory.CreatePanel(zoneObject.transform, "Highlight", new Color(1f, 0.85f, 0f, 0.4f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            border.transform.SetAsFirstSibling();
+            var borderImage = border.GetComponent<Image>();
+            borderImage.raycastTarget = false;
+            borderImage.enabled = false;
+
+            var zoneView = zoneObject.AddComponent<BattleAreaDropZoneView>();
+            zoneView.Initialize(image, borderImage, area);
+            _areaDropZones.Add(zoneView);
+        }
+
         private static void ClearContainer(Transform container)
         {
             for (var i = container.childCount - 1; i >= 0; i--)
             {
-                Object.Destroy(container.GetChild(i).gameObject);
+                UnityEngine.Object.Destroy(container.GetChild(i).gameObject);
             }
         }
 
