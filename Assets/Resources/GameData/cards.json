@@ -25,7 +25,7 @@
       "effectType": "ChargeUp",
       "targetType": "Self",
       "rangeHeights": "Ground",
-      "energyCost": 2,
+      "energyCost": 3,
       "value": 0
     },
     {

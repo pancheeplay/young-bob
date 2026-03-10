@@ -7,7 +7,7 @@ namespace YoungBob.Prototype.Battle
     {
         internal const int BaseEnergyPerTurn = 3;
         internal const int CardsDrawnPerTurn = 2;
-        internal const int MaxHandSize = 10;
+        internal const int MaxHandSize = 5;
         internal const string MoveCardId = "move";
         internal const string PoseIdleId = "idle";
         internal const string PoseChargeId = "charge";

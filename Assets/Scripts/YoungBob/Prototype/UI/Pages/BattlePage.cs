@@ -390,8 +390,8 @@ namespace YoungBob.Prototype.UI.Pages
                 var dragView = cardObject.AddComponent<BattleHandCardDragView>();
                 dragView.Initialize(_canvas);
                 dragView.BeganDrag += (_, eventData) => BeginCardDrag(cardState.instanceId, cardDef);
-                dragView.Dragged += (_, eventData) => UpdateCardDrag(eventData);
-                dragView.EndedDrag += (_, eventData) => EndCardDrag(eventData);
+                dragView.Dragged += (v, eventData) => UpdateCardDrag(v);
+                dragView.EndedDrag += (v, eventData) => EndCardDrag(v);
 
                 // Dim if not playable
                 if (!isPlayable)
@@ -419,20 +419,18 @@ namespace YoungBob.Prototype.UI.Pages
             ApplyHighlight(cardDef, null, null, null);
         }
 
-        private void UpdateCardDrag(PointerEventData eventData)
+        private void UpdateCardDrag(BattleHandCardDragView view)
         {
             if (_draggingCardDefinition == null || _lastState == null)
             {
                 return;
             }
 
-            var hoveredPlayer = FindHoveredPlayerSlot(eventData);
-            var hoveredPart = FindHoveredPartSlot(eventData);
-            var hoveredArea = FindHoveredAreaDropZone(eventData);
+            FindHoveredTargetsAtCardTop(view, out var hoveredPlayer, out var hoveredPart, out var hoveredArea);
             ApplyHighlight(_draggingCardDefinition, hoveredPlayer, hoveredPart, hoveredArea);
         }
 
-        private void EndCardDrag(PointerEventData eventData)
+        private void EndCardDrag(BattleHandCardDragView view)
         {
             if (_draggingCardDefinition == null || string.IsNullOrEmpty(_draggingCardInstanceId))
             {
@@ -449,9 +447,7 @@ namespace YoungBob.Prototype.UI.Pages
             }
 
             var targetType = ParseTargetType(_draggingCardDefinition.targetType);
-            var hoveredPlayer = FindHoveredPlayerSlot(eventData);
-            var hoveredPart = FindHoveredPartSlot(eventData);
-            var hoveredArea = FindHoveredAreaDropZone(eventData);
+            FindHoveredTargetsAtCardTop(view, out var hoveredPlayer, out var hoveredPart, out var hoveredArea);
 
             if (targetType == BattleTargetType.Area)
             {
@@ -632,9 +628,60 @@ namespace YoungBob.Prototype.UI.Pages
             }
         }
 
-        private BattleUnitSlotView FindHoveredPlayerSlot(PointerEventData eventData)
+        private void FindHoveredTargetsAtCardTop(BattleHandCardDragView view, out BattleUnitSlotView hoveredPlayer, out MonsterPartSlotView hoveredPart, out BattleAreaDropZoneView hoveredArea)
         {
-            var hoveredObject = eventData.pointerEnter;
+            hoveredPlayer = null;
+            hoveredPart = null;
+            hoveredArea = null;
+
+            var raycaster = _canvas.GetComponent<GraphicRaycaster>();
+            if (raycaster == null)
+            {
+                return;
+            }
+
+            var results = RaycastAtCardTop(view, raycaster);
+            for (var i = 0; i < results.Count; i++)
+            {
+                var hitObject = results[i].gameObject;
+                if (hitObject == view.gameObject || hitObject.transform.IsChildOf(view.transform))
+                {
+                    continue;
+                }
+
+                if (hoveredPlayer == null)
+                {
+                    hoveredPlayer = FindHoveredPlayerSlot(hitObject);
+                }
+
+                if (hoveredPart == null)
+                {
+                    hoveredPart = FindHoveredPartSlot(hitObject);
+                }
+
+                if (hoveredArea == null)
+                {
+                    hoveredArea = FindHoveredAreaDropZone(hitObject);
+                }
+
+                if (hoveredPlayer != null && hoveredPart != null && hoveredArea != null)
+                {
+                    break;
+                }
+            }
+        }
+
+        private List<RaycastResult> RaycastAtCardTop(BattleHandCardDragView view, GraphicRaycaster raycaster)
+        {
+            var pointerData = new PointerEventData(EventSystem.current);
+            pointerData.position = view.GetTopCenterScreenPoint();
+            var results = new List<RaycastResult>();
+            raycaster.Raycast(pointerData, results);
+            return results;
+        }
+
+        private BattleUnitSlotView FindHoveredPlayerSlot(GameObject hoveredObject)
+        {
             while (hoveredObject != null)
             {
                 var slot = hoveredObject.GetComponent<BattleUnitSlotView>();
@@ -649,9 +696,8 @@ namespace YoungBob.Prototype.UI.Pages
             return null;
         }
 
-        private MonsterPartSlotView FindHoveredPartSlot(PointerEventData eventData)
+        private MonsterPartSlotView FindHoveredPartSlot(GameObject hoveredObject)
         {
-            var hoveredObject = eventData.pointerEnter;
             while (hoveredObject != null)
             {
                 var slot = hoveredObject.GetComponent<MonsterPartSlotView>();
@@ -666,9 +712,8 @@ namespace YoungBob.Prototype.UI.Pages
             return null;
         }
 
-        private BattleAreaDropZoneView FindHoveredAreaDropZone(PointerEventData eventData)
+        private BattleAreaDropZoneView FindHoveredAreaDropZone(GameObject hoveredObject)
         {
-            var hoveredObject = eventData.pointerEnter;
             while (hoveredObject != null)
             {
                 var slot = hoveredObject.GetComponent<BattleAreaDropZoneView>();

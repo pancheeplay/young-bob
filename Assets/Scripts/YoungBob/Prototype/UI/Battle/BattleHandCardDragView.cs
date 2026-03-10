@@ -25,6 +25,21 @@ namespace YoungBob.Prototype.UI.Battle
             _canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
+        public Vector2 GetTopCenterScreenPoint()
+        {
+            Vector3[] corners = new Vector3[4];
+            _rectTransform.GetWorldCorners(corners);
+            // corners[1] = top-left, corners[2] = top-right in World Space
+            Vector3 worldTopCenter = (corners[1] + corners[2]) * 0.5f;
+            
+            if (_canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+            {
+                return new Vector2(worldTopCenter.x, worldTopCenter.y);
+            }
+            
+            return RectTransformUtility.WorldToScreenPoint(_canvas.worldCamera, worldTopCenter);
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
             _originalParent = transform.parent;
@@ -43,11 +58,19 @@ namespace YoungBob.Prototype.UI.Battle
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            transform.SetParent(_originalParent, false);
-            transform.SetSiblingIndex(_originalSiblingIndex);
-            _rectTransform.anchoredPosition = _originalAnchoredPosition;
-            _canvasGroup.blocksRaycasts = true;
-            EndedDrag?.Invoke(this, eventData);
+            try
+            {
+                // End callback must run while card is still at dragged position,
+                // so drop detection can use card top-center screen point.
+                EndedDrag?.Invoke(this, eventData);
+            }
+            finally
+            {
+                transform.SetParent(_originalParent, false);
+                transform.SetSiblingIndex(_originalSiblingIndex);
+                _rectTransform.anchoredPosition = _originalAnchoredPosition;
+                _canvasGroup.blocksRaycasts = true;
+            }
         }
     }
 }

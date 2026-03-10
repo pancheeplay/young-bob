@@ -1,22 +1,22 @@
   Determining projects to restore...
   All projects are up-to-date for restore.
+/Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs(47,38): warning CS0649: Field 'EncounterCatalog.encounters' is never assigned to, and will always have its default value null [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
 /Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Multiplayer/LoopbackMultiplayerService.cs(14,37): warning CS0067: The event 'LoopbackMultiplayerService.TransportError' is never used [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
 /Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Multiplayer/TapTapMultiplayerService.cs(12,58): warning CS0067: The event 'TapTapMultiplayerService.RoomListUpdated' is never used [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
-/Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs(53,33): warning CS0649: Field 'DeckCatalog.decks' is never assigned to, and will always have its default value null [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
 /Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Multiplayer/TapTapMultiplayerService.cs(10,37): warning CS0067: The event 'TapTapMultiplayerService.TransportError' is never used [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
+/Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs(53,33): warning CS0649: Field 'DeckCatalog.decks' is never assigned to, and will always have its default value null [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
 /Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs(41,33): warning CS0649: Field 'CardCatalog.cards' is never assigned to, and will always have its default value null [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
-/Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs(47,38): warning CS0649: Field 'EncounterCatalog.encounters' is never assigned to, and will always have its default value null [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
   Assembly-CSharp -> /Users/usr/Documents/unity_projects/young-bob/Temp/bin/Debug/Assembly-CSharp.dll
 
 Build succeeded.
 
+/Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs(47,38): warning CS0649: Field 'EncounterCatalog.encounters' is never assigned to, and will always have its default value null [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
 /Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Multiplayer/LoopbackMultiplayerService.cs(14,37): warning CS0067: The event 'LoopbackMultiplayerService.TransportError' is never used [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
 /Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Multiplayer/TapTapMultiplayerService.cs(12,58): warning CS0067: The event 'TapTapMultiplayerService.RoomListUpdated' is never used [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
-/Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs(53,33): warning CS0649: Field 'DeckCatalog.decks' is never assigned to, and will always have its default value null [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
 /Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Multiplayer/TapTapMultiplayerService.cs(10,37): warning CS0067: The event 'TapTapMultiplayerService.TransportError' is never used [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
+/Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs(53,33): warning CS0649: Field 'DeckCatalog.decks' is never assigned to, and will always have its default value null [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
 /Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs(41,33): warning CS0649: Field 'CardCatalog.cards' is never assigned to, and will always have its default value null [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
-/Users/usr/Documents/unity_projects/young-bob/Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs(47,38): warning CS0649: Field 'EncounterCatalog.encounters' is never assigned to, and will always have its default value null [/Users/usr/Documents/unity_projects/young-bob/Assembly-CSharp.csproj]
     6 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:00.56
+Time Elapsed 00:00:00.62
