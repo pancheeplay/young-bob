@@ -100,6 +100,7 @@ namespace YoungBob.Prototype.Battle
         public int maxHp;
         public int hp;
         public int armor;
+        public int vulnerableStacks;
         public int energy;
         public BattleArea area;
         public BattleHeight height;
@@ -140,6 +141,9 @@ namespace YoungBob.Prototype.Battle
         public string displayName;
         public int remainingWindup;
         public int damage;
+        public string castPoseId;
+        public string onHitAddCardId;
+        public int onHitApplyVulnerable;
         public BattleArea targetArea;
         public BattleHeight targetHeight;
         public bool targetsBothHeights;
@@ -285,6 +289,9 @@ namespace YoungBob.Prototype.Battle
         public int windupTurns;
         public int cooldownTurns;
         public int damage;
+        public string castPoseId;
+        public string onHitAddCardId;
+        public int onHitApplyVulnerable;
         public string targetArea;
         public string targetHeight;
     }

@@ -1,0 +1,86 @@
+{
+  "id": "curse_multi",
+  "name": "Curse flow two clients sync",
+  "setup": {
+    "roomId": "test_room_multi",
+    "encounterId": "slime_intro",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 24681357,
+    "topology": 1,
+    "players": [
+      {
+        "playerId": "host",
+        "displayName": "Host"
+      },
+      {
+        "playerId": "guest",
+        "displayName": "Guest"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "end_turn",
+      "actorPlayerId": "host",
+      "snapshotTag": "host_end_turn"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "guest",
+      "snapshotTag": "after_monster_turn"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "guest",
+      "cardInstanceId": "card:curse_betrayal",
+      "targetFaction": 1,
+      "targetUnitId": "guest",
+      "targetArea": 0,
+      "snapshotTag": "guest_self_curse_fail",
+      "allowFailure": true,
+      "expectedErrorContains": "Invalid curse target."
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "guest",
+      "cardInstanceId": "card:curse_betrayal",
+      "targetFaction": 1,
+      "targetUnitId": "host",
+      "targetArea": 0,
+      "snapshotTag": "after_guest_curse"
+    },
+    {
+      "action": "snapshot",
+      "snapshotTag": "host_view_final"
+    },
+    {
+      "action": "snapshot",
+      "snapshotTag": "guest_view_final"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "snapshot_contains",
+      "message": "Monster hit adds curse card",
+      "expected": "\"cardId\":\"curse_betrayal\"",
+      "actualPath": "after_monster_turn"
+    },
+    {
+      "type": "snapshot_error_contains",
+      "message": "Curse cannot target self",
+      "expected": "Invalid curse target.",
+      "actualPath": "guest_self_curse_fail"
+    },
+    {
+      "type": "snapshot_contains",
+      "message": "Curse to ally applies Vulnerable",
+      "expected": "\"vulnerableStacks\":2",
+      "actualPath": "after_guest_curse"
+    },
+    {
+      "type": "snapshot_hash_equals",
+      "message": "Host and guest final battle state hash should match",
+      "actualPath": "host_view_final|guest_view_final"
+    }
+  ]
+}

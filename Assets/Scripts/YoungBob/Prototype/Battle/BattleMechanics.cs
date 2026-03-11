@@ -7,9 +7,16 @@ namespace YoungBob.Prototype.Battle
     {
         public static int ApplyDamage(PlayerBattleState target, int amount)
         {
-            var mitigatedByArmor = Math.Min(target.armor, amount);
+            var incoming = Math.Max(0, amount);
+            if (target.vulnerableStacks > 0)
+            {
+                incoming += (incoming + 1) / 2;
+                target.vulnerableStacks = Math.Max(0, target.vulnerableStacks - 1);
+            }
+
+            var mitigatedByArmor = Math.Min(target.armor, incoming);
             target.armor -= mitigatedByArmor;
-            var remainingDamage = amount - mitigatedByArmor;
+            var remainingDamage = incoming - mitigatedByArmor;
             target.hp = Math.Max(0, target.hp - remainingDamage);
             return remainingDamage;
         }
@@ -110,6 +117,43 @@ namespace YoungBob.Prototype.Battle
             }
 
             player.hand.Add(moveCard);
+        }
+
+        public static void AddCardToHandOrDiscard(BattleState state, PlayerBattleState player, string cardId, bool forceIntoHand = false)
+        {
+            if (state == null || player == null || string.IsNullOrWhiteSpace(cardId))
+            {
+                return;
+            }
+
+            var card = new BattleCardState
+            {
+                instanceId = player.playerId + "_" + cardId + "_" + state.turnIndex + "_" + Guid.NewGuid().ToString("N"),
+                cardId = cardId
+            };
+
+            if (player.hand.Count >= BattleEngine.MaxHandSize)
+            {
+                if (forceIntoHand && player.hand.Count > 0)
+                {
+                    var displaced = player.hand[0];
+                    player.hand.RemoveAt(0);
+                    player.discardPile.Add(displaced);
+                }
+                else
+                {
+                    player.discardPile.Add(card);
+                    return;
+                }
+            }
+
+            if (player.hand.Count >= BattleEngine.MaxHandSize)
+            {
+                player.discardPile.Add(card);
+                return;
+            }
+
+            player.hand.Add(card);
         }
 
         public static void Shuffle(List<BattleCardState> list, int seed)

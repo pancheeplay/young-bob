@@ -37,6 +37,10 @@ namespace YoungBob.Prototype.Battle
                     ResolveCurseLoseHpEffect(state, actingPlayer, command, definition, targetType, result);
                     break;
 
+                case "CurseApplyVulnerable":
+                    ResolveCurseApplyVulnerableEffect(state, actingPlayer, command, definition, targetType, result);
+                    break;
+
                 case "CopyAndPlunder":
                     ResolveCopyAndPlunderEffect(state, actingPlayer, command, targetType, result);
                     break;
@@ -318,6 +322,29 @@ namespace YoungBob.Prototype.Battle
             result.events.Add(new BattleEvent
             {
                 message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(target.displayName) + ", reducing life by " + BattleTextHelper.DamageText(definition.value) + "."
+            });
+        }
+
+        private static void ResolveCurseApplyVulnerableEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
+        {
+            if (targetType != BattleTargetType.OtherAlly)
+            {
+                result.error = "CurseApplyVulnerable requires OtherAlly target.";
+                return;
+            }
+
+            var target = BattleTargetResolver.ResolveHeroTargetForUtility(state, actingPlayer, command, targetType, allowSelf: false, allowOtherAlly: true);
+            if (target == null)
+            {
+                result.error = "Invalid curse target.";
+                return;
+            }
+
+            var stacks = Math.Max(1, definition.value);
+            target.vulnerableStacks += stacks;
+            result.events.Add(new BattleEvent
+            {
+                message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(target.displayName) + ", applying Vulnerable x" + stacks + "."
             });
         }
 

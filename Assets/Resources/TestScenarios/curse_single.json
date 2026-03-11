@@ -1,0 +1,85 @@
+{
+  "id": "curse_single",
+  "name": "Curse flow single client",
+  "setup": {
+    "roomId": "test_room_single",
+    "encounterId": "slime_intro",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 24681357,
+    "topology": 0,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      },
+      {
+        "playerId": "p2",
+        "displayName": "Beta"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p2"
+    },
+    {
+      "action": "snapshot",
+      "snapshotTag": "after_monster_turn"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p1",
+      "cardInstanceId": "card:curse_betrayal",
+      "targetFaction": 1,
+      "targetUnitId": "p1",
+      "targetArea": 0,
+      "snapshotTag": "self_curse_fail",
+      "allowFailure": true,
+      "expectedErrorContains": "Invalid curse target."
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p1",
+      "cardInstanceId": "card:curse_betrayal",
+      "targetFaction": 1,
+      "targetUnitId": "p2",
+      "targetArea": 0,
+      "snapshotTag": "ally_curse_success"
+    },
+    {
+      "action": "snapshot",
+      "snapshotTag": "after_curse_play"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "snapshot_contains",
+      "message": "Monster attack adds curse card into hand",
+      "expected": "\"cardId\":\"curse_betrayal\"",
+      "actualPath": "after_monster_turn"
+    },
+    {
+      "type": "snapshot_error_contains",
+      "message": "Playing curse on self should fail",
+      "expected": "Invalid curse target.",
+      "actualPath": "self_curse_fail"
+    },
+    {
+      "type": "snapshot_contains",
+      "message": "Playing curse on ally should succeed",
+      "expected": "\"cardId\":\"curse_betrayal\"",
+      "actualPath": "ally_curse_success"
+    },
+    {
+      "type": "snapshot_contains",
+      "message": "Target ally gains Vulnerable",
+      "expected": "\"vulnerableStacks\":2",
+      "actualPath": "after_curse_play"
+    }
+  ]
+}

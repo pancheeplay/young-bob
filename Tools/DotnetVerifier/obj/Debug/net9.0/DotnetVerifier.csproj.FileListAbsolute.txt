@@ -1,0 +1,15 @@
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/bin/Debug/net9.0/DotnetVerifier
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/bin/Debug/net9.0/DotnetVerifier.deps.json
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/bin/Debug/net9.0/DotnetVerifier.runtimeconfig.json
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/bin/Debug/net9.0/DotnetVerifier.dll
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/bin/Debug/net9.0/DotnetVerifier.pdb
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/obj/Debug/net9.0/DotnetVerifier.GeneratedMSBuildEditorConfig.editorconfig
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/obj/Debug/net9.0/DotnetVerifier.AssemblyInfoInputs.cache
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/obj/Debug/net9.0/DotnetVerifier.AssemblyInfo.cs
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/obj/Debug/net9.0/DotnetVerifier.csproj.CoreCompileInputs.cache
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/obj/Debug/net9.0/DotnetVerifier.sourcelink.json
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/obj/Debug/net9.0/DotnetVerifier.dll
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/obj/Debug/net9.0/refint/DotnetVerifier.dll
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/obj/Debug/net9.0/DotnetVerifier.pdb
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/obj/Debug/net9.0/DotnetVerifier.genruntimeconfig.cache
+/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/obj/Debug/net9.0/ref/DotnetVerifier.dll

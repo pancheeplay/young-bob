@@ -79,12 +79,16 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/MonsterAI.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/FrameSyncManager.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/PingData.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioRunner.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/InProcessBattleTestDriver.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/LoopbackMultiplayerService.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/TapBattleEventHandler.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/StateSyncManager.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleTestDriverContracts.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/PlayerCustomProperties.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleAreaSlotView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTypes.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioCommandEntry.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/TapTapRuntimeMultiplayerService.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/LobbyPage.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleEngine.cs" />
@@ -92,6 +96,7 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/PageBase.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/TapSDKService.cs" />
     <Compile Include="Assets/TutorialInfo/Scripts/Readme.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioModels.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/BattlePage.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/BattleInteraction.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleUnitSlotView.cs" />
@@ -99,6 +104,7 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleAreaDropZoneView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/MonsterPartSlotView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTargetResolver.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioExecutionService.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/App/PrototypeSessionController.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/UiFactory.cs" />

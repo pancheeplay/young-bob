@@ -43,6 +43,7 @@ namespace YoungBob.Prototype.Battle
                     maxHp = 24,
                     hp = 24,
                     armor = 0,
+                    vulnerableStacks = 0,
                     energy = BaseEnergyPerTurn,
                     area = BattleArea.West,
                     height = BattleHeight.Ground,

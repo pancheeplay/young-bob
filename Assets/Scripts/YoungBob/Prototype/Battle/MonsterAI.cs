@@ -125,6 +125,9 @@ namespace YoungBob.Prototype.Battle
                     displayName = skillDef.name,
                     remainingWindup = windupTurns,
                     damage = skillDef.damage,
+                    castPoseId = string.IsNullOrWhiteSpace(skillDef.castPoseId) ? BattleEngine.PoseIdleId : skillDef.castPoseId,
+                    onHitAddCardId = skillDef.onHitAddCardId,
+                    onHitApplyVulnerable = skillDef.onHitApplyVulnerable,
                     targetArea = targetArea,
                     targetHeight = targetHeight,
                     targetsBothHeights = targetsBothHeights
@@ -168,7 +171,7 @@ namespace YoungBob.Prototype.Battle
                 }
             }
 
-            ApplyMonsterPose(monster, BattleEngine.PoseAttackId);
+            ApplyMonsterPose(monster, string.IsNullOrWhiteSpace(monster.activeSkill.castPoseId) ? BattleEngine.PoseIdleId : monster.activeSkill.castPoseId);
             result.events.Add(new BattleEvent
             {
                 message = "<color=#8A8A8A>Monster action:</color> using " + BattleTextHelper.Card(monster.activeSkill.displayName) + "."
@@ -177,7 +180,6 @@ namespace YoungBob.Prototype.Battle
             StartSkillCooldown(monster, monster.activeSkill);
             monster.hasActiveSkill = false;
             monster.activeSkill = null;
-            ApplyMonsterPose(monster, BattleEngine.PoseIdleId);
         }
 
         private static void TickSkillCooldowns(MonsterBattleState monster)
@@ -474,6 +476,25 @@ namespace YoungBob.Prototype.Battle
                 {
                     message = BattleTextHelper.Unit(state.monster.displayName) + " hits " + BattleTextHelper.Unit(player.displayName) + " for " + BattleTextHelper.DamageText(damage) + " with " + BattleTextHelper.Card(skill.displayName) + "."
                 });
+
+                if (!string.IsNullOrWhiteSpace(skill.onHitAddCardId))
+                {
+                    BattleMechanics.AddCardToHandOrDiscard(state, player, skill.onHitAddCardId, forceIntoHand: true);
+                    result.events.Add(new BattleEvent
+                    {
+                        message = BattleTextHelper.Unit(player.displayName) + " received " + BattleTextHelper.Card(skill.onHitAddCardId) + " due to " + BattleTextHelper.Card(skill.displayName) + "."
+                    });
+                }
+
+                if (skill.onHitApplyVulnerable > 0)
+                {
+                    player.vulnerableStacks += skill.onHitApplyVulnerable;
+                    result.events.Add(new BattleEvent
+                    {
+                        message = BattleTextHelper.Unit(player.displayName) + " gained Vulnerable x" + skill.onHitApplyVulnerable + "."
+                    });
+                }
+
                 hitCount += 1;
             }
 

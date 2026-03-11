@@ -93,6 +93,17 @@
       "rangeDistance": "Near",
       "energyCost": 1,
       "value": 4
+    },
+    {
+      "id": "curse_betrayal",
+      "name": "背叛诅咒",
+      "classTag": "Curse",
+      "effectType": "CurseApplyVulnerable",
+      "targetType": "OtherAlly",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 0,
+      "value": 1
     }
   ]
 }
