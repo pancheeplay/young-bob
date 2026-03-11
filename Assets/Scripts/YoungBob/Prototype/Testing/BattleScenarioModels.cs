@@ -27,6 +27,7 @@ namespace YoungBob.Prototype.Testing
         public string action;
         public string actorPlayerId;
         public string cardInstanceId;
+        public int debugValue;
         public BattleTargetFaction targetFaction;
         public string targetUnitId;
         public BattleArea targetArea;

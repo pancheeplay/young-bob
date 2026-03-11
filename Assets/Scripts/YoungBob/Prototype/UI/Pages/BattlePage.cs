@@ -236,7 +236,11 @@ namespace YoungBob.Prototype.UI.Pages
 
             var turnType = state.phase == BattlePhase.PlayerTurn ? "PLAYER TURN" : "MONSTER TURN";
             var color = state.phase == BattlePhase.PlayerTurn ? "#40FF80" : "#FF6060";
-            _summaryText.text = $"<color={color}>{turnType}</color>  -  ROUND {state.turnIndex}\n<size=22>{state.currentPrompt}</size>";
+            var encounterTotal = state.stageEncounterIds == null ? 0 : state.stageEncounterIds.Length;
+            var encounterText = encounterTotal > 0
+                ? $"<size=20>Stage {state.stageId}  Encounter {state.stageEncounterIndex + 1}/{encounterTotal}</size>\n"
+                : string.Empty;
+            _summaryText.text = $"<color={color}>{turnType}</color>  -  ROUND {state.turnIndex}\n{encounterText}<size=22>{state.currentPrompt}</size>";
             
             _endTurnButton.interactable = Session.CanLocalPlayerAct();
             _exitBattleButton.interactable = true;

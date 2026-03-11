@@ -2,165 +2,130 @@
 
 ## 1. 目标
 
-为本项目建立可自动闭环的流程：
+为本项目建立可自动闭环流程：
 
 1. LLM 修改数据与代码
-2. 自动执行单机/联机场景测试
-3. 自动断言结果并输出失败原因
-4. 基于失败信息继续修复并重试
+2. 自动执行场景测试（single + multi 语义）
+3. 自动断言并产出 JSON 报告
+4. 基于失败信息继续修复并重跑
 
 核心要求：
 
 - 非交互、可脚本化（适配 LLM/CI）
-- 可复现（固定随机种子 + 明确步骤）
-- 可断言（结果不是“看日志判断”，而是结构化 pass/fail）
-- 可扩展（新增卡牌/怪物/效果时，只需新增场景与断言）
+- 可复现（固定 seed + 场景步骤）
+- 可断言（结构化 pass/fail，而不是人工看日志）
 
-## 2. 分层设计
+## 2. 当前落地结构
 
-### 2.1 Domain Core（现有）
+### 2.1 战斗域（Domain Core）
 
 目录：`Assets/Scripts/YoungBob/Prototype/Battle`
 
 职责：
 
-- 战斗规则与状态推进
-- 不依赖 UI
-- 不依赖网络传输实现
+- 战斗状态与规则推进
+- 卡牌效果、怪物技能、目标合法性
+- 与 UI、网络层解耦
 
-约束：
-
-- 所有新效果（如 Vulnerable、加诅咒）必须在这一层可表达和可测试
-
-### 2.2 Test Driver API（新增）
-
-目录：`Assets/Scripts/YoungBob/Prototype/Testing`
-
-职责：
-
-- 提供可编排 API：创建房间、加入房间、开战、出牌、结束回合、读取状态、等待同步
-- 返回结构化结果，供断言与报告
-- 支持单客户端和多客户端模式
-
-约束：
-
-- 不做 REPL 输入循环
-- 不把业务逻辑写进 CLI
-
-### 2.3 Scenario Spec（新增）
+### 2.2 场景定义（Scenario Spec）
 
 目录：`Assets/Resources/TestScenarios`
 
+当前场景：
+
+- `curse_single.json`
+- `curse_multi.json`
+
+结构：
+
+- `setup`：`stageId`/`monsterId`/deck/players/seed（`monsterId` 用于快速直测某个怪物）
+- `steps`：`end_turn` / `play_card` / `snapshot`
+- `steps` 也支持 debug 指令（用于规则回归，不改正式战斗数据）：
+  - `debug_damage_monster`（配合 `debugValue`）
+  - `debug_set_player_hp`（`targetUnitId` + `debugValue`）
+- `assertions`：`snapshot_contains` / `snapshot_error_contains` / `snapshot_hash_equals` 等
+
+### 2.3 纯 dotnet 执行器（主入口）
+
+目录：`Tools/DotnetVerifier`
+
+文件：
+
+- `DotnetVerifier.csproj`
+- `Program.cs`
+- `JsonGameDataRepository.cs`
+
 职责：
 
-- 用 JSON 定义 Given/When/Then
-- 让 LLM 修改后可自动新增或更新场景，而不是手写流程脚本
+- 加载 GameData 与 Scenario JSON
+- 直接调用 `BattleEngine` 执行步骤
+- 生成快照、执行断言、输出汇总报告 JSON
 
-内容：
+说明：
 
-- meta：场景名、模式（single/multi）、seed
-- setup：encounter、deck、players
-- steps：动作序列
-- assertions：状态断言、跨客户端一致性断言
+- 该入口不依赖 Unity batch，不依赖旧 REPL CLI
+- 适合 LLM 自循环与 CI
 
-### 2.4 Scenario Runner（新增）
+### 2.4 Unity 入口（保留）
 
 目录：`Assets/Scripts/YoungBob/Prototype/Testing`
 
-职责：
+说明：
 
-- 加载场景
-- 调用 Test Driver 执行动作
-- 执行断言
-- 输出结构化报告（JSON）
+- Unity 侧 runner 保留用于编辑器内触发
+- 当前自动化主路径以 `Tools/DotnetVerifier` 为准
 
-### 2.5 Thin CLI（后续可选）
+## 3. 命令用法（推荐）
 
-目录建议：`Tools/BattleScenarioRunner`
+运行全部场景并输出报告：
 
-职责：
+```bash
+dotnet run --project Tools/DotnetVerifier/DotnetVerifier.csproj -- --scenario all --report /tmp/young-bob-dotnet-verifier-report.json
+```
 
-- 解析参数并调用 Scenario Runner
-- 例如：`--scenario curse_multi --report /tmp/young-bob-report.json`
+只跑单个场景：
 
-约束：
-
-- 只做入口层，不承载规则判断
-
-## 3. 执行流水线
-
-## 3.1 每次功能改动的标准流程
-
-1. 修改游戏数据（如 `cards.json` / `encounters.json`）
-2. 修改 Battle 规则代码
-3. 更新/新增场景 JSON
-4. 执行 scenario runner（single + multi）
-5. 读取报告并判断 pass/fail
-6. 失败则进入下一轮修复
-
-## 3.2 必须覆盖的验证维度
-
-- 功能正确性：效果是否触发
-- 目标合法性：例如诅咒是否只能对队友
-- 状态同步：host/client 最终状态是否一致
-- 稳定性：同一 seed 多次结果一致
-
-## 4. 诅咒示例（你给的需求）
-
-需求：
-
-- 怪物攻击时给玩家手牌加入一张诅咒卡
-- 诅咒卡只能对队友打出
-- 诅咒命中后目标获得 Vulnerable
-
-对应断言：
-
-1. 怪物技能后，目标玩家手牌包含 `curse_*`
-2. 对自己使用诅咒应失败（返回错误码/错误文本）
-3. 对队友使用诅咒应成功
-4. 队友状态中 `Vulnerable` 层数按预期变化
-5. 双客户端最终快照 hash 一致
-
-## 5. 目录建议
-
-- `Assets/Scripts/YoungBob/Prototype/Testing/BattleTestDriverContracts.cs`
-- `Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioModels.cs`
-- `Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioRunner.cs`
-- `Assets/Resources/TestScenarios/curse_single.json`
-- `Assets/Resources/TestScenarios/curse_multi.json`
-
-## 6. 渐进实施顺序
-
-1. 先做 Test Driver Contracts + Scenario Models（今天可完成）
-2. 再做 Runner 的动作执行与基础断言
-3. 最后接入真实网络多客户端启动（DebugRelay / TapTap）
-
-这样可以先把规则正确性跑通，再逐步放大到联机端到端验证。
-
-## 7. 命令入口（当前版本）
-
-当前已提供 Unity 可调用入口：
-
-- `YoungBob.Prototype.Testing.BattleScenarioCommandEntry.Run`
+```bash
+dotnet run --project Tools/DotnetVerifier/DotnetVerifier.csproj -- --scenario curse_single --report /tmp/curse_single_report.json
+```
 
 参数：
 
-- `--scenario TestScenarios/curse_single`
-- `--report /tmp/young-bob-scenario-report.json`
+- `--scenario`：`all` / `curse_single` / `curse_multi` / 自定义 JSON 路径
+- `--report`：报告输出路径
 
-示例（Unity 命令行）：
+退出码：
 
-```bash
-Unity \
-  -batchmode \
-  -quit \
-  -projectPath /Users/usr/Documents/unity_projects/young-bob \
-  -executeMethod YoungBob.Prototype.Testing.BattleScenarioCommandEntry.Run \
-  --scenario TestScenarios/curse_multi \
-  --report /tmp/young-bob-reports/curse_multi.json
-```
+- `0`：全部通过
+- `2`：存在失败用例
+- `1`：执行异常
 
-注意：
+## 4. 诅咒功能（当前实现）
 
-- 若当前机器上 Unity Editor 被占用，可在空闲时段执行该命令；
-- 日常开发仍可通过 `BattleScenarioExecutionService.RunScenarioFromResourcesAsJson(...)` 在编辑器内触发。
+当前规则：
+
+- 怪物通过**指定技能** `curse_prayer` 施加诅咒（不是普通攻击）
+- `curse_prayer` 的施放动作：`castPoseId = prayer`
+- 普通攻击 `normal_attack` 的施放动作：`castPoseId = idle`
+- 诅咒卡 `curse_betrayal` 只能对队友打出，命中后目标获得 Vulnerable
+
+关键数据：
+
+- `Assets/Resources/GameData/encounters.json`
+- `Assets/Resources/GameData/cards.json`
+
+关键断言：
+
+1. 怪物技能后手牌出现 `curse_betrayal`
+2. 对自己出诅咒失败（错误包含 `Invalid curse target.`）
+3. 对队友出诅咒成功并提升易伤层数
+4. single/multi 场景均通过
+
+## 5. 边界与下一步
+
+当前 dotnet 执行器验证的是“战斗域规则正确性”，不覆盖：
+
+- 真实网络收发与房间同步
+- Unity UI 点击链路
+
+后续可并行增加联机 E2E 层（DebugRelay/TapTap），与当前规则层验证互补。

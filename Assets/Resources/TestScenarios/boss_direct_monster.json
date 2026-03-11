@@ -1,0 +1,31 @@
+{
+  "id": "boss_direct_monster",
+  "name": "Direct monster setup for boss debug",
+  "setup": {
+    "roomId": "test_room_direct_monster",
+    "monsterId": "training_dragon",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 24681357,
+    "topology": 0,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "snapshot",
+      "snapshotTag": "direct_start"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "snapshot_contains",
+      "message": "MonsterId direct setup should build requested monster",
+      "expected": "\"monsterId\":\"training_dragon\"",
+      "actualPath": "direct_start"
+    }
+  ]
+}

@@ -61,7 +61,9 @@ namespace YoungBob.Prototype.Testing
                 var definition = new BattleSetupDefinition
                 {
                     roomId = _setup.roomId,
+                    stageId = _setup.stageId,
                     encounterId = _setup.encounterId,
+                    monsterId = _setup.monsterId,
                     starterDeckId = _setup.starterDeckId,
                     randomSeed = _setup.randomSeed
                 };
@@ -127,6 +129,53 @@ namespace YoungBob.Prototype.Testing
             });
 
             return FromCommandResult(result, "end_turn");
+        }
+
+        public DriverActionResult DebugDamageMonster(int amount)
+        {
+            if (_state == null)
+            {
+                return Fail("Battle not started.");
+            }
+
+            if (_state.monster == null)
+            {
+                return Fail("Monster not found.");
+            }
+
+            var damage = Math.Max(0, amount);
+            _state.monster.coreHp = Math.Max(0, _state.monster.coreHp - damage);
+            if (_state.monster.parts != null)
+            {
+                for (var i = 0; i < _state.monster.parts.Count; i++)
+                {
+                    var part = _state.monster.parts[i];
+                    part.hp = Math.Max(0, part.hp - damage);
+                    if (part.hp == 0)
+                    {
+                        part.isBroken = true;
+                    }
+                }
+            }
+
+            return Success("debug_damage_monster");
+        }
+
+        public DriverActionResult DebugSetPlayerHp(string playerId, int hp)
+        {
+            if (_state == null)
+            {
+                return Fail("Battle not started.");
+            }
+
+            var player = _state.GetPlayer(playerId);
+            if (player == null)
+            {
+                return Fail("Player not found: " + playerId);
+            }
+
+            player.hp = Math.Max(0, Math.Min(player.maxHp, hp));
+            return Success("debug_set_player_hp");
         }
 
         public DriverActionResult Snapshot(string tag)

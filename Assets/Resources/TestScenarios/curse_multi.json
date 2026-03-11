@@ -3,7 +3,7 @@
   "name": "Curse flow two clients sync",
   "setup": {
     "roomId": "test_room_multi",
-    "encounterId": "slime_intro",
+    "stageId": "stage_boss_debug",
     "starterDeckId": "co_op_starter",
     "randomSeed": 24681357,
     "topology": 1,
@@ -59,6 +59,12 @@
     }
   ],
   "assertions": [
+    {
+      "type": "snapshot_contains",
+      "message": "Battle setup uses stage",
+      "expected": "\"stageId\":\"stage_boss_debug\"",
+      "actualPath": "setup"
+    },
     {
       "type": "snapshot_contains",
       "message": "Monster hit adds curse card",

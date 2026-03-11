@@ -22,17 +22,17 @@ namespace YoungBob.Prototype.Battle
 
         public BattleState CreateInitialState(BattleSetupDefinition setup)
         {
-            var encounter = _dataRepository.GetEncounter(setup.encounterId);
             var deck = _dataRepository.GetDeck(setup.starterDeckId);
             var state = new BattleState
             {
                 roomId = setup.roomId,
-                encounterId = setup.encounterId,
                 randomSeed = setup.randomSeed,
                 turnIndex = 1,
-                phase = BattlePhase.PlayerTurn,
-                currentPrompt = "Team turn"
+                phase = BattlePhase.PlayerTurn
             };
+
+            ResolveInitialStageAndEncounter(setup, state, out var openingEncounterId, out var openingMonsterDefinition);
+            state.currentPrompt = BuildTeamTurnPrompt(state);
 
             foreach (var participant in setup.players)
             {
@@ -68,7 +68,12 @@ namespace YoungBob.Prototype.Battle
                 state.players.Add(player);
             }
 
-            state.monster = MonsterAI.BuildMonster(encounter, setup.randomSeed);
+            state.monster = MonsterAI.BuildMonster(openingMonsterDefinition, setup.randomSeed);
+            if (state.monster == null && !string.IsNullOrWhiteSpace(openingEncounterId))
+            {
+                throw new InvalidOperationException("Encounter has no monster definition: " + openingEncounterId);
+            }
+
             return state;
         }
 
@@ -146,7 +151,7 @@ namespace YoungBob.Prototype.Battle
             actingPlayer.hand.Remove(card);
             actingPlayer.discardPile.Add(card);
             actingPlayer.cardsPlayedThisTurn += 1;
-            BattleMechanics.TryResolveBattleEnd(state, result);
+            TryResolveEncounterEnd(state, result);
             result.success = true;
             return result;
         }
@@ -185,14 +190,18 @@ namespace YoungBob.Prototype.Battle
 
             if (state.monster.coreHp <= 0)
             {
-                state.phase = BattlePhase.Victory;
-                state.currentPrompt = "Victory";
-                result.events.Add(new BattleEvent { message = "The monster has fallen." });
+                TryResolveEncounterEnd(state, result);
                 return;
             }
 
             EnsureMonsterDefinition(state);
             MonsterAI.ResolveMonsterSkill(state, result);
+
+            if (state.monster != null && state.monster.coreHp <= 0)
+            {
+                TryResolveEncounterEnd(state, result);
+                return;
+            }
 
             if (BattleTargetResolver.AllPlayersDead(state.players))
             {
@@ -202,6 +211,11 @@ namespace YoungBob.Prototype.Battle
                 return;
             }
 
+            BeginPlayerRound(state, result);
+        }
+
+        private void BeginPlayerRound(BattleState state, BattleCommandResult result)
+        {
             state.phase = BattlePhase.PlayerTurn;
             state.turnIndex += 1;
             BattleTargetResolver.ResetTeamTurn(state.players);
@@ -216,11 +230,152 @@ namespace YoungBob.Prototype.Battle
                 }
             }
 
-            state.currentPrompt = "Team turn";
+            state.currentPrompt = BuildTeamTurnPrompt(state);
             result.events.Add(new BattleEvent
             {
                 message = "<color=#E6C36A>Turn " + state.turnIndex + " begins.</color>"
             });
+        }
+
+        private void TryResolveEncounterEnd(BattleState state, BattleCommandResult result)
+        {
+            if (state.monster != null && state.monster.coreHp > 0)
+            {
+                return;
+            }
+
+            var encounterIds = state.stageEncounterIds;
+            if (encounterIds == null || encounterIds.Length == 0)
+            {
+                state.phase = BattlePhase.Victory;
+                state.currentPrompt = "Victory";
+                result.events.Add(new BattleEvent
+                {
+                    message = "<color=#7FD67F>The monster was defeated. Victory.</color>"
+                });
+                return;
+            }
+
+            var clearedEncounterName = string.IsNullOrWhiteSpace(state.encounterId) ? "unknown" : state.encounterId;
+            var hasNextEncounter = state.stageEncounterIndex + 1 < encounterIds.Length;
+            if (!hasNextEncounter)
+            {
+                state.phase = BattlePhase.Victory;
+                state.currentPrompt = "Stage Cleared";
+                result.events.Add(new BattleEvent
+                {
+                    message = "<color=#7FD67F>Encounter cleared:</color> " + clearedEncounterName
+                });
+                result.events.Add(new BattleEvent
+                {
+                    message = "<color=#7FD67F>Stage cleared:</color> " + (string.IsNullOrWhiteSpace(state.stageName) ? state.stageId : state.stageName)
+                });
+                return;
+            }
+
+            state.stageEncounterIndex += 1;
+            state.encounterId = encounterIds[state.stageEncounterIndex];
+            var nextMonsterDef = _dataRepository.GetEncounterMonster(state.encounterId);
+            state.monster = MonsterAI.BuildMonster(nextMonsterDef, state.randomSeed ^ state.turnIndex ^ state.stageEncounterIndex);
+
+            state.phase = BattlePhase.PlayerTurn;
+            BattleTargetResolver.ResetTeamTurn(state.players);
+            for (var i = 0; i < state.players.Count; i++)
+            {
+                var player = state.players[i];
+                player.cardsPlayedThisTurn = 0;
+                player.attackChargeStage = 0;
+                player.nextAttackBonus = 0;
+                if (player.hp > 0)
+                {
+                    player.energy = BaseEnergyPerTurn;
+                    BattleMechanics.DrawCards(state, player, CardsDrawnPerTurn);
+                    BattleMechanics.AddMoveCard(state, player);
+                }
+            }
+
+            state.currentPrompt = BuildTeamTurnPrompt(state);
+            result.events.Add(new BattleEvent
+            {
+                message = "<color=#7FD67F>Encounter cleared:</color> " + clearedEncounterName
+            });
+            result.events.Add(new BattleEvent
+            {
+                message = "<color=#7FD67F>Next encounter:</color> " + state.encounterId + " (" + (state.stageEncounterIndex + 1) + "/" + encounterIds.Length + ")"
+            });
+        }
+
+        private string BuildTeamTurnPrompt(BattleState state)
+        {
+            var encounterTotal = state.stageEncounterIds == null ? 0 : state.stageEncounterIds.Length;
+            if (encounterTotal <= 0)
+            {
+                return "Team turn";
+            }
+
+            return "Team turn - Encounter " + (state.stageEncounterIndex + 1) + "/" + encounterTotal;
+        }
+
+        private void ResolveInitialStageAndEncounter(
+            BattleSetupDefinition setup,
+            BattleState state,
+            out string openingEncounterId,
+            out MonsterDefinition openingMonsterDefinition)
+        {
+            openingEncounterId = null;
+            openingMonsterDefinition = null;
+
+            if (!string.IsNullOrWhiteSpace(setup.monsterId))
+            {
+                var monster = _dataRepository.GetMonster(setup.monsterId);
+                state.stageId = string.IsNullOrWhiteSpace(setup.stageId) ? "monster_debug" : setup.stageId;
+                state.stageName = "Monster Debug";
+                state.stageEncounterIds = new[] { "monster:" + setup.monsterId };
+                state.stageEncounterIndex = 0;
+                state.encounterId = state.stageEncounterIds[0];
+                openingEncounterId = state.encounterId;
+                openingMonsterDefinition = monster;
+                return;
+            }
+
+            StageDefinition stage = null;
+            if (!string.IsNullOrWhiteSpace(setup.stageId))
+            {
+                stage = _dataRepository.GetStage(setup.stageId);
+            }
+            else
+            {
+                var allStages = _dataRepository.GetAllStages();
+                if (allStages != null && allStages.Count > 0)
+                {
+                    stage = allStages[0];
+                }
+            }
+
+            if (stage != null)
+            {
+                state.stageId = stage.id;
+                state.stageName = stage.name;
+                state.stageEncounterIds = stage.encounterIds;
+                state.stageEncounterIndex = 0;
+                state.encounterId = stage.encounterIds[0];
+                openingEncounterId = state.encounterId;
+                openingMonsterDefinition = _dataRepository.GetEncounterMonster(state.encounterId);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(setup.encounterId))
+            {
+                throw new InvalidOperationException("Battle setup requires stageId, monsterId, or encounterId.");
+            }
+
+            state.stageId = "legacy_single_encounter";
+            state.stageName = "Single Encounter";
+            state.stageEncounterIds = new[] { setup.encounterId };
+            state.stageEncounterIndex = 0;
+            state.encounterId = setup.encounterId;
+            openingEncounterId = setup.encounterId;
+            openingMonsterDefinition = _dataRepository.GetEncounterMonster(setup.encounterId);
         }
 
         private void EnsureMonsterDefinition(BattleState state)
@@ -237,36 +392,32 @@ namespace YoungBob.Prototype.Battle
                 return;
             }
 
-            if (string.IsNullOrEmpty(state.encounterId))
+            if (string.IsNullOrEmpty(state.encounterId) || state.encounterId.StartsWith("monster:", StringComparison.Ordinal))
             {
                 return;
             }
 
-            var encounter = _dataRepository.GetEncounter(state.encounterId);
-            if (encounter == null || encounter.monster == null)
-            {
-                return;
-            }
+            var encounterMonster = _dataRepository.GetEncounterMonster(state.encounterId);
 
             if (!string.IsNullOrEmpty(state.monster.monsterId)
-                && !string.Equals(state.monster.monsterId, encounter.monster.monsterId, StringComparison.OrdinalIgnoreCase))
+                && !string.Equals(state.monster.monsterId, encounterMonster.monsterId, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
             if (needsSkills)
             {
-                state.monster.skills = encounter.monster.skills;
+                state.monster.skills = encounterMonster.skills;
             }
 
             if (needsPoses)
             {
-                state.monster.poses = encounter.monster.poses;
+                state.monster.poses = encounterMonster.poses;
             }
 
             if (string.IsNullOrEmpty(state.monster.currentPoseId))
             {
-                MonsterAI.ApplyMonsterPose(state.monster, MonsterAI.ResolveInitialPose(encounter.monster));
+                MonsterAI.ApplyMonsterPose(state.monster, MonsterAI.ResolveInitialPose(encounterMonster));
             }
         }
     }

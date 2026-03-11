@@ -11,6 +11,7 @@ namespace YoungBob.Prototype.App
     public sealed class BattleStartPayload
     {
         public int randomSeed;
+        public string stageId;
         public string encounterId;
         public string starterDeckId;
     }
@@ -46,15 +47,19 @@ namespace YoungBob.Prototype.App
         private readonly IMultiplayerService _multiplayer;
         private readonly BattleEngine _battleEngine;
         private readonly GameDataRepository _dataRepository;
+        private readonly IReadOnlyList<StageDefinition> _availableStages;
 
         private RoomJoinedEvent _room;
         private int _seq;
+        private int _selectedStageIndex;
 
         public PrototypeSessionController(IMultiplayerService multiplayer, BattleEngine battleEngine, GameDataRepository dataRepository)
         {
             _multiplayer = multiplayer;
             _battleEngine = battleEngine;
             _dataRepository = dataRepository;
+            _availableStages = _dataRepository.GetAllStages();
+            _selectedStageIndex = 0;
 
             _multiplayer.Connected += OnConnected;
             _multiplayer.TransportError += OnTransportError;
@@ -68,6 +73,7 @@ namespace YoungBob.Prototype.App
         public event Action<IReadOnlyList<RoomListItem>> RoomListChanged;
         public event Action<BattleState> BattleStateChanged;
         public event Action<string> LogAdded;
+        public event Action StageSelectionChanged;
 
         public BattleState CurrentBattleState { get; private set; }
         public RoomJoinedEvent CurrentRoom { get; private set; }
@@ -80,6 +86,29 @@ namespace YoungBob.Prototype.App
         public bool IsLocalHost
         {
             get { return _room != null && _room.localPlayerId == _room.hostPlayerId; }
+        }
+
+        public StageDefinition SelectedStage
+        {
+            get
+            {
+                if (_availableStages == null || _availableStages.Count == 0)
+                {
+                    return null;
+                }
+
+                if (_selectedStageIndex < 0 || _selectedStageIndex >= _availableStages.Count)
+                {
+                    _selectedStageIndex = 0;
+                }
+
+                return _availableStages[_selectedStageIndex];
+            }
+        }
+
+        public int AvailableStageCount
+        {
+            get { return _availableStages == null ? 0 : _availableStages.Count; }
         }
 
         public string AvailabilityText
@@ -153,15 +182,45 @@ namespace YoungBob.Prototype.App
                 return;
             }
 
+            var selectedStage = SelectedStage;
+            if (selectedStage == null)
+            {
+                StatusChanged?.Invoke("No stage available.");
+                LogAdded?.Invoke("StartBattle aborted: no stage available.");
+                return;
+            }
+
             var payload = new BattleStartPayload
             {
                 randomSeed = 24681357,
-                encounterId = "slime_intro",
+                stageId = selectedStage.id,
                 starterDeckId = "co_op_starter"
             };
 
-            LogAdded?.Invoke("Broadcasting battle.start for room " + _room.roomId + ".");
+            LogAdded?.Invoke("Broadcasting battle.start for room " + _room.roomId + " with stage " + selectedStage.id + ".");
             Broadcast("battle.start", JsonUtility.ToJson(payload));
+        }
+
+        public void SelectPreviousStage()
+        {
+            if (_availableStages == null || _availableStages.Count == 0)
+            {
+                return;
+            }
+
+            _selectedStageIndex = (_selectedStageIndex - 1 + _availableStages.Count) % _availableStages.Count;
+            StageSelectionChanged?.Invoke();
+        }
+
+        public void SelectNextStage()
+        {
+            if (_availableStages == null || _availableStages.Count == 0)
+            {
+                return;
+            }
+
+            _selectedStageIndex = (_selectedStageIndex + 1) % _availableStages.Count;
+            StageSelectionChanged?.Invoke();
         }
 
         public void PlayCard(string cardInstanceId, BattleTargetFaction targetFaction, string targetUnitId, BattleArea targetArea)
@@ -314,6 +373,7 @@ namespace YoungBob.Prototype.App
             {
                 roomId = message.roomId,
                 randomSeed = payload.randomSeed,
+                stageId = payload.stageId,
                 encounterId = payload.encounterId,
                 starterDeckId = payload.starterDeckId
             };

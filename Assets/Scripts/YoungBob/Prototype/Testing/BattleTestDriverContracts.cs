@@ -21,7 +21,9 @@ namespace YoungBob.Prototype.Testing
     public sealed class DriverSetupOptions
     {
         public string roomId;
+        public string stageId;
         public string encounterId;
+        public string monsterId;
         public string starterDeckId;
         public int randomSeed;
         public BattleTestTopology topology;
@@ -53,6 +55,8 @@ namespace YoungBob.Prototype.Testing
         DriverActionResult StartBattle(string hostPlayerId);
         DriverActionResult PlayCard(string actorPlayerId, string cardInstanceId, BattleTargetFaction targetFaction, string targetUnitId, BattleArea targetArea);
         DriverActionResult EndTurn(string actorPlayerId);
+        DriverActionResult DebugDamageMonster(int amount);
+        DriverActionResult DebugSetPlayerHp(string playerId, int hp);
         DriverActionResult Snapshot(string tag);
     }
 }

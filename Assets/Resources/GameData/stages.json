@@ -1,0 +1,26 @@
+{
+  "stages": [
+    {
+      "id": "stage_slime_training",
+      "name": "Slime Training",
+      "encounterIds": [
+        "slime_intro"
+      ]
+    },
+    {
+      "id": "stage_boss_debug",
+      "name": "Boss Debug",
+      "encounterIds": [
+        "dragon_curse_boss"
+      ]
+    },
+    {
+      "id": "stage_trial_1",
+      "name": "Trial Stage I",
+      "encounterIds": [
+        "slime_intro",
+        "dragon_curse_boss"
+      ]
+    }
+  ]
+}

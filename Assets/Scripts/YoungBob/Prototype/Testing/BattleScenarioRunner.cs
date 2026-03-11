@@ -88,6 +88,12 @@ namespace YoungBob.Prototype.Testing
                 case "snapshot":
                     return _driver.Snapshot(string.IsNullOrWhiteSpace(step.snapshotTag) ? "snapshot" : step.snapshotTag);
 
+                case "debug_damage_monster":
+                    return ApplySnapshotTagOverride(_driver.DebugDamageMonster(step.debugValue), step.snapshotTag);
+
+                case "debug_set_player_hp":
+                    return ApplySnapshotTagOverride(_driver.DebugSetPlayerHp(step.targetUnitId, step.debugValue), step.snapshotTag);
+
                 default:
                     return new DriverActionResult { success = false, error = "Unknown step action: " + step.action };
             }

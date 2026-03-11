@@ -1,19 +1,16 @@
 using System;
 using System.Collections.Generic;
-using YoungBob.Prototype.Data;
 
 namespace YoungBob.Prototype.Battle
 {
     internal static class MonsterAI
     {
-        public static MonsterBattleState BuildMonster(EncounterDefinition encounter, int seed)
+        public static MonsterBattleState BuildMonster(MonsterDefinition definition, int seed)
         {
-            if (encounter == null || encounter.monster == null)
+            if (definition == null)
             {
                 return null;
             }
-
-            var definition = encounter.monster;
             var monster = new MonsterBattleState
             {
                 monsterId = definition.monsterId,

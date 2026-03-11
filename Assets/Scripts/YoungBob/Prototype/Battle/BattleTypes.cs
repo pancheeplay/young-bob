@@ -171,6 +171,10 @@ namespace YoungBob.Prototype.Battle
     public sealed class BattleState
     {
         public string roomId;
+        public string stageId;
+        public string stageName;
+        public string[] stageEncounterIds;
+        public int stageEncounterIndex;
         public string encounterId;
         public int randomSeed;
         public int turnIndex;
@@ -222,7 +226,9 @@ namespace YoungBob.Prototype.Battle
     {
         public string roomId;
         public int randomSeed;
+        public string stageId;
         public string encounterId;
+        public string monsterId;
         public string starterDeckId;
         public List<BattleParticipantDefinition> players = new List<BattleParticipantDefinition>();
     }

@@ -68,7 +68,9 @@ static ScenarioReport ExecuteScenario(GameDataRepository repo, ScenarioDefinitio
         var setup = new BattleSetupDefinition
         {
             roomId = scenario.setup.roomId,
+            stageId = scenario.setup.stageId,
             encounterId = scenario.setup.encounterId,
+            monsterId = scenario.setup.monsterId,
             starterDeckId = scenario.setup.starterDeckId,
             randomSeed = scenario.setup.randomSeed
         };
@@ -150,6 +152,38 @@ static StepResult ExecuteStep(BattleEngine engine, BattleState state, ScenarioSt
 
         case "snapshot":
             return new StepResult { success = true };
+
+        case "debug_damage_monster":
+            if (state.monster == null)
+            {
+                return new StepResult { success = false, error = "Monster not found." };
+            }
+
+            var damage = Math.Max(0, step.debugValue);
+            state.monster.coreHp = Math.Max(0, state.monster.coreHp - damage);
+            for (var i = 0; i < state.monster.parts.Count; i++)
+            {
+                var part = state.monster.parts[i];
+                part.hp = Math.Max(0, part.hp - damage);
+                if (part.hp == 0)
+                {
+                    part.isBroken = true;
+                }
+            }
+
+            return new StepResult { success = true };
+
+        case "debug_set_player_hp":
+            {
+                var player = state.GetPlayer(step.targetUnitId);
+                if (player == null)
+                {
+                    return new StepResult { success = false, error = "Player not found: " + step.targetUnitId };
+                }
+
+                player.hp = Math.Max(0, Math.Min(player.maxHp, step.debugValue));
+                return new StepResult { success = true };
+            }
 
         default:
             return new StepResult { success = false, error = "unknown action: " + step.action };
@@ -393,7 +427,9 @@ public sealed class ScenarioDefinition
 public sealed class ScenarioSetup
 {
     public string roomId = string.Empty;
+    public string stageId = string.Empty;
     public string encounterId = string.Empty;
+    public string monsterId = string.Empty;
     public string starterDeckId = string.Empty;
     public int randomSeed;
     public int topology;
@@ -411,6 +447,7 @@ public sealed class ScenarioStep
     public string action = string.Empty;
     public string actorPlayerId = string.Empty;
     public string cardInstanceId = string.Empty;
+    public int debugValue;
     public BattleTargetFaction targetFaction;
     public string targetUnitId = string.Empty;
     public BattleArea targetArea;

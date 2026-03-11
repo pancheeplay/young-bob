@@ -38,6 +38,7 @@ namespace YoungBob.Prototype.Scene
             _session.RoomChanged += HandleRoomChanged;
             _session.RoomListChanged += HandleRoomListChanged;
             _session.BattleStateChanged += HandleBattleStateChanged;
+            _session.StageSelectionChanged += HandleStageSelectionChanged;
             Application.logMessageReceived += HandleUnityLog;
 
             ShowLobby();
@@ -84,6 +85,11 @@ namespace YoungBob.Prototype.Scene
         private void HandleRoomListChanged(IReadOnlyList<RoomListItem> rooms)
         {
             _lobbyPage.RenderRooms(rooms);
+        }
+
+        private void HandleStageSelectionChanged()
+        {
+            _roomPage.Render(_session.CurrentRoom);
         }
 
         private void HandleBattleStateChanged(BattleState battleState)
