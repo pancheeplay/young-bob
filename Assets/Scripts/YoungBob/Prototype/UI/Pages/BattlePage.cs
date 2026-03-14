@@ -25,6 +25,9 @@ namespace YoungBob.Prototype.UI.Pages
         private readonly Transform _eastPlayerContainer;
         private readonly RectTransform _boardPanelRect;
         private readonly List<BattleAreaDropZoneView> _areaDropZones = new List<BattleAreaDropZoneView>();
+        private readonly RectTransform _cardDragGuideRoot;
+        private readonly List<RectTransform> _cardDragGuideSegments = new List<RectTransform>();
+        private readonly RectTransform _cardDragGuideArrow;
         private readonly RectTransform _handPanelRect;
         private readonly Transform _handContainer;
         private readonly RectTransform _monsterHpFillRect;
@@ -42,6 +45,7 @@ namespace YoungBob.Prototype.UI.Pages
         private BattleState _lastState;
         private CardDefinition _draggingCardDefinition;
         private string _draggingCardInstanceId;
+        private BattleHandCardDragView _draggingCardView;
 
         public BattlePage(Transform parent, PrototypeSessionController session)
             : base(parent, "BattlePage", session, new Color(0.12f, 0.14f, 0.17f), new Vector2(0f, 0f), new Vector2(1f, 1f))
@@ -212,6 +216,44 @@ namespace YoungBob.Prototype.UI.Pages
             handScroll.vertical = false;
             handScroll.horizontal = true;
             _handContainer = handContent.transform;
+
+            var dragCurveObject = new GameObject("CardDragCurve");
+            dragCurveObject.transform.SetParent(_canvas.transform, false);
+            var dragCurveRect = dragCurveObject.AddComponent<RectTransform>();
+            dragCurveRect.anchorMin = Vector2.zero;
+            dragCurveRect.anchorMax = Vector2.one;
+            dragCurveRect.offsetMin = Vector2.zero;
+            dragCurveRect.offsetMax = Vector2.zero;
+            _cardDragGuideRoot = dragCurveRect;
+            const int guideSegmentCount = 18;
+            for (var i = 0; i < guideSegmentCount; i++)
+            {
+                var segmentObj = new GameObject("Segment_" + i);
+                segmentObj.transform.SetParent(_cardDragGuideRoot, false);
+                var segmentRect = segmentObj.AddComponent<RectTransform>();
+                segmentRect.anchorMin = new Vector2(0.5f, 0.5f);
+                segmentRect.anchorMax = new Vector2(0.5f, 0.5f);
+                segmentRect.pivot = new Vector2(0.5f, 0.5f);
+                var segmentImage = segmentObj.AddComponent<RawImage>();
+                segmentImage.texture = Texture2D.whiteTexture;
+                segmentImage.color = new Color(1f, 0.95f, 0.4f, 0.95f);
+                segmentImage.raycastTarget = false;
+                segmentObj.SetActive(false);
+                _cardDragGuideSegments.Add(segmentRect);
+            }
+
+            var arrowObj = new GameObject("Arrow");
+            arrowObj.transform.SetParent(_cardDragGuideRoot, false);
+            _cardDragGuideArrow = arrowObj.AddComponent<RectTransform>();
+            _cardDragGuideArrow.anchorMin = new Vector2(0.5f, 0.5f);
+            _cardDragGuideArrow.anchorMax = new Vector2(0.5f, 0.5f);
+            _cardDragGuideArrow.pivot = new Vector2(0.5f, 0.5f);
+            var arrowImage = arrowObj.AddComponent<RawImage>();
+            arrowImage.texture = Texture2D.whiteTexture;
+            arrowImage.color = new Color(1f, 0.95f, 0.4f, 0.95f);
+            arrowImage.raycastTarget = false;
+            arrowObj.SetActive(false);
+            _cardDragGuideRoot.gameObject.SetActive(false);
 
             Hide();
         }
@@ -416,6 +458,12 @@ namespace YoungBob.Prototype.UI.Pages
 
             if (!string.IsNullOrEmpty(_draggingCardInstanceId) && !HasCardInHand(player, _draggingCardInstanceId))
             {
+                if (_draggingCardView != null)
+                {
+                    UnityEngine.Object.Destroy(_draggingCardView.gameObject);
+                    _draggingCardView = null;
+                }
+                HideDragGuide();
                 ClearHighlights();
                 _draggingCardDefinition = null;
                 _draggingCardInstanceId = null;
@@ -430,6 +478,13 @@ namespace YoungBob.Prototype.UI.Pages
                 if (cardDef == null) continue;
                 
                 var isPlayable = canAct && player.energy >= cardDef.energyCost;
+
+                // Skip the card that is currently being dragged (it's in the canvas already)
+                if (cardState.instanceId == _draggingCardInstanceId)
+                {
+                    continue;
+                }
+
                 var cardObject = UiFactory.CreateCard(_handContainer, "Card_" + cardState.instanceId, cardDef, isPlayable);
                 if (cardObject == null) continue;
 
@@ -439,9 +494,9 @@ namespace YoungBob.Prototype.UI.Pages
 
                 var dragView = cardObject.AddComponent<BattleHandCardDragView>();
                 dragView.Initialize(_canvas);
-                dragView.BeganDrag += (_, eventData) => BeginCardDrag(cardState.instanceId, cardDef);
-                dragView.Dragged += (v, eventData) => UpdateCardDrag(v);
-                dragView.EndedDrag += (v, eventData) => EndCardDrag(v);
+                dragView.BeganDrag += (v, eventData) => BeginCardDrag(v, cardState.instanceId, cardDef, eventData);
+                dragView.Dragged += (v, eventData) => UpdateCardDrag(v, eventData);
+                dragView.EndedDrag += (v, eventData) => EndCardDrag(v, eventData);
 
                 // Dim if not playable
                 if (!isPlayable)
@@ -457,7 +512,7 @@ namespace YoungBob.Prototype.UI.Pages
             }
         }
 
-        private void BeginCardDrag(string cardInstanceId, CardDefinition cardDef)
+        private void BeginCardDrag(BattleHandCardDragView view, string cardInstanceId, CardDefinition cardDef, PointerEventData eventData)
         {
             if (!Session.CanLocalPlayerAct())
             {
@@ -466,22 +521,30 @@ namespace YoungBob.Prototype.UI.Pages
 
             _draggingCardDefinition = cardDef;
             _draggingCardInstanceId = cardInstanceId;
+            _draggingCardView = view;
+            view.FollowMouse = false;
+            view.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -320f);
+
+            UpdateDragCurve(view, eventData.position);
             ApplyHighlight(cardDef, null, null, null);
         }
 
-        private void UpdateCardDrag(BattleHandCardDragView view)
+        private void UpdateCardDrag(BattleHandCardDragView view, PointerEventData eventData)
         {
             if (_draggingCardDefinition == null || _lastState == null)
             {
                 return;
             }
 
-            FindHoveredTargetsAtCardTop(view, out var hoveredPlayer, out var hoveredPart, out var hoveredArea);
+            UpdateDragCurve(view, eventData.position);
+            FindHoveredTargetsAtScreenPosition(view, eventData.position, out var hoveredPlayer, out var hoveredPart, out var hoveredArea);
             ApplyHighlight(_draggingCardDefinition, hoveredPlayer, hoveredPart, hoveredArea);
         }
 
-        private void EndCardDrag(BattleHandCardDragView view)
+        private void EndCardDrag(BattleHandCardDragView view, PointerEventData eventData)
         {
+            HideDragGuide();
+
             if (_draggingCardDefinition == null || string.IsNullOrEmpty(_draggingCardInstanceId))
             {
                 return;
@@ -497,7 +560,7 @@ namespace YoungBob.Prototype.UI.Pages
             }
 
             var targetType = ParseTargetType(_draggingCardDefinition.targetType);
-            FindHoveredTargetsAtCardTop(view, out var hoveredPlayer, out var hoveredPart, out var hoveredArea);
+            FindHoveredTargetsAtScreenPosition(view, eventData.position, out var hoveredPlayer, out var hoveredPart, out var hoveredArea);
 
             if (targetType == BattleTargetType.Area)
             {
@@ -535,12 +598,18 @@ namespace YoungBob.Prototype.UI.Pages
                         faction = targetType == BattleTargetType.AllAllies ? BattleTargetFaction.Allies : BattleTargetFaction.Enemies;
                     }
                     Session.PlayCard(_draggingCardInstanceId, faction, unitId, BattleArea.Middle);
+                    ClearHighlights();
+                    _draggingCardDefinition = null;
+                    _draggingCardInstanceId = null;
+                    _draggingCardView = null;
+                    return;
                 }
             }
 
             ClearHighlights();
             _draggingCardDefinition = null;
             _draggingCardInstanceId = null;
+            _draggingCardView = null;
         }
 
         private void ApplyHighlight(CardDefinition cardDef, BattleUnitSlotView hoveredPlayer, MonsterPartSlotView hoveredPart, BattleAreaDropZoneView hoveredArea)
@@ -678,7 +747,7 @@ namespace YoungBob.Prototype.UI.Pages
             }
         }
 
-        private void FindHoveredTargetsAtCardTop(BattleHandCardDragView view, out BattleUnitSlotView hoveredPlayer, out MonsterPartSlotView hoveredPart, out BattleAreaDropZoneView hoveredArea)
+        private void FindHoveredTargetsAtScreenPosition(BattleHandCardDragView view, Vector2 screenPosition, out BattleUnitSlotView hoveredPlayer, out MonsterPartSlotView hoveredPart, out BattleAreaDropZoneView hoveredArea)
         {
             hoveredPlayer = null;
             hoveredPart = null;
@@ -690,7 +759,7 @@ namespace YoungBob.Prototype.UI.Pages
                 return;
             }
 
-            var results = RaycastAtCardTop(view, raycaster);
+            var results = RaycastAtScreenPosition(screenPosition, raycaster);
             for (var i = 0; i < results.Count; i++)
             {
                 var hitObject = results[i].gameObject;
@@ -721,10 +790,127 @@ namespace YoungBob.Prototype.UI.Pages
             }
         }
 
-        private List<RaycastResult> RaycastAtCardTop(BattleHandCardDragView view, GraphicRaycaster raycaster)
+        private void UpdateDragCurve(BattleHandCardDragView view, Vector2 pointerScreenPosition)
+        {
+            if (_cardDragGuideRoot == null)
+            {
+                return;
+            }
+
+            _cardDragGuideRoot.gameObject.SetActive(true);
+            _cardDragGuideRoot.SetAsLastSibling();
+
+            var eventCamera = _canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : _canvas.worldCamera;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_cardDragGuideRoot, view.GetTopCenterScreenPoint(), eventCamera, out var startLocal)
+                || !RectTransformUtility.ScreenPointToLocalPointInRectangle(_cardDragGuideRoot, pointerScreenPosition, eventCamera, out var endLocal))
+            {
+                HideDragGuide();
+                return;
+            }
+
+            var delta = endLocal - startLocal;
+            if (delta.sqrMagnitude < 16f)
+            {
+                HideDragGuide();
+                return;
+            }
+
+            var control = startLocal + new Vector2(0f, Mathf.Max(90f, Mathf.Abs(delta.y) * 0.38f));
+            var segmentCount = _cardDragGuideSegments.Count;
+            var prev = EvaluateQuadratic(startLocal, control, endLocal, 0f);
+            for (var i = 0; i < segmentCount; i++)
+            {
+                var t = (i + 1) / (float)segmentCount;
+                var next = EvaluateQuadratic(startLocal, control, endLocal, t);
+                var seg = _cardDragGuideSegments[i];
+                ConfigureGuideSegment(seg, prev, next, 8f);
+                prev = next;
+            }
+
+            var tangent = EvaluateQuadraticTangent(startLocal, control, endLocal, 1f);
+            if (tangent.sqrMagnitude < 0.0001f)
+            {
+                tangent = delta.normalized;
+            }
+            else
+            {
+                tangent = tangent.normalized;
+            }
+
+            ConfigureGuideArrow(endLocal, tangent, 20f, 14f);
+        }
+
+        private void HideDragGuide()
+        {
+            if (_cardDragGuideRoot == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < _cardDragGuideSegments.Count; i++)
+            {
+                _cardDragGuideSegments[i].gameObject.SetActive(false);
+            }
+
+            if (_cardDragGuideArrow != null)
+            {
+                _cardDragGuideArrow.gameObject.SetActive(false);
+            }
+
+            _cardDragGuideRoot.gameObject.SetActive(false);
+        }
+
+        private static void ConfigureGuideSegment(RectTransform segment, Vector2 from, Vector2 to, float thickness)
+        {
+            if (segment == null)
+            {
+                return;
+            }
+
+            var dir = to - from;
+            var len = dir.magnitude;
+            if (len < 0.5f)
+            {
+                segment.gameObject.SetActive(false);
+                return;
+            }
+
+            segment.gameObject.SetActive(true);
+            segment.anchoredPosition = (from + to) * 0.5f;
+            segment.sizeDelta = new Vector2(len, thickness);
+            var angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+            segment.localRotation = Quaternion.Euler(0f, 0f, angle);
+        }
+
+        private void ConfigureGuideArrow(Vector2 tip, Vector2 tangent, float length, float width)
+        {
+            if (_cardDragGuideArrow == null)
+            {
+                return;
+            }
+
+            _cardDragGuideArrow.gameObject.SetActive(true);
+            _cardDragGuideArrow.anchoredPosition = tip - tangent * (length * 0.5f);
+            _cardDragGuideArrow.sizeDelta = new Vector2(length, width);
+            var angle = Mathf.Atan2(tangent.y, tangent.x) * Mathf.Rad2Deg;
+            _cardDragGuideArrow.localRotation = Quaternion.Euler(0f, 0f, angle);
+        }
+
+        private static Vector2 EvaluateQuadratic(Vector2 p0, Vector2 p1, Vector2 p2, float t)
+        {
+            var inv = 1f - t;
+            return inv * inv * p0 + 2f * inv * t * p1 + t * t * p2;
+        }
+
+        private static Vector2 EvaluateQuadraticTangent(Vector2 p0, Vector2 p1, Vector2 p2, float t)
+        {
+            return 2f * (1f - t) * (p1 - p0) + 2f * t * (p2 - p1);
+        }
+
+        private List<RaycastResult> RaycastAtScreenPosition(Vector2 screenPosition, GraphicRaycaster raycaster)
         {
             var pointerData = new PointerEventData(EventSystem.current);
-            pointerData.position = view.GetTopCenterScreenPoint();
+            pointerData.position = screenPosition;
             var results = new List<RaycastResult>();
             raycaster.Raycast(pointerData, results);
             return results;
@@ -1011,4 +1197,5 @@ namespace YoungBob.Prototype.UI.Pages
             return false;
         }
     }
+
 }

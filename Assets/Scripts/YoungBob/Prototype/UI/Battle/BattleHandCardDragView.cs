@@ -13,10 +13,13 @@ namespace YoungBob.Prototype.UI.Battle
         private Transform _originalParent;
         private int _originalSiblingIndex;
         private Vector2 _originalAnchoredPosition;
+        private Vector3 _originalLocalScale;
 
         public Action<BattleHandCardDragView, PointerEventData> BeganDrag;
         public Action<BattleHandCardDragView, PointerEventData> Dragged;
         public Action<BattleHandCardDragView, PointerEventData> EndedDrag;
+
+        public bool FollowMouse { get; set; } = true;
 
         public void Initialize(Canvas canvas)
         {
@@ -45,14 +48,27 @@ namespace YoungBob.Prototype.UI.Battle
             _originalParent = transform.parent;
             _originalSiblingIndex = transform.GetSiblingIndex();
             _originalAnchoredPosition = _rectTransform.anchoredPosition;
+            _originalLocalScale = _rectTransform.localScale;
+            
             transform.SetParent(_canvas.transform, true);
+            transform.SetAsLastSibling();
+            
+            // Reset anchors and pivot to center so anchoredPosition works as expected
+            _rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            _rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            _rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            
+            _rectTransform.localScale = _originalLocalScale * 1.15f;
             _canvasGroup.blocksRaycasts = false;
             BeganDrag?.Invoke(this, eventData);
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            _rectTransform.anchoredPosition += eventData.delta / _canvas.scaleFactor;
+            if (FollowMouse)
+            {
+                _rectTransform.anchoredPosition += eventData.delta / _canvas.scaleFactor;
+            }
             Dragged?.Invoke(this, eventData);
         }
 
@@ -60,15 +76,16 @@ namespace YoungBob.Prototype.UI.Battle
         {
             try
             {
-                // End callback must run while card is still at dragged position,
-                // so drop detection can use card top-center screen point.
                 EndedDrag?.Invoke(this, eventData);
             }
             finally
             {
                 transform.SetParent(_originalParent, false);
                 transform.SetSiblingIndex(_originalSiblingIndex);
+                // Return to original state (layout group will handle anchors/pivot if applicable, 
+                // but we should restore them if they were modified)
                 _rectTransform.anchoredPosition = _originalAnchoredPosition;
+                _rectTransform.localScale = _originalLocalScale;
                 _canvasGroup.blocksRaycasts = true;
             }
         }

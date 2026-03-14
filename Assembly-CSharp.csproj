@@ -87,6 +87,7 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleTestDriverContracts.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/PlayerCustomProperties.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleAreaSlotView.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleCardDragCurveGraphic.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTypes.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioCommandEntry.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/TapTapRuntimeMultiplayerService.cs" />
