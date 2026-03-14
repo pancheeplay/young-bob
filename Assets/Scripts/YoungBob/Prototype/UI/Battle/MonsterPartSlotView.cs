@@ -6,9 +6,14 @@ namespace YoungBob.Prototype.UI.Battle
 {
     internal sealed class MonsterPartSlotView : MonoBehaviour
     {
+        private const float MoveLerpSpeed = 12f;
+
         private Image _shapeImage;
         private Image _highlightBorder;
         private Text _label;
+        private RectTransform _rectTransform;
+        private Vector2 _targetAnchoredPosition;
+        private bool _hasTargetPosition;
 
         public string PartId { get; private set; }
         public string InstanceId { get; private set; }
@@ -19,9 +24,20 @@ namespace YoungBob.Prototype.UI.Battle
             _shapeImage = shapeImage;
             _label = label;
             _highlightBorder = highlightBorder;
+            _rectTransform = GetComponent<RectTransform>();
             if (_highlightBorder != null)
             {
                 _highlightBorder.gameObject.SetActive(false);
+            }
+        }
+
+        public void SetTargetPosition(Vector2 position, bool snapImmediately)
+        {
+            _targetAnchoredPosition = position;
+            _hasTargetPosition = true;
+            if (snapImmediately && _rectTransform != null)
+            {
+                _rectTransform.anchoredPosition = position;
             }
         }
 
@@ -51,6 +67,19 @@ namespace YoungBob.Prototype.UI.Battle
                     _highlightBorder.color = highlightMode == SlotHighlightMode.Selected ? new Color(1f, 0.85f, 0f, 1f) : new Color(1f, 1f, 1f, 0.4f);
                 }
             }
+        }
+
+        private void Update()
+        {
+            if (!_hasTargetPosition || _rectTransform == null)
+            {
+                return;
+            }
+
+            _rectTransform.anchoredPosition = Vector2.Lerp(
+                _rectTransform.anchoredPosition,
+                _targetAnchoredPosition,
+                1f - Mathf.Exp(-MoveLerpSpeed * Time.unscaledDeltaTime));
         }
     }
 }

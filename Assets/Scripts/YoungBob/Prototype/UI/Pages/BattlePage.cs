@@ -29,10 +29,12 @@ namespace YoungBob.Prototype.UI.Pages
         private readonly Transform _handContainer;
         private readonly RectTransform _monsterHpFillRect;
         private readonly Text _monsterHpText;
+        private readonly Text _monsterActionHintText;
         private readonly Button _endTurnButton;
         private readonly Button _exitBattleButton;
         private readonly List<BattleUnitSlotView> _playerSlots = new List<BattleUnitSlotView>();
         private readonly List<MonsterPartSlotView> _monsterPartSlots = new List<MonsterPartSlotView>();
+        private readonly Dictionary<string, MonsterPartSlotView> _monsterPartSlotsByInstanceId = new Dictionary<string, MonsterPartSlotView>();
         private readonly List<string> _battleLogs = new List<string>();
         private readonly Text _energyLabel;
         private bool _isUserScrolling;
@@ -109,6 +111,9 @@ namespace YoungBob.Prototype.UI.Pages
             monsterPanel.GetComponent<Image>().raycastTarget = false;
             _monsterPanelRect = monsterPanel.GetComponent<RectTransform>();
             _monsterContainer = monsterPanel.transform;
+            _monsterActionHintText = UiFactory.CreateText(monsterPanel.transform, "MonsterActionHint", 18, TextAnchor.MiddleCenter, new Vector2(0.08f, 0.08f), new Vector2(0.92f, 0.16f), Vector2.zero, Vector2.zero);
+            _monsterActionHintText.color = new Color(0.72f, 0.72f, 0.72f, 0.75f);
+            _monsterActionHintText.raycastTarget = false;
 
             // East Players (Right side, standing on horizon)
             var eastPanel = UiFactory.CreatePanel(boardPanel.transform, "EastPlayers", Color.clear, new Vector2(0.72f, 0.3f), new Vector2(1f, 0.8f), Vector2.zero, Vector2.zero);
@@ -294,15 +299,15 @@ namespace YoungBob.Prototype.UI.Pages
 
         private void RenderBoard(BattleState state)
         {
-            ClearContainer(_monsterContainer);
             ClearContainer(_westPlayerContainer);
             ClearContainer(_eastPlayerContainer);
             _playerSlots.Clear();
-            _monsterPartSlots.Clear();
             // Drop zones are static, no need to clear
 
             if (state == null)
             {
+                ClearMonsterPartViews();
+                _monsterActionHintText.text = string.Empty;
                 return;
             }
 
@@ -313,6 +318,12 @@ namespace YoungBob.Prototype.UI.Pages
                 _monsterHpFillRect.anchorMax = new Vector2(ratio, 1f);
                 string pose = !string.IsNullOrEmpty(state.monster.currentPoseId) ? $" [{state.monster.currentPoseId}]" : "";
                 _monsterHpText.text = $"MONSTER HP: {state.monster.coreHp} / {state.monster.coreMaxHp}{pose}";
+                _monsterActionHintText.text = BuildMonsterActionHint(state.monster);
+            }
+            else
+            {
+                ClearMonsterPartViews();
+                _monsterActionHintText.text = string.Empty;
             }
 
             // Render Players in their respective areas
@@ -329,11 +340,46 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 Canvas.ForceUpdateCanvases();
                 var panelRect = _monsterPanelRect.rect;
+                var activePartIds = new HashSet<string>();
+                _monsterPartSlots.Clear();
                 for (var i = 0; i < state.monster.parts.Count; i++)
                 {
                     var part = state.monster.parts[i];
-                    var slot = CreateMonsterPartSlot(_monsterContainer, part, panelRect, state.monster.facing, state.monster.stance, SlotHighlightMode.None);
+                    activePartIds.Add(part.instanceId);
+                    MonsterPartSlotView slot;
+                    if (!_monsterPartSlotsByInstanceId.TryGetValue(part.instanceId, out slot))
+                    {
+                        slot = CreateMonsterPartSlot(_monsterContainer, part, panelRect, state.monster.facing, state.monster.stance, SlotHighlightMode.None);
+                        _monsterPartSlotsByInstanceId[part.instanceId] = slot;
+                    }
+
+                    var targetPosition = ResolvePartPosition(part, panelRect, state.monster.facing, state.monster.stance);
+                    slot.SetTargetPosition(targetPosition, snapImmediately: false);
+                    slot.SetData(part, SlotHighlightMode.None);
                     _monsterPartSlots.Add(slot);
+                }
+
+                var removedIds = new List<string>();
+                foreach (var pair in _monsterPartSlotsByInstanceId)
+                {
+                    if (!activePartIds.Contains(pair.Key))
+                    {
+                        if (pair.Value != null)
+                        {
+                            UnityEngine.Object.Destroy(pair.Value.gameObject);
+                        }
+                        removedIds.Add(pair.Key);
+                    }
+                }
+
+                for (var i = 0; i < removedIds.Count; i++)
+                {
+                    _monsterPartSlotsByInstanceId.Remove(removedIds[i]);
+                }
+
+                for (var i = 0; i < _monsterPartSlots.Count; i++)
+                {
+                    _monsterPartSlots[i].transform.SetSiblingIndex(i);
                 }
             }
 
@@ -805,7 +851,6 @@ namespace YoungBob.Prototype.UI.Pages
             rect.sizeDelta = size;
 
             var position = ResolvePartPosition(part, panelRect, facing, stance);
-            rect.anchoredPosition = position;
 
             var image = slotObject.AddComponent<Image>();
             image.sprite = GetPartSprite(part.shape);
@@ -823,8 +868,23 @@ namespace YoungBob.Prototype.UI.Pages
 
             var slotView = slotObject.AddComponent<MonsterPartSlotView>();
             slotView.Initialize(image, label, highlightImage);
+            slotView.SetTargetPosition(position, snapImmediately: true);
             slotView.SetData(part, highlightMode);
             return slotView;
+        }
+
+        private void ClearMonsterPartViews()
+        {
+            foreach (var pair in _monsterPartSlotsByInstanceId)
+            {
+                if (pair.Value != null)
+                {
+                    UnityEngine.Object.Destroy(pair.Value.gameObject);
+                }
+            }
+
+            _monsterPartSlotsByInstanceId.Clear();
+            _monsterPartSlots.Clear();
         }
 
         private static Vector2 ResolvePartSize(MonsterPartState part)
@@ -846,20 +906,37 @@ namespace YoungBob.Prototype.UI.Pages
         private static Vector2 ResolvePartPosition(MonsterPartState part, Rect panelRect, BattleFacing facing, BattleStance stance)
         {
             const float scale = 0.45f;
+            const float verticalLiftRatio = 0.12f;
             var x = part.offsetX * panelRect.width * scale;
-            var y = part.offsetY * panelRect.height * scale;
+            var y = part.offsetY * panelRect.height * scale + panelRect.height * verticalLiftRatio;
 
             if (facing == BattleFacing.West)
             {
                 x = -x;
             }
 
-            if (stance == BattleStance.Prone)
-            {
-                y = Mathf.Min(y, 0f);
-            }
+            // Keep monster body above the horizon/info area.
+            var minAboveHorizon = stance == BattleStance.Prone ? panelRect.height * 0.01f : panelRect.height * 0.02f;
+            y = Mathf.Max(y, minAboveHorizon);
 
             return new Vector2(x, y);
+        }
+
+        private static string BuildMonsterActionHint(MonsterBattleState monster)
+        {
+            if (monster == null)
+            {
+                return string.Empty;
+            }
+
+            var pose = string.IsNullOrEmpty(monster.currentPoseId) ? "idle" : monster.currentPoseId;
+            if (monster.hasActiveSkill && monster.activeSkill != null)
+            {
+                var windup = monster.activeSkill.remainingWindup > 0 ? $" (windup {monster.activeSkill.remainingWindup})" : "";
+                return $"Action: {monster.activeSkill.displayName}{windup}  |  Pose: {pose}";
+            }
+
+            return $"Action: waiting  |  Pose: {pose}";
         }
 
         private static Sprite GetPartSprite(string shape)
