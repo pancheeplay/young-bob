@@ -1,0 +1,72 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_attack_broken_part",
+  "name": "V2 can attack broken part",
+  "setup": {
+    "roomId": "v2_attack_broken_part_room",
+    "stageId": "stage_boss_debug",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 1007,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_damage_monster",
+      "debugValue": 26,
+      "snapshotTag": "after_break"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p1",
+      "cardId": "assassin_quick_jab"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p1",
+      "cardInstanceId": "card:assassin_quick_jab",
+      "targetFaction": 2,
+      "targetUnitId": "$part:body",
+      "targetArea": 0,
+      "snapshotTag": "after_hit_broken_part"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "part_field_equals",
+      "actualPath": "after_break",
+      "partId": "body",
+      "field": "hp",
+      "expectedInt": 0,
+      "message": "body break gauge reaches zero"
+    },
+    {
+      "type": "part_field_equals",
+      "actualPath": "after_break",
+      "partId": "body",
+      "field": "isBroken",
+      "expectedInt": 1,
+      "message": "body is broken"
+    },
+    {
+      "type": "monster_core_hp_equals",
+      "actualPath": "after_break",
+      "expectedInt": 34,
+      "message": "core hp after initial break setup"
+    },
+    {
+      "type": "monster_core_hp_equals",
+      "actualPath": "after_hit_broken_part",
+      "expectedInt": 33,
+      "message": "attacking broken part still damages core"
+    }
+  ]
+}

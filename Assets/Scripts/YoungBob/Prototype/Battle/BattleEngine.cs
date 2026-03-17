@@ -58,7 +58,8 @@ namespace YoungBob.Prototype.Battle
                     player.drawPile.Add(new BattleCardState
                     {
                         instanceId = participant.playerId + "_" + deck.cards[i] + "_" + i,
-                        cardId = deck.cards[i]
+                        cardId = deck.cards[i],
+                        costDelta = 0
                     });
                 }
 
@@ -134,21 +135,46 @@ namespace YoungBob.Prototype.Battle
             }
 
             var definition = _dataRepository.GetCard(card.cardId);
-            if (actingPlayer.energy < definition.energyCost)
+            var effectiveCost = BattleMechanics.GetEffectiveEnergyCost(card, definition);
+            if (actingPlayer.energy < effectiveCost)
             {
                 result.error = "Not enough energy.";
                 return result;
             }
 
             var targetType = BattleTargetResolver.ParseTargetType(definition.targetType);
-            CardEffectResolver.ResolveCardEffect(state, actingPlayer, command, definition, targetType, result);
-            if (!string.IsNullOrEmpty(result.error))
+            if (targetType == BattleTargetType.None)
             {
+                result.error = "Invalid card target type.";
                 return result;
             }
 
-            actingPlayer.energy -= definition.energyCost;
-            actingPlayer.hand.Remove(card);
+            var handIndex = actingPlayer.hand.IndexOf(card);
+            if (handIndex < 0)
+            {
+                result.error = "Card not found in hand.";
+                return result;
+            }
+
+            // STS-like timing: played card leaves hand before effects resolve,
+            // so draw effects can use the freed hand slot.
+            actingPlayer.hand.RemoveAt(handIndex);
+            CardEffectResolver.ResolveCardEffects(state, actingPlayer, command, card, definition, targetType, result);
+            if (!string.IsNullOrEmpty(result.error))
+            {
+                if (handIndex <= actingPlayer.hand.Count)
+                {
+                    actingPlayer.hand.Insert(handIndex, card);
+                }
+                else
+                {
+                    actingPlayer.hand.Add(card);
+                }
+                return result;
+            }
+
+            actingPlayer.energy -= effectiveCost;
+            card.costDelta = 0;
             actingPlayer.discardPile.Add(card);
             actingPlayer.cardsPlayedThisTurn += 1;
             TryResolveEncounterEnd(state, result);
@@ -195,6 +221,13 @@ namespace YoungBob.Prototype.Battle
             }
 
             EnsureMonsterDefinition(state);
+            BattleStatusSystem.TickPoisonOnMonsterAtTurnStart(state, result);
+            if (state.monster != null && state.monster.coreHp <= 0)
+            {
+                TryResolveEncounterEnd(state, result);
+                return;
+            }
+
             MonsterAI.ResolveMonsterSkill(state, result);
 
             if (state.monster != null && state.monster.coreHp <= 0)
@@ -225,16 +258,48 @@ namespace YoungBob.Prototype.Battle
                 {
                     state.players[i].energy = BaseEnergyPerTurn;
                     state.players[i].cardsPlayedThisTurn = 0;
+                    ResetTemporaryCardModifiers(state.players[i]);
                     BattleMechanics.DrawCards(state, state.players[i], CardsDrawnPerTurn);
                     BattleMechanics.AddMoveCard(state, state.players[i]);
                 }
             }
+
+            BattleStatusSystem.TickPoisonOnPlayersAtTurnStart(state, result);
 
             state.currentPrompt = BuildTeamTurnPrompt(state);
             result.events.Add(new BattleEvent
             {
                 message = "<color=#E6C36A>Turn " + state.turnIndex + " begins.</color>"
             });
+        }
+
+        private static void ResetTemporaryCardModifiers(PlayerBattleState player)
+        {
+            if (player == null)
+            {
+                return;
+            }
+
+            ResetCostDelta(player.hand);
+            ResetCostDelta(player.drawPile);
+            ResetCostDelta(player.discardPile);
+            ResetCostDelta(player.exhaustPile);
+        }
+
+        private static void ResetCostDelta(System.Collections.Generic.List<BattleCardState> cards)
+        {
+            if (cards == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < cards.Count; i++)
+            {
+                if (cards[i] != null)
+                {
+                    cards[i].costDelta = 0;
+                }
+            }
         }
 
         private void TryResolveEncounterEnd(BattleState state, BattleCommandResult result)

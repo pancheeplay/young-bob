@@ -81,6 +81,7 @@
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/PingData.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioRunner.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/InProcessBattleTestDriver.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleStatusSystem.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/LoopbackMultiplayerService.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/TapBattleEventHandler.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/StateSyncManager.cs" />

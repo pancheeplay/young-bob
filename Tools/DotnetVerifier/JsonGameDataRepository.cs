@@ -2,18 +2,30 @@ using System.Text.Json;
 
 namespace YoungBob.Prototype.Data;
 
+public sealed class CardEffectDefinition
+{
+    public string op = string.Empty;
+    public string target = string.Empty;
+    public string statusId = string.Empty;
+    public string scaleBy = string.Empty;
+    public string pileFrom = string.Empty;
+    public int amount;
+    public int amount2;
+    public float ratio = 1f;
+}
+
 public sealed class CardDefinition
 {
     public string id = string.Empty;
     public string name = string.Empty;
     public string classTag = string.Empty;
-    public string effectType = string.Empty;
     public string targetType = string.Empty;
     public string rangeHeights = string.Empty;
     public string rangeDistance = string.Empty;
     public string rangeZones = string.Empty;
     public int energyCost;
-    public int value;
+    public string[] tags = Array.Empty<string>();
+    public CardEffectDefinition[] effects = Array.Empty<CardEffectDefinition>();
 }
 
 public sealed class EncounterDefinition

@@ -14,10 +14,10 @@
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleMechanics.cs" Link="Battle/BattleMechanics.cs" />
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleTargetResolver.cs" Link="Battle/BattleTargetResolver.cs" />
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleTargetingRules.cs" Link="Battle/BattleTargetingRules.cs" />
+    <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleStatusSystem.cs" Link="Battle/BattleStatusSystem.cs" />
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/CardEffectResolver.cs" Link="Battle/CardEffectResolver.cs" />
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/MonsterAI.cs" Link="Battle/MonsterAI.cs" />
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleTextHelper.cs" Link="Battle/BattleTextHelper.cs" />
-    <Compile Include="JsonGameDataRepository.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="*.cs" />
   </ItemGroup>
 </Project>

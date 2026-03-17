@@ -50,12 +50,17 @@ namespace YoungBob.Prototype.Battle
             }
 
             var target = state.GetPart(command.targetUnitId);
-            return target != null && target.hp > 0 ? target : null;
+            return target;
         }
 
         public static BattleTargetType ParseTargetType(string raw)
         {
-            return (BattleTargetType)Enum.Parse(typeof(BattleTargetType), raw, true);
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return BattleTargetType.None;
+            }
+
+            return Enum.TryParse(raw, true, out BattleTargetType parsed) ? parsed : BattleTargetType.None;
         }
 
         public static BattleZone ParseZone(string raw)

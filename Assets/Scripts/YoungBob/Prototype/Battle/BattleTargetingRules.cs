@@ -65,7 +65,7 @@ namespace YoungBob.Prototype.Battle
 
         public static bool CanTargetPart(BattleState state, PlayerBattleState actingPlayer, CardDefinition card, BattleTargetType targetType, MonsterPartState part)
         {
-            if (state == null || state.monster == null || actingPlayer == null || card == null || part == null || part.hp <= 0)
+            if (state == null || state.monster == null || actingPlayer == null || card == null || part == null)
             {
                 return false;
             }

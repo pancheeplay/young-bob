@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using YoungBob.Prototype.Battle;
+using System.Text;
 
 namespace YoungBob.Prototype.UI.Battle
 {
@@ -41,7 +42,7 @@ namespace YoungBob.Prototype.UI.Battle
             }
         }
 
-        public void SetData(MonsterPartState part, SlotHighlightMode highlightMode)
+        public void SetData(MonsterPartState part, bool detailedMode, SlotHighlightMode highlightMode)
         {
             PartId = part.partId;
             InstanceId = part.instanceId;
@@ -49,7 +50,9 @@ namespace YoungBob.Prototype.UI.Battle
 
             if (_label != null)
             {
-                _label.text = part.displayName + "\n" + "<color=#fbbf24>Break: " + part.hp + "/" + part.maxHp + "</color>";
+                _label.text = part.displayName
+                    + "\n" + "<color=#fbbf24>部位耐久: " + part.hp + "/" + part.maxHp + "</color>"
+                    + BuildStatusesSuffix(part.statuses, detailedMode);
                 _label.color = IsAlive ? Color.white : new Color(0.5f, 0.5f, 0.5f);
             }
 
@@ -60,7 +63,7 @@ namespace YoungBob.Prototype.UI.Battle
 
             if (_highlightBorder != null)
             {
-                bool showHighlight = IsAlive && highlightMode != SlotHighlightMode.None;
+                bool showHighlight = highlightMode != SlotHighlightMode.None;
                 _highlightBorder.gameObject.SetActive(showHighlight);
                 if (showHighlight)
                 {
@@ -80,6 +83,53 @@ namespace YoungBob.Prototype.UI.Battle
                 _rectTransform.anchoredPosition,
                 _targetAnchoredPosition,
                 1f - Mathf.Exp(-MoveLerpSpeed * Time.unscaledDeltaTime));
+        }
+
+        private static string BuildStatusesSuffix(System.Collections.Generic.List<BattleStatusState> statuses, bool detailedMode)
+        {
+            if (statuses == null || statuses.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                var status = statuses[i];
+                if (status == null || status.stacks <= 0 || string.IsNullOrWhiteSpace(status.id))
+                {
+                    continue;
+                }
+
+                if (sb.Length == 0)
+                {
+                    sb.Append("\n<color=#cbd5e1>");
+                }
+                else
+                {
+                    sb.Append(' ');
+                }
+
+                if (string.Equals(status.id, "Poison", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.Append(detailedMode ? "中毒" : "☠").Append(status.stacks);
+                }
+                else if (string.Equals(status.id, "Strength", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.Append(detailedMode ? "力量" : "💪").Append(status.stacks);
+                }
+                else
+                {
+                    sb.Append(status.id).Append(':').Append(status.stacks);
+                }
+            }
+
+            if (sb.Length > 0)
+            {
+                sb.Append("</color>");
+            }
+
+            return sb.ToString();
         }
     }
 }

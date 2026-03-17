@@ -1,0 +1,47 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_monster_curse_skill",
+  "name": "V2 monster curse skill still works",
+  "setup": {
+    "roomId": "v2_curse_skill_room",
+    "stageId": "stage_boss_debug",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 1004,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p1",
+      "snapshotTag": "after_monster_turn"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "player_hand_has_card",
+      "actualPath": "after_monster_turn",
+      "playerId": "p1",
+      "cardId": "curse_betrayal",
+      "message": "monster skill adds curse card"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_monster_turn",
+      "playerId": "p1",
+      "field": "vulnerableStacks",
+      "expectedInt": 1,
+      "message": "monster skill applies vulnerable"
+    },
+    {
+      "type": "event_log_contains",
+      "actualPath": "after_monster_turn",
+      "expected": "received >> gained Vulnerable x1",
+      "message": "monster skill event order: add curse card then apply vulnerable"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using YoungBob.Prototype.Battle;
+using System.Text;
+using System.Collections.Generic;
 
 namespace YoungBob.Prototype.UI.Battle
 {
@@ -42,7 +44,7 @@ namespace YoungBob.Prototype.UI.Battle
             if (_highlightBorder != null) _highlightBorder.gameObject.SetActive(false);
         }
 
-        public void SetData(BattleTargetFaction faction, string unitId, string displayName, int hp, int maxHp, int armor, int charge, int bonus, SlotHighlightMode highlightMode)
+        public void SetData(BattleTargetFaction faction, string unitId, string displayName, int hp, int maxHp, int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, bool detailedMode, SlotHighlightMode highlightMode)
         {
             Faction = faction;
             UnitId = unitId;
@@ -64,15 +66,13 @@ namespace YoungBob.Prototype.UI.Battle
 
             if (_armorLabel != null)
             {
-                _armorLabel.text = armor > 0 ? "🛡️ " + armor : "";
+                _armorLabel.text = armor > 0 ? (detailedMode ? "护甲 " + armor : "🛡️ " + armor) : "";
                 _armorLabel.gameObject.SetActive(armor > 0);
             }
 
             if (_statusLabel != null)
             {
-                string status = "";
-                if (charge > 0) status += $"⚡{charge} ";
-                if (bonus > 0) status += $"💥+{bonus}";
+                var status = BuildStatusText(charge, bonus, vulnerableStacks, statuses, detailedMode);
                 _statusLabel.text = status;
                 _statusLabel.gameObject.SetActive(!string.IsNullOrEmpty(status) && IsAlive);
             }
@@ -97,7 +97,7 @@ namespace YoungBob.Prototype.UI.Battle
                 _background.color = new Color(0.12f, 0.12f, 0.12f, 0.9f);
                 _nameLabel.color = new Color(0.4f, 0.4f, 0.4f);
                 _hpLabel.color = new Color(0.4f, 0.4f, 0.4f);
-                _hpLabel.text = "DEAD";
+                _hpLabel.text = "已阵亡";
                 
                 if (_armorLabel != null) _armorLabel.gameObject.SetActive(false);
                 if (_statusLabel != null) _statusLabel.gameObject.SetActive(false);
@@ -117,6 +117,41 @@ namespace YoungBob.Prototype.UI.Battle
                     _highlightBorder.color = highlightMode == SlotHighlightMode.Selected ? new Color(1f, 0.85f, 0f, 1f) : new Color(1f, 1f, 1f, 0.4f);
                 }
             }
+        }
+
+        private static string BuildStatusText(int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, bool detailedMode)
+        {
+            var sb = new StringBuilder();
+            if (charge > 0) sb.Append(detailedMode ? "蓄力" : "⚡").Append(charge).Append(' ');
+            if (bonus > 0) sb.Append(detailedMode ? "增伤+" : "💥+").Append(bonus).Append(' ');
+            if (vulnerableStacks > 0) sb.Append(detailedMode ? "易伤" : "🎯").Append(vulnerableStacks).Append(' ');
+
+            if (statuses != null)
+            {
+                for (var i = 0; i < statuses.Count; i++)
+                {
+                    var status = statuses[i];
+                    if (status == null || status.stacks <= 0 || string.IsNullOrWhiteSpace(status.id))
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(status.id, "Poison", System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        sb.Append(detailedMode ? "中毒" : "☠").Append(status.stacks).Append(' ');
+                    }
+                    else if (string.Equals(status.id, "Strength", System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        sb.Append(detailedMode ? "力量" : "💪").Append(status.stacks).Append(' ');
+                    }
+                    else
+                    {
+                        sb.Append(status.id).Append(':').Append(status.stacks).Append(' ');
+                    }
+                }
+            }
+
+            return sb.ToString().TrimEnd();
         }
     }
 }

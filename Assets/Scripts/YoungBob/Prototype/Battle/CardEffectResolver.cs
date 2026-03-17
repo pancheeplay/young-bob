@@ -1,479 +1,786 @@
 using System;
+using System.Collections.Generic;
 using YoungBob.Prototype.Data;
 
 namespace YoungBob.Prototype.Battle
 {
     internal static class CardEffectResolver
     {
-        public static void ResolveCardEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
-        {
-            switch (definition.effectType)
+        private const int MaxEffectOperationsPerCard = 128;
+
+        private static readonly Dictionary<string, ICardEffectHandler> Handlers =
+            new Dictionary<string, ICardEffectHandler>(StringComparer.OrdinalIgnoreCase)
             {
-                case "Damage":
-                    ResolveDamageEffect(state, actingPlayer, command, definition, targetType, result);
-                    break;
-
-                case "Heal":
-                    ResolveHealEffect(state, actingPlayer, command, definition, targetType, result);
-                    break;
-
-                case "GainArmor":
-                    ResolveGainArmorEffect(state, actingPlayer, command, definition, targetType, result);
-                    break;
-
-                case "DrawCards":
-                    ResolveDrawCardsEffect(state, actingPlayer, command, definition, targetType, result);
-                    break;
-
-                case "DamageAndDrawSelf":
-                    ResolveDamageAndDrawSelfEffect(state, actingPlayer, command, definition, targetType, result);
-                    break;
-
-                case "DamageAndTargetHeroDraw":
-                    ResolveDamageAndTargetHeroDrawEffect(state, actingPlayer, command, definition, targetType, result);
-                    break;
-
-                case "CurseLoseHp":
-                    ResolveCurseLoseHpEffect(state, actingPlayer, command, definition, targetType, result);
-                    break;
-
-                case "CurseApplyVulnerable":
-                    ResolveCurseApplyVulnerableEffect(state, actingPlayer, command, definition, targetType, result);
-                    break;
-
-                case "CopyAndPlunder":
-                    ResolveCopyAndPlunderEffect(state, actingPlayer, command, targetType, result);
-                    break;
-
-                case "MoveArea":
-                    ResolveMoveAreaEffect(state, actingPlayer, command, definition, targetType, result);
-                    break;
-
-                case "ChargeUp":
-                    ResolveChargeUpEffect(actingPlayer, definition, targetType, result);
-                    break;
-
-                case "ComboFinisherDamage":
-                    ResolveDamageEffect(state, actingPlayer, command, definition, targetType, result, includeComboBonus: true);
-                    break;
-
-                default:
-                    result.error = "Unknown card effect: " + definition.effectType;
-                    break;
-            }
-        }
-
-        private static void ResolveDamageEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
-        {
-            ResolveDamageEffect(state, actingPlayer, command, definition, targetType, result, includeComboBonus: false);
-        }
-
-        private static void ResolveDamageEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result, bool includeComboBonus)
-        {
-            var comboBonus = includeComboBonus ? Math.Max(0, actingPlayer.cardsPlayedThisTurn) : 0;
-            var chargeBonus = Math.Max(0, actingPlayer.nextAttackBonus);
-            var finalDamage = Math.Max(0, definition.value + comboBonus + chargeBonus);
-
-            switch (targetType)
-            {
-                case BattleTargetType.MonsterPart:
-                case BattleTargetType.SingleUnit:
-                    var part = BattleTargetResolver.ResolvePartTarget(state, command);
-                    if (part == null)
-                    {
-                        var playerTarget = BattleTargetResolver.ResolvePlayerTarget(state, command, false);
-                        if (playerTarget != null
-                            && targetType == BattleTargetType.SingleUnit
-                            && BattleTargetingRules.CanTargetPlayer(state, actingPlayer, definition, targetType, playerTarget))
-                        {
-                            var damageToHero = BattleMechanics.ApplyDamage(playerTarget, finalDamage);
-                            ConsumeAttackCharge(actingPlayer);
-                            result.events.Add(new BattleEvent
-                            {
-                                message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(playerTarget.displayName) + " for " + BattleTextHelper.DamageText(damageToHero) + "."
-                            });
-                            AppendDamageBonusLog(actingPlayer, comboBonus, chargeBonus, result);
-                            return;
-                        }
-
-                        result.error = "Invalid target.";
-                        return;
-                    }
-
-                    if (!BattleTargetingRules.CanTargetPart(state, actingPlayer, definition, targetType, part))
-                    {
-                        result.error = "Target out of range.";
-                        return;
-                    }
-
-                    var damageApplied = BattleMechanics.ApplyDamageToPart(state, part, finalDamage, result);
-                    ConsumeAttackCharge(actingPlayer);
-                    result.events.Add(new BattleEvent
-                    {
-                        message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(part.displayName) + " for " + BattleTextHelper.DamageText(damageApplied) + "."
-                    });
-                    AppendDamageBonusLog(actingPlayer, comboBonus, chargeBonus, result);
-                    break;
-
-                case BattleTargetType.AllMonsterParts:
-                    var hitCount = 0;
-                    for (var i = 0; i < state.monster.parts.Count; i++)
-                    {
-                        var target = state.monster.parts[i];
-                        if (target.hp <= 0)
-                        {
-                            continue;
-                        }
-
-                        if (!BattleTargetingRules.CanTargetPart(state, actingPlayer, definition, targetType, target))
-                        {
-                            continue;
-                        }
-
-                        BattleMechanics.ApplyDamageToPart(state, target, finalDamage, result);
-                        hitCount += 1;
-                    }
-
-                    if (hitCount == 0)
-                    {
-                        result.error = "No valid parts to target.";
-                        return;
-                    }
-
-                    ConsumeAttackCharge(actingPlayer);
-                    result.events.Add(new BattleEvent
-                    {
-                        message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " and hit all parts for " + BattleTextHelper.DamageText(finalDamage) + "."
-                    });
-                    AppendDamageBonusLog(actingPlayer, comboBonus, chargeBonus, result);
-                    break;
-
-                default:
-                    result.error = "Damage target type mismatch.";
-                    break;
-            }
-        }
-
-        private static void ResolveHealEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
-        {
-            switch (targetType)
-            {
-                case BattleTargetType.SingleAlly:
-                    var ally = BattleTargetResolver.ResolvePlayerTarget(state, command, false);
-                    if (ally == null)
-                    {
-                        result.error = "Invalid ally target.";
-                        return;
-                    }
-
-                    var recovered = BattleMechanics.Heal(ally, definition.value);
-                    result.events.Add(new BattleEvent
-                    {
-                        message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(ally.displayName) + " for " + BattleTextHelper.HealText(recovered) + "."
-                    });
-                    break;
-
-                case BattleTargetType.AllAllies:
-                    var healedTargets = 0;
-                    for (var i = 0; i < state.players.Count; i++)
-                    {
-                        var teamMate = state.players[i];
-                        if (teamMate.hp <= 0)
-                        {
-                            continue;
-                        }
-
-                        BattleMechanics.Heal(teamMate, definition.value);
-                        healedTargets += 1;
-                    }
-
-                    if (healedTargets == 0)
-                    {
-                        result.error = "No living allies to heal.";
-                        return;
-                    }
-
-                    result.events.Add(new BattleEvent
-                    {
-                        message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " and healed the whole team for " + BattleTextHelper.HealText(definition.value) + "."
-                    });
-                    break;
-
-                default:
-                    result.error = "Heal target type mismatch.";
-                    break;
-            }
-        }
-
-        private static void ResolveGainArmorEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
-        {
-            var target = BattleTargetResolver.ResolveHeroTargetForUtility(state, actingPlayer, command, targetType, allowSelf: true, allowOtherAlly: true);
-            if (target == null)
-            {
-                result.error = "Invalid armor target.";
-                return;
-            }
-
-            target.armor += definition.value;
-            result.events.Add(new BattleEvent
-            {
-                message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(target.displayName) + ", granting " + BattleTextHelper.ArmorText(definition.value) + "."
-            });
-        }
-
-        private static void ResolveDrawCardsEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
-        {
-            var target = BattleTargetResolver.ResolveHeroTargetForUtility(state, actingPlayer, command, targetType, allowSelf: true, allowOtherAlly: false);
-            if (target == null)
-            {
-                result.error = "Invalid draw target.";
-                return;
-            }
-
-            var drawn = BattleMechanics.DrawCards(state, target, definition.value);
-            result.events.Add(new BattleEvent
-            {
-                message = BattleTextHelper.Unit(target.displayName) + " drew " + BattleTextHelper.DrawText(drawn) + " from " + BattleTextHelper.Card(definition.name) + "."
-            });
-        }
-
-        private static void ResolveDamageAndDrawSelfEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
-        {
-            ResolveDamageEffect(state, actingPlayer, command, definition, targetType, result);
-            if (!string.IsNullOrEmpty(result.error))
-            {
-                return;
-            }
-
-            var drawn = BattleMechanics.DrawCards(state, actingPlayer, 1);
-            result.events.Add(new BattleEvent
-            {
-                message = BattleTextHelper.Actor(actingPlayer.displayName) + " drew " + BattleTextHelper.DrawText(drawn) + "."
-            });
-        }
-
-        private static void ResolveDamageAndTargetHeroDrawEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
-        {
-            if (targetType != BattleTargetType.SingleUnit)
-            {
-                result.error = "DamageAndTargetHeroDraw requires SingleUnit target.";
-                return;
-            }
-
-            var playerTarget = BattleTargetResolver.ResolvePlayerTarget(state, command, false);
-            if (playerTarget != null && BattleTargetingRules.CanTargetPlayer(state, actingPlayer, definition, targetType, playerTarget))
-            {
-                var chargeBonus = Math.Max(0, actingPlayer.nextAttackBonus);
-                var damage = BattleMechanics.ApplyDamage(playerTarget, Math.Max(0, definition.value + chargeBonus));
-                ConsumeAttackCharge(actingPlayer);
-                result.events.Add(new BattleEvent
-                {
-                    message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(playerTarget.displayName) + " for " + BattleTextHelper.DamageText(damage) + "."
-                });
-                AppendDamageBonusLog(actingPlayer, 0, chargeBonus, result);
-
-                var drawn = BattleMechanics.DrawCards(state, playerTarget, 1);
-                result.events.Add(new BattleEvent
-                {
-                    message = BattleTextHelper.Unit(playerTarget.displayName) + " drew " + BattleTextHelper.DrawText(drawn) + " because they are a hero."
-                });
-                return;
-            }
-
-            var part = BattleTargetResolver.ResolvePartTarget(state, command);
-            if (part == null)
-            {
-                result.error = "Invalid unit target.";
-                return;
-            }
-
-            if (!BattleTargetingRules.CanTargetPart(state, actingPlayer, definition, targetType, part))
-            {
-                result.error = "Target out of range.";
-                return;
-            }
-
-            var partChargeBonus = Math.Max(0, actingPlayer.nextAttackBonus);
-            var enemyDamage = BattleMechanics.ApplyDamageToPart(state, part, Math.Max(0, definition.value + partChargeBonus), result);
-            ConsumeAttackCharge(actingPlayer);
-            result.events.Add(new BattleEvent
-            {
-                message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(part.displayName) + " for " + BattleTextHelper.DamageText(enemyDamage) + "."
-            });
-            AppendDamageBonusLog(actingPlayer, 0, partChargeBonus, result);
-        }
-
-        private static void ResolveCurseLoseHpEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
-        {
-            var target = BattleTargetResolver.ResolveHeroTargetForUtility(state, actingPlayer, command, targetType, allowSelf: true, allowOtherAlly: true);
-            if (target == null)
-            {
-                result.error = "Invalid curse target.";
-                return;
-            }
-
-            if (target.hp <= 0)
-            {
-                result.error = "Target already has no life.";
-                return;
-            }
-
-            target.hp = Math.Max(0, target.hp - definition.value);
-            result.events.Add(new BattleEvent
-            {
-                message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(target.displayName) + ", reducing life by " + BattleTextHelper.DamageText(definition.value) + "."
-            });
-        }
-
-        private static void ResolveCurseApplyVulnerableEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
-        {
-            if (targetType != BattleTargetType.OtherAlly)
-            {
-                result.error = "CurseApplyVulnerable requires OtherAlly target.";
-                return;
-            }
-
-            var target = BattleTargetResolver.ResolveHeroTargetForUtility(state, actingPlayer, command, targetType, allowSelf: false, allowOtherAlly: true);
-            if (target == null)
-            {
-                result.error = "Invalid curse target.";
-                return;
-            }
-
-            var stacks = Math.Max(1, definition.value);
-            target.vulnerableStacks += stacks;
-            result.events.Add(new BattleEvent
-            {
-                message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + " on " + BattleTextHelper.Unit(target.displayName) + ", applying Vulnerable x" + stacks + "."
-            });
-        }
-
-        private static void ResolveCopyAndPlunderEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, BattleTargetType targetType, BattleCommandResult result)
-        {
-            if (targetType != BattleTargetType.OtherAlly)
-            {
-                result.error = "CopyAndPlunder requires OtherAlly target.";
-                return;
-            }
-
-            var target = BattleTargetResolver.ResolvePlayerTarget(state, command, true);
-            if (target == null)
-            {
-                result.error = "Invalid ally target.";
-                return;
-            }
-
-            if (target.hand.Count == 0)
-            {
-                result.error = target.displayName + " has no cards to plunder.";
-                return;
-            }
-
-            var random = new Random(state.randomSeed ^ state.turnIndex ^ actingPlayer.playerId.GetHashCode() ^ target.playerId.GetHashCode() ^ target.hand.Count);
-            var stolenIndex = random.Next(target.hand.Count);
-            var stolenCard = target.hand[stolenIndex];
-
-            // Effect: Target's card goes to their discard pile
-            target.hand.RemoveAt(stolenIndex);
-            target.discardPile.Add(stolenCard);
-
-            // Effect: Actor gets a NEW card with the same ID
-            var copiedCard = new BattleCardState
-            {
-                instanceId = actingPlayer.playerId + "_plundered_" + stolenCard.cardId + "_" + Guid.NewGuid().ToString("N"),
-                cardId = stolenCard.cardId
+                { "Damage", new DamageEffectHandler() },
+                { "Heal", new HealEffectHandler() },
+                { "Draw", new DrawEffectHandler() },
+                { "GainArmor", new GainArmorEffectHandler() },
+                { "ApplyStatus", new ApplyStatusEffectHandler() },
+                { "ApplyVulnerable", new ApplyVulnerableEffectHandler() },
+                { "DamageByArmor", new DamageByArmorEffectHandler() },
+                { "ModifyEnergy", new ModifyEnergyEffectHandler() },
+                { "LoseHp", new LoseHpEffectHandler() },
+                { "CopyAndPlunder", new CopyAndPlunderEffectHandler() },
+                { "RecycleDiscardToHand", new RecycleDiscardToHandEffectHandler() },
+                { "ExhaustFromHand", new ExhaustFromHandEffectHandler() },
+                { "MoveArea", new MoveAreaEffectHandler() }
             };
 
-            if (actingPlayer.hand.Count >= BattleEngine.MaxHandSize)
+        public static void ResolveCardEffects(
+            BattleState state,
+            PlayerBattleState actingPlayer,
+            BattleCommand command,
+            BattleCardState playedCard,
+            CardDefinition definition,
+            BattleTargetType cardTargetType,
+            BattleCommandResult result)
+        {
+            if (definition == null)
             {
-                actingPlayer.discardPile.Add(copiedCard);
-            }
-            else
-            {
-                actingPlayer.hand.Add(copiedCard);
+                result.error = "Card definition missing.";
+                return;
             }
 
-            result.events.Add(new BattleEvent
+            if (definition.effects == null || definition.effects.Length == 0)
             {
-                message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card("复制掠夺") + ", forcing " + BattleTextHelper.Unit(target.displayName) + " to discard a card and gaining a copy of it."
-            });
+                result.error = "Card has no effects: " + definition.id;
+                return;
+            }
+
+            var context = new EffectExecutionContext
+            {
+                state = state,
+                actingPlayer = actingPlayer,
+                command = command,
+                playedCard = playedCard,
+                definition = definition,
+                cardTargetType = cardTargetType,
+                result = result
+            };
+
+            var plan = new List<PlannedEffect>(definition.effects.Length);
+            for (var i = 0; i < definition.effects.Length; i++)
+            {
+                var effect = definition.effects[i];
+                if (effect == null || string.IsNullOrWhiteSpace(effect.op))
+                {
+                    result.error = "Invalid effect at index " + i + " for card " + definition.id + ".";
+                    return;
+                }
+
+                if (!Handlers.TryGetValue(effect.op, out var handler))
+                {
+                    result.error = "Unknown effect op: " + effect.op;
+                    return;
+                }
+
+                var targets = ResolveTargets(context, effect, out var targetError);
+                if (!string.IsNullOrEmpty(targetError))
+                {
+                    result.error = targetError;
+                    return;
+                }
+
+                if (handler.RequiresTarget && targets.Count == 0)
+                {
+                    result.error = "Effect requires target: " + effect.op;
+                    return;
+                }
+
+                plan.Add(new PlannedEffect
+                {
+                    effect = effect,
+                    handler = handler,
+                    targets = targets
+                });
+            }
+
+            var opCount = 0;
+            for (var i = 0; i < plan.Count; i++)
+            {
+                var planned = plan[i];
+                if (!planned.handler.Execute(context, planned.effect, planned.targets, ref opCount, out var error))
+                {
+                    result.error = error;
+                    return;
+                }
+
+                if (opCount > MaxEffectOperationsPerCard)
+                {
+                    result.error = "Effect operation limit exceeded.";
+                    return;
+                }
+            }
         }
 
-        private static void ResolveMoveAreaEffect(BattleState state, PlayerBattleState actingPlayer, BattleCommand command, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
+        private static List<EffectTargetRef> ResolveTargets(EffectExecutionContext context, CardEffectDefinition effect, out string error)
         {
-            if (targetType != BattleTargetType.Area)
+            error = null;
+            var targets = new List<EffectTargetRef>();
+            var targetMode = string.IsNullOrWhiteSpace(effect.target) ? "CardTarget" : effect.target;
+
+            if (string.Equals(targetMode, "None", StringComparison.OrdinalIgnoreCase))
             {
-                result.error = "MoveArea requires Area target.";
-                return;
+                return targets;
             }
 
-            if (!BattleTargetingRules.CanTargetArea(state, actingPlayer, definition, command.targetArea))
+            if (string.Equals(targetMode, "Self", StringComparison.OrdinalIgnoreCase))
             {
-                result.error = "Invalid target area.";
-                return;
+                targets.Add(EffectTargetRef.ForPlayer(context.actingPlayer));
+                return targets;
             }
 
-            actingPlayer.area = command.targetArea;
-            result.events.Add(new BattleEvent
+            if (string.Equals(targetMode, "AllAllies", StringComparison.OrdinalIgnoreCase))
             {
-                message = BattleTextHelper.Actor(actingPlayer.displayName) + " moved to " + BattleTextHelper.AreaText(command.targetArea) + "."
-            });
-        }
+                for (var i = 0; i < context.state.players.Count; i++)
+                {
+                    var player = context.state.players[i];
+                    if (player != null && player.hp > 0)
+                    {
+                        targets.Add(EffectTargetRef.ForPlayer(player));
+                    }
+                }
 
-        private static void ResolveChargeUpEffect(PlayerBattleState actingPlayer, CardDefinition definition, BattleTargetType targetType, BattleCommandResult result)
-        {
-            if (targetType != BattleTargetType.Self)
-            {
-                result.error = "ChargeUp requires Self target.";
-                return;
+                return targets;
             }
 
-            if (actingPlayer.attackChargeStage < 3)
+            if (string.Equals(targetMode, "AllEnemies", StringComparison.OrdinalIgnoreCase))
             {
-                actingPlayer.attackChargeStage += 1;
+                if (context.state.monster != null)
+                {
+                    for (var i = 0; i < context.state.monster.parts.Count; i++)
+                    {
+                        var part = context.state.monster.parts[i];
+                        if (part != null)
+                        {
+                            targets.Add(EffectTargetRef.ForPart(part));
+                        }
+                    }
+                }
+
+                return targets;
             }
 
-            switch (actingPlayer.attackChargeStage)
+            switch (context.cardTargetType)
             {
-                case 1:
-                    actingPlayer.nextAttackBonus = 1;
-                    break;
-                case 2:
-                    actingPlayer.nextAttackBonus = 3;
-                    break;
+                case BattleTargetType.Self:
+                    targets.Add(EffectTargetRef.ForPlayer(context.actingPlayer));
+                    return targets;
+
+                case BattleTargetType.SingleAlly:
+                case BattleTargetType.OtherAlly:
+                {
+                    var disallowSelf = context.cardTargetType == BattleTargetType.OtherAlly;
+                    var playerTarget = BattleTargetResolver.ResolvePlayerTarget(context.state, context.command, disallowSelf);
+                    if (playerTarget == null || !BattleTargetingRules.CanTargetPlayer(context.state, context.actingPlayer, context.definition, context.cardTargetType, playerTarget))
+                    {
+                        error = "Invalid player target.";
+                        return targets;
+                    }
+
+                    targets.Add(EffectTargetRef.ForPlayer(playerTarget));
+                    return targets;
+                }
+
+                case BattleTargetType.SingleUnit:
+                {
+                    var playerTarget = BattleTargetResolver.ResolvePlayerTarget(context.state, context.command, false);
+                    if (playerTarget != null && BattleTargetingRules.CanTargetPlayer(context.state, context.actingPlayer, context.definition, context.cardTargetType, playerTarget))
+                    {
+                        targets.Add(EffectTargetRef.ForPlayer(playerTarget));
+                        return targets;
+                    }
+
+                    var partTarget = BattleTargetResolver.ResolvePartTarget(context.state, context.command);
+                    if (partTarget == null || !BattleTargetingRules.CanTargetPart(context.state, context.actingPlayer, context.definition, context.cardTargetType, partTarget))
+                    {
+                        error = "Invalid unit target.";
+                        return targets;
+                    }
+
+                    targets.Add(EffectTargetRef.ForPart(partTarget));
+                    return targets;
+                }
+
+                case BattleTargetType.MonsterPart:
+                {
+                    var partTarget = BattleTargetResolver.ResolvePartTarget(context.state, context.command);
+                    if (partTarget == null || !BattleTargetingRules.CanTargetPart(context.state, context.actingPlayer, context.definition, context.cardTargetType, partTarget))
+                    {
+                        error = "Invalid part target.";
+                        return targets;
+                    }
+
+                    targets.Add(EffectTargetRef.ForPart(partTarget));
+                    return targets;
+                }
+
+                case BattleTargetType.AllMonsterParts:
+                    if (context.state.monster == null)
+                    {
+                        error = "No enemy target.";
+                        return targets;
+                    }
+
+                    for (var i = 0; i < context.state.monster.parts.Count; i++)
+                    {
+                        var part = context.state.monster.parts[i];
+                        if (part == null)
+                        {
+                            continue;
+                        }
+
+                        if (BattleTargetingRules.CanTargetPart(context.state, context.actingPlayer, context.definition, context.cardTargetType, part))
+                        {
+                            targets.Add(EffectTargetRef.ForPart(part));
+                        }
+                    }
+
+                    return targets;
+
+                case BattleTargetType.Area:
+                    return targets;
+
                 default:
-                    actingPlayer.nextAttackBonus = 5;
-                    break;
+                    error = "Unsupported card target type: " + context.cardTargetType;
+                    return targets;
             }
-
-            result.events.Add(new BattleEvent
-            {
-                message = BattleTextHelper.Actor(actingPlayer.displayName) + " used " + BattleTextHelper.Card(definition.name) + ", next attack bonus is " + BattleTextHelper.DamageText(actingPlayer.nextAttackBonus) + "."
-            });
         }
 
-        private static void ConsumeAttackCharge(PlayerBattleState actingPlayer)
+        private static int CalculateScaledAmount(EffectExecutionContext context, CardEffectDefinition effect, EffectTargetRef target)
         {
-            if (actingPlayer == null || actingPlayer.nextAttackBonus <= 0)
+            var scaleBy = effect.scaleBy;
+            if (string.IsNullOrWhiteSpace(scaleBy))
             {
-                return;
+                return 0;
             }
 
-            actingPlayer.nextAttackBonus = 0;
-            actingPlayer.attackChargeStage = 0;
+            if (string.Equals(scaleBy, "SelfArmor", StringComparison.OrdinalIgnoreCase))
+            {
+                return (int)Math.Round(context.actingPlayer.armor * effect.ratio);
+            }
+
+            if (string.Equals(scaleBy, "CardsPlayedThisTurn", StringComparison.OrdinalIgnoreCase))
+            {
+                return (int)Math.Round(context.actingPlayer.cardsPlayedThisTurn * effect.ratio);
+            }
+
+            if (string.Equals(scaleBy, "TargetPoison", StringComparison.OrdinalIgnoreCase))
+            {
+                var poison = target.IsPlayer
+                    ? BattleStatusSystem.GetStacks(target.Player.statuses, BattleStatusSystem.PoisonStatusId)
+                    : BattleStatusSystem.GetStacks(target.Part.statuses, BattleStatusSystem.PoisonStatusId);
+                return (int)Math.Round(poison * effect.ratio);
+            }
+
+            return 0;
         }
 
-        private static void AppendDamageBonusLog(PlayerBattleState actingPlayer, int comboBonus, int chargeBonus, BattleCommandResult result)
+        private static int GetStrengthBonus(PlayerBattleState player)
         {
-            if (comboBonus <= 0 && chargeBonus <= 0)
+            return BattleStatusSystem.GetStacks(player.statuses, BattleStatusSystem.StrengthStatusId);
+        }
+
+        private sealed class EffectExecutionContext
+        {
+            public BattleState state;
+            public PlayerBattleState actingPlayer;
+            public BattleCommand command;
+            public BattleCardState playedCard;
+            public CardDefinition definition;
+            public BattleTargetType cardTargetType;
+            public BattleCommandResult result;
+        }
+
+        private sealed class PlannedEffect
+        {
+            public CardEffectDefinition effect;
+            public ICardEffectHandler handler;
+            public List<EffectTargetRef> targets;
+        }
+
+        private sealed class EffectTargetRef
+        {
+            public PlayerBattleState Player;
+            public MonsterPartState Part;
+            public bool IsPlayer => Player != null;
+
+            public static EffectTargetRef ForPlayer(PlayerBattleState player)
             {
-                return;
+                return new EffectTargetRef { Player = player };
             }
 
-            result.events.Add(new BattleEvent
+            public static EffectTargetRef ForPart(MonsterPartState part)
             {
-                message = "<color=#8A8A8A>Damage bonus:</color> combo +" + comboBonus + ", charge +" + chargeBonus + "."
-            });
+                return new EffectTargetRef { Part = part };
+            }
+        }
+
+        private interface ICardEffectHandler
+        {
+            bool RequiresTarget { get; }
+
+            bool Execute(
+                EffectExecutionContext context,
+                CardEffectDefinition effect,
+                List<EffectTargetRef> targets,
+                ref int opCount,
+                out string error);
+        }
+
+        private sealed class DamageEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                var strength = GetStrengthBonus(context.actingPlayer);
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    var target = targets[i];
+                    var scaled = CalculateScaledAmount(context, effect, target);
+                    var amount = Math.Max(0, effect.amount + scaled + strength);
+                    if (target.IsPlayer)
+                    {
+                        var applied = BattleMechanics.ApplyDamage(target.Player, amount);
+                        context.result.events.Add(new BattleEvent
+                        {
+                            message = BattleTextHelper.Actor(context.actingPlayer.displayName) + " used " + BattleTextHelper.Card(context.definition.name) + " on " + BattleTextHelper.Unit(target.Player.displayName) + " for " + BattleTextHelper.DamageText(applied) + "."
+                        });
+                    }
+                    else
+                    {
+                        var applied = BattleMechanics.ApplyDamageToPart(context.state, target.Part, amount, context.result);
+                        context.result.events.Add(new BattleEvent
+                        {
+                            message = BattleTextHelper.Actor(context.actingPlayer.displayName) + " used " + BattleTextHelper.Card(context.definition.name) + " on " + BattleTextHelper.Unit(target.Part.displayName) + " for " + BattleTextHelper.DamageText(applied) + "."
+                        });
+                    }
+
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class DrawEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    if (!targets[i].IsPlayer)
+                    {
+                        continue;
+                    }
+
+                    var drawn = BattleMechanics.DrawCards(context.state, targets[i].Player, Math.Max(0, effect.amount));
+                    context.result.events.Add(new BattleEvent
+                    {
+                        message = BattleTextHelper.Unit(targets[i].Player.displayName) + " drew " + BattleTextHelper.DrawText(drawn) + "."
+                    });
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class HealEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    if (!targets[i].IsPlayer)
+                    {
+                        continue;
+                    }
+
+                    var healed = BattleMechanics.Heal(targets[i].Player, Math.Max(0, effect.amount));
+                    context.result.events.Add(new BattleEvent
+                    {
+                        message = BattleTextHelper.Unit(targets[i].Player.displayName) + " recovers " + BattleTextHelper.HealText(healed) + "."
+                    });
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class GainArmorEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    if (!targets[i].IsPlayer)
+                    {
+                        continue;
+                    }
+
+                    var amount = Math.Max(0, effect.amount);
+                    targets[i].Player.armor += amount;
+                    context.result.events.Add(new BattleEvent
+                    {
+                        message = BattleTextHelper.Unit(targets[i].Player.displayName) + " gains " + BattleTextHelper.ArmorText(amount) + "."
+                    });
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class ApplyStatusEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                if (string.IsNullOrWhiteSpace(effect.statusId))
+                {
+                    error = "ApplyStatus missing statusId.";
+                    return false;
+                }
+
+                var amount = Math.Max(1, effect.amount);
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    var target = targets[i];
+                    if (target.IsPlayer)
+                    {
+                        var total = BattleStatusSystem.AddStacks(target.Player.statuses, effect.statusId, amount);
+                        context.result.events.Add(new BattleEvent
+                        {
+                            message = BattleTextHelper.Unit(target.Player.displayName) + " gains " + effect.statusId + " x" + amount + " (total " + total + ")."
+                        });
+                    }
+                    else
+                    {
+                        var total = BattleStatusSystem.AddStacks(target.Part.statuses, effect.statusId, amount);
+                        context.result.events.Add(new BattleEvent
+                        {
+                            message = BattleTextHelper.Unit(target.Part.displayName) + " gains " + effect.statusId + " x" + amount + " (total " + total + ")."
+                        });
+                    }
+
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class DamageByArmorEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                var scaled = (int)Math.Round(context.actingPlayer.armor * effect.ratio);
+                var amount = Math.Max(0, effect.amount + scaled);
+                if (amount <= 0)
+                {
+                    return true;
+                }
+
+                if (effect.amount2 > 0)
+                {
+                    var consumed = Math.Min(context.actingPlayer.armor, scaled);
+                    context.actingPlayer.armor -= consumed;
+                }
+
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    var target = targets[i];
+                    if (target.IsPlayer)
+                    {
+                        var applied = BattleMechanics.ApplyDamage(target.Player, amount);
+                        context.result.events.Add(new BattleEvent
+                        {
+                            message = BattleTextHelper.Unit(target.Player.displayName) + " takes " + BattleTextHelper.DamageText(applied) + " from armor slam."
+                        });
+                    }
+                    else
+                    {
+                        var applied = BattleMechanics.ApplyDamageToPart(context.state, target.Part, amount, context.result);
+                        context.result.events.Add(new BattleEvent
+                        {
+                            message = BattleTextHelper.Unit(target.Part.displayName) + " takes " + BattleTextHelper.DamageText(applied) + " from armor slam."
+                        });
+                    }
+
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class ApplyVulnerableEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                var stacks = Math.Max(1, effect.amount);
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    if (!targets[i].IsPlayer)
+                    {
+                        continue;
+                    }
+
+                    targets[i].Player.vulnerableStacks += stacks;
+                    context.result.events.Add(new BattleEvent
+                    {
+                        message = BattleTextHelper.Unit(targets[i].Player.displayName) + " gains Vulnerable x" + stacks + "."
+                    });
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class ModifyEnergyEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => false;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                context.actingPlayer.energy = Math.Max(0, context.actingPlayer.energy + effect.amount);
+                context.result.events.Add(new BattleEvent
+                {
+                    message = BattleTextHelper.Unit(context.actingPlayer.displayName) + " energy changes by " + effect.amount + "."
+                });
+                opCount += 1;
+                return true;
+            }
+        }
+
+        private sealed class LoseHpEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    if (!targets[i].IsPlayer)
+                    {
+                        continue;
+                    }
+
+                    var player = targets[i].Player;
+                    var lose = Math.Max(0, effect.amount);
+                    var before = player.hp;
+                    player.hp = Math.Max(0, player.hp - lose);
+                    var applied = before - player.hp;
+                    context.result.events.Add(new BattleEvent
+                    {
+                        message = BattleTextHelper.Unit(player.displayName) + " loses " + BattleTextHelper.DamageText(applied) + "."
+                    });
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class RecycleDiscardToHandEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => false;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                var count = Math.Max(0, effect.amount);
+                for (var i = 0; i < count; i++)
+                {
+                    if (context.actingPlayer.discardPile.Count == 0)
+                    {
+                        break;
+                    }
+
+                    var index = context.actingPlayer.discardPile.Count - 1;
+                    var card = context.actingPlayer.discardPile[index];
+                    context.actingPlayer.discardPile.RemoveAt(index);
+                    card.costDelta += effect.amount2;
+
+                    if (context.actingPlayer.hand.Count >= BattleEngine.MaxHandSize)
+                    {
+                        context.actingPlayer.discardPile.Add(card);
+                        continue;
+                    }
+
+                    context.actingPlayer.hand.Add(card);
+                    context.result.events.Add(new BattleEvent
+                    {
+                        message = BattleTextHelper.Unit(context.actingPlayer.displayName) + " recycles " + BattleTextHelper.Card(card.cardId) + " from discard."
+                    });
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class CopyAndPlunderEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                if (targets == null || targets.Count == 0)
+                {
+                    error = "CopyAndPlunder requires a target.";
+                    return false;
+                }
+
+                var target = targets[0];
+                if (!target.IsPlayer || target.Player == null)
+                {
+                    error = "CopyAndPlunder requires ally target.";
+                    return false;
+                }
+
+                if (target.Player.hand.Count == 0)
+                {
+                    error = target.Player.displayName + " has no cards to plunder.";
+                    return false;
+                }
+
+                var random = new Random(
+                    context.state.randomSeed
+                    ^ context.state.turnIndex
+                    ^ context.actingPlayer.playerId.GetHashCode()
+                    ^ target.Player.playerId.GetHashCode()
+                    ^ target.Player.hand.Count);
+                var stolenIndex = random.Next(target.Player.hand.Count);
+                var stolenCard = target.Player.hand[stolenIndex];
+
+                target.Player.hand.RemoveAt(stolenIndex);
+                target.Player.discardPile.Add(stolenCard);
+
+                var copiedCard = new BattleCardState
+                {
+                    instanceId = context.actingPlayer.playerId + "_plundered_" + stolenCard.cardId + "_" + Guid.NewGuid().ToString("N"),
+                    cardId = stolenCard.cardId,
+                    costDelta = 0
+                };
+
+                if (context.actingPlayer.hand.Count >= BattleEngine.MaxHandSize)
+                {
+                    context.actingPlayer.discardPile.Add(copiedCard);
+                }
+                else
+                {
+                    context.actingPlayer.hand.Add(copiedCard);
+                }
+
+                context.result.events.Add(new BattleEvent
+                {
+                    message = BattleTextHelper.Actor(context.actingPlayer.displayName) + " used " + BattleTextHelper.Card(context.definition.name) + " on " + BattleTextHelper.Unit(target.Player.displayName) + ", plundering a copy."
+                });
+                opCount += 1;
+                return true;
+            }
+        }
+
+        private sealed class ExhaustFromHandEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => false;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                var count = Math.Max(0, effect.amount);
+                for (var i = 0; i < count; i++)
+                {
+                    var idx = FindExhaustCandidateIndex(context.actingPlayer.hand, context.playedCard == null ? null : context.playedCard.instanceId);
+                    if (idx < 0)
+                    {
+                        break;
+                    }
+
+                    var exhausted = context.actingPlayer.hand[idx];
+                    context.actingPlayer.hand.RemoveAt(idx);
+                    context.actingPlayer.exhaustPile.Add(exhausted);
+                    context.result.events.Add(new BattleEvent
+                    {
+                        message = BattleTextHelper.Unit(context.actingPlayer.displayName) + " exhausts " + BattleTextHelper.Card(exhausted.cardId) + "."
+                    });
+                    opCount += 1;
+                }
+
+                return true;
+            }
+
+            private static int FindExhaustCandidateIndex(List<BattleCardState> hand, string playedCardInstanceId)
+            {
+                if (hand == null)
+                {
+                    return -1;
+                }
+
+                for (var i = 0; i < hand.Count; i++)
+                {
+                    if (hand[i] == null)
+                    {
+                        continue;
+                    }
+
+                    if (!string.Equals(hand[i].instanceId, playedCardInstanceId, StringComparison.Ordinal))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+        }
+
+        private sealed class MoveAreaEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => false;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                if (!BattleTargetingRules.CanTargetArea(context.state, context.actingPlayer, context.definition, context.command.targetArea))
+                {
+                    error = "Invalid target area.";
+                    return false;
+                }
+
+                context.actingPlayer.area = context.command.targetArea;
+                context.result.events.Add(new BattleEvent
+                {
+                    message = BattleTextHelper.Actor(context.actingPlayer.displayName) + " moved to " + BattleTextHelper.AreaText(context.command.targetArea) + "."
+                });
+                opCount += 1;
+                return true;
+            }
         }
     }
 }

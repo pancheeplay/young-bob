@@ -7,18 +7,31 @@ using YoungBob.Prototype.Battle;
 namespace YoungBob.Prototype.Data
 {
     [Serializable]
+    public sealed class CardEffectDefinition
+    {
+        public string op;
+        public string target;
+        public string statusId;
+        public string scaleBy;
+        public string pileFrom;
+        public int amount;
+        public int amount2;
+        public float ratio = 1f;
+    }
+
+    [Serializable]
     public sealed class CardDefinition
     {
         public string id;
         public string name;
         public string classTag;
-        public string effectType;
         public string targetType;
         public string rangeHeights;
         public string rangeDistance;
         public string rangeZones;
         public int energyCost;
-        public int value;
+        public string[] tags;
+        public CardEffectDefinition[] effects;
     }
 
     [Serializable]

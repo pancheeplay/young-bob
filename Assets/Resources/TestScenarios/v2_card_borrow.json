@@ -1,0 +1,66 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_card_borrow",
+  "name": "V2 borrow card",
+  "setup": {
+    "roomId": "v2_borrow_room",
+    "stageId": "stage_boss_debug",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 1002,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      },
+      {
+        "playerId": "p2",
+        "displayName": "Beta"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p2"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p2",
+      "cardId": "warrior_battle_cry"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p1",
+      "cardId": "utility_borrow_card"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p1",
+      "cardInstanceId": "card:utility_borrow_card",
+      "targetFaction": 1,
+      "targetUnitId": "p2",
+      "targetArea": 0,
+      "snapshotTag": "after_borrow"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "player_hand_has_card",
+      "actualPath": "after_borrow",
+      "playerId": "p1",
+      "cardId": "warrior_battle_cry",
+      "message": "p1 receives copied card"
+    },
+    {
+      "type": "player_discard_has_card",
+      "actualPath": "after_borrow",
+      "playerId": "p2",
+      "cardId": "warrior_battle_cry",
+      "message": "p2 loses card to discard"
+    }
+  ]
+}

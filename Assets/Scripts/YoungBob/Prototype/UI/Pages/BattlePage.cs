@@ -30,9 +30,18 @@ namespace YoungBob.Prototype.UI.Pages
         private readonly RectTransform _cardDragGuideArrow;
         private readonly RectTransform _handPanelRect;
         private readonly Transform _handContainer;
+        private readonly Button _drawPileButton;
+        private readonly Button _discardPileButton;
+        private readonly Button _exhaustPileButton;
+        private readonly GameObject _pilePopupMask;
+        private readonly Text _pilePopupTitle;
+        private readonly Transform _pilePopupContent;
+        private readonly GridLayoutGroup _pilePopupGrid;
         private readonly RectTransform _monsterHpFillRect;
         private readonly Text _monsterHpText;
         private readonly Text _monsterActionHintText;
+        private readonly Text _effectTargetHintText;
+        private readonly Button _statusModeButton;
         private readonly Button _endTurnButton;
         private readonly Button _exitBattleButton;
         private readonly List<BattleUnitSlotView> _playerSlots = new List<BattleUnitSlotView>();
@@ -46,6 +55,16 @@ namespace YoungBob.Prototype.UI.Pages
         private CardDefinition _draggingCardDefinition;
         private string _draggingCardInstanceId;
         private BattleHandCardDragView _draggingCardView;
+        private bool _isDetailedStatusMode = true;
+        private PileView _currentPileView = PileView.Draw;
+        private Action<PlayerBattleState, Transform> _popupContentRenderer;
+
+        private enum PileView
+        {
+            Draw,
+            Discard,
+            Exhaust
+        }
 
         public BattlePage(Transform parent, PrototypeSessionController session)
             : base(parent, "BattlePage", session, new Color(0.12f, 0.14f, 0.17f), new Vector2(0f, 0f), new Vector2(1f, 1f))
@@ -58,7 +77,7 @@ namespace YoungBob.Prototype.UI.Pages
             _summaryText.fontStyle = FontStyle.Bold;
             _summaryText.supportRichText = true;
 
-            _endTurnButton = UiFactory.CreateButton(headerPanel.transform, "EndTurn", "END", Session.EndTurn);
+            _endTurnButton = UiFactory.CreateButton(headerPanel.transform, "EndTurn", "结束", Session.EndTurn);
             var etRect = _endTurnButton.GetComponent<RectTransform>();
             etRect.anchorMin = new Vector2(0.7f, 0.2f);
             etRect.anchorMax = new Vector2(0.95f, 0.8f);
@@ -69,7 +88,7 @@ namespace YoungBob.Prototype.UI.Pages
             etText.fontStyle = FontStyle.Bold;
             _endTurnButton.image.color = new Color(0.25f, 0.55f, 0.35f);
 
-            _exitBattleButton = UiFactory.CreateButton(Root.transform, "ExitBattle", "Exit", Session.EndBattleAndReturnToLobby);
+            _exitBattleButton = UiFactory.CreateButton(Root.transform, "ExitBattle", "退出", Session.EndBattleAndReturnToLobby);
             var exRect = _exitBattleButton.GetComponent<RectTransform>();
             exRect.anchorMin = new Vector2(0.42f, 0.94f);
             exRect.anchorMax = new Vector2(0.58f, 0.98f);
@@ -119,6 +138,11 @@ namespace YoungBob.Prototype.UI.Pages
             _monsterActionHintText.color = new Color(0.72f, 0.72f, 0.72f, 0.75f);
             _monsterActionHintText.raycastTarget = false;
 
+            _effectTargetHintText = UiFactory.CreateText(Root.transform, "EffectTargetHint", 18, TextAnchor.MiddleCenter, new Vector2(0.15f, 0.425f), new Vector2(0.85f, 0.45f), Vector2.zero, Vector2.zero);
+            _effectTargetHintText.color = new Color(0.9f, 0.92f, 0.95f, 0.9f);
+            _effectTargetHintText.raycastTarget = false;
+            _effectTargetHintText.text = string.Empty;
+
             // East Players (Right side, standing on horizon)
             var eastPanel = UiFactory.CreatePanel(boardPanel.transform, "EastPlayers", Color.clear, new Vector2(0.72f, 0.3f), new Vector2(1f, 0.8f), Vector2.zero, Vector2.zero);
             eastPanel.GetComponent<Image>().raycastTarget = false;
@@ -163,7 +187,7 @@ namespace YoungBob.Prototype.UI.Pages
             _logScrollRect.vertical = true;
             _logScrollRect.onValueChanged.AddListener(_ => OnLogScrollChanged());
 
-            _jumpToLatestButton = UiFactory.CreateButton(logBase.transform, "JumpToLatest", "Log ↓", () => {
+            _jumpToLatestButton = UiFactory.CreateButton(logBase.transform, "JumpToLatest", "日志 ↓", () => {
                 _logScrollRect.verticalNormalizedPosition = 0f;
                 _isUserScrolling = false;
                 _jumpToLatestButton.gameObject.SetActive(false);
@@ -181,7 +205,7 @@ namespace YoungBob.Prototype.UI.Pages
             _energyLabel.raycastTarget = false;
 
             // --- Hand ---
-            var handPanel = UiFactory.CreatePanel(Root.transform, "HandPanel", new Color(0.12f, 0.14f, 0.18f, 0.7f), new Vector2(0f, 0f), new Vector2(1f, 0.27f), new Vector2(10f, 10f), new Vector2(-10f, 10f));
+            var handPanel = UiFactory.CreatePanel(Root.transform, "HandPanel", new Color(0.12f, 0.14f, 0.18f, 0.7f), new Vector2(0f, 0.08f), new Vector2(1f, 0.27f), new Vector2(10f, 10f), new Vector2(-10f, 10f));
             _handPanelRect = handPanel.GetComponent<RectTransform>();
             var handScrollArea = new GameObject("HandScroll");
             handScrollArea.transform.SetParent(handPanel.transform, false);
@@ -216,6 +240,98 @@ namespace YoungBob.Prototype.UI.Pages
             handScroll.vertical = false;
             handScroll.horizontal = true;
             _handContainer = handContent.transform;
+
+            _drawPileButton = UiFactory.CreateButton(handPanel.transform, "DrawPileButton", "牌库 0", () => OpenPilePopup(PileView.Draw));
+            var drawRect = _drawPileButton.GetComponent<RectTransform>();
+            drawRect.anchorMin = new Vector2(0.64f, 0.8f);
+            drawRect.anchorMax = new Vector2(0.75f, 0.97f);
+            drawRect.offsetMin = Vector2.zero;
+            drawRect.offsetMax = Vector2.zero;
+            _drawPileButton.image.color = new Color(0.2f, 0.28f, 0.45f, 0.95f);
+            _drawPileButton.GetComponentInChildren<Text>().fontSize = 16;
+
+            _discardPileButton = UiFactory.CreateButton(handPanel.transform, "DiscardPileButton", "弃牌 0", () => OpenPilePopup(PileView.Discard));
+            var discardRect = _discardPileButton.GetComponent<RectTransform>();
+            discardRect.anchorMin = new Vector2(0.76f, 0.8f);
+            discardRect.anchorMax = new Vector2(0.87f, 0.97f);
+            discardRect.offsetMin = Vector2.zero;
+            discardRect.offsetMax = Vector2.zero;
+            _discardPileButton.image.color = new Color(0.32f, 0.24f, 0.2f, 0.95f);
+            _discardPileButton.GetComponentInChildren<Text>().fontSize = 16;
+
+            _exhaustPileButton = UiFactory.CreateButton(handPanel.transform, "ExhaustPileButton", "消耗 0", () => OpenPilePopup(PileView.Exhaust));
+            var exhaustRect = _exhaustPileButton.GetComponent<RectTransform>();
+            exhaustRect.anchorMin = new Vector2(0.88f, 0.8f);
+            exhaustRect.anchorMax = new Vector2(0.99f, 0.97f);
+            exhaustRect.offsetMin = Vector2.zero;
+            exhaustRect.offsetMax = Vector2.zero;
+            _exhaustPileButton.image.color = new Color(0.26f, 0.2f, 0.36f, 0.95f);
+            _exhaustPileButton.GetComponentInChildren<Text>().fontSize = 16;
+
+            _pilePopupMask = UiFactory.CreatePanel(Root.transform, "PilePopupMask", new Color(0f, 0f, 0f, 0.78f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            var popupWindow = UiFactory.CreatePanel(_pilePopupMask.transform, "PilePopupWindow", new Color(0.12f, 0.14f, 0.17f, 1f), new Vector2(0.06f, 0.1f), new Vector2(0.94f, 0.9f), Vector2.zero, Vector2.zero);
+            _pilePopupTitle = UiFactory.CreateText(popupWindow.transform, "Title", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0.9f), new Vector2(0.8f, 1f), new Vector2(24f, 0f), new Vector2(0f, 0f));
+            _pilePopupTitle.fontStyle = FontStyle.Bold;
+            var popupClose = UiFactory.CreateButton(popupWindow.transform, "CloseButton", "关闭", ClosePilePopup);
+            var popupCloseRect = popupClose.GetComponent<RectTransform>();
+            popupCloseRect.anchorMin = new Vector2(0.82f, 0.91f);
+            popupCloseRect.anchorMax = new Vector2(0.98f, 0.99f);
+            popupCloseRect.offsetMin = Vector2.zero;
+            popupCloseRect.offsetMax = Vector2.zero;
+
+            var popupScrollObj = new GameObject("Scroll");
+            popupScrollObj.transform.SetParent(popupWindow.transform, false);
+            var popupScrollRect = popupScrollObj.AddComponent<RectTransform>();
+            popupScrollRect.anchorMin = new Vector2(0.03f, 0.04f);
+            popupScrollRect.anchorMax = new Vector2(0.97f, 0.88f);
+            popupScrollRect.offsetMin = Vector2.zero;
+            popupScrollRect.offsetMax = Vector2.zero;
+            var popupScroll = popupScrollObj.AddComponent<ScrollRect>();
+
+            var popupViewportObj = new GameObject("Viewport");
+            popupViewportObj.transform.SetParent(popupScrollObj.transform, false);
+            var popupViewportRect = popupViewportObj.AddComponent<RectTransform>();
+            popupViewportRect.anchorMin = Vector2.zero;
+            popupViewportRect.anchorMax = Vector2.one;
+            popupViewportRect.offsetMin = Vector2.zero;
+            popupViewportRect.offsetMax = Vector2.zero;
+            popupViewportObj.AddComponent<RectMask2D>();
+
+            var popupContentObj = UiFactory.CreatePanel(popupViewportObj.transform, "Content", Color.clear, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            var popupContentRect = popupContentObj.GetComponent<RectTransform>();
+            popupContentRect.pivot = new Vector2(0.5f, 1f);
+            _pilePopupGrid = popupContentObj.AddComponent<GridLayoutGroup>();
+            _pilePopupGrid.childAlignment = TextAnchor.UpperCenter;
+            _pilePopupGrid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            _pilePopupGrid.constraintCount = 3;
+            _pilePopupGrid.cellSize = new Vector2(184f, 256f);
+            _pilePopupGrid.spacing = new Vector2(14f, 14f);
+            _pilePopupGrid.padding = new RectOffset(10, 10, 12, 12);
+            var popupFitter = popupContentObj.AddComponent<ContentSizeFitter>();
+            popupFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            popupScroll.viewport = popupViewportRect;
+            popupScroll.content = popupContentRect;
+            popupScroll.horizontal = false;
+            popupScroll.vertical = true;
+            _pilePopupContent = popupContentObj.transform;
+            _pilePopupMask.SetActive(false);
+
+            var settingsBar = UiFactory.CreatePanel(Root.transform, "BattleSettingsBar", new Color(0.09f, 0.11f, 0.14f, 0.95f), new Vector2(0f, 0f), new Vector2(1f, 0.08f), new Vector2(10f, 10f), new Vector2(-10f, -2f));
+            var settingsLayout = settingsBar.AddComponent<HorizontalLayoutGroup>();
+            settingsLayout.childAlignment = TextAnchor.MiddleLeft;
+            settingsLayout.childControlWidth = false;
+            settingsLayout.childControlHeight = false;
+            settingsLayout.childForceExpandWidth = false;
+            settingsLayout.childForceExpandHeight = false;
+            settingsLayout.spacing = 10f;
+            settingsLayout.padding = new RectOffset(12, 12, 6, 6);
+
+            _statusModeButton = UiFactory.CreateButton(settingsBar.transform, "StatusMode", "模式: 详", ToggleStatusMode);
+            _statusModeButton.image.color = new Color(0.24f, 0.32f, 0.46f);
+            _statusModeButton.GetComponentInChildren<Text>().fontSize = 16;
+            var smRect = _statusModeButton.GetComponent<RectTransform>();
+            smRect.sizeDelta = new Vector2(170f, 40f);
 
             var dragCurveObject = new GameObject("CardDragCurve");
             dragCurveObject.transform.SetParent(_canvas.transform, false);
@@ -273,7 +389,7 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 _battleLogs.Clear();
                 _battleLogText.text = string.Empty;
-                _summaryText.text = "Waiting for battle...";
+                _summaryText.text = "等待战斗开始...";
                 _endTurnButton.interactable = false;
                 _exitBattleButton.interactable = false;
                 _isUserScrolling = false;
@@ -281,13 +397,13 @@ namespace YoungBob.Prototype.UI.Pages
                 return;
             }
 
-            var turnType = state.phase == BattlePhase.PlayerTurn ? "PLAYER TURN" : "MONSTER TURN";
+            var turnType = state.phase == BattlePhase.PlayerTurn ? "我方回合" : "怪物回合";
             var color = state.phase == BattlePhase.PlayerTurn ? "#40FF80" : "#FF6060";
             var encounterTotal = state.stageEncounterIds == null ? 0 : state.stageEncounterIds.Length;
             var encounterText = encounterTotal > 0
-                ? $"<size=20>Stage {state.stageId}  Encounter {state.stageEncounterIndex + 1}/{encounterTotal}</size>\n"
+                ? $"<size=20>关卡 {state.stageId}  遭遇 {state.stageEncounterIndex + 1}/{encounterTotal}</size>\n"
                 : string.Empty;
-            _summaryText.text = $"<color={color}>{turnType}</color>  -  ROUND {state.turnIndex}\n{encounterText}<size=22>{state.currentPrompt}</size>";
+            _summaryText.text = $"<color={color}>{turnType}</color>  -  第 {state.turnIndex} 回合\n{encounterText}<size=22>{state.currentPrompt}</size>";
             
             _endTurnButton.interactable = Session.CanLocalPlayerAct();
             _exitBattleButton.interactable = true;
@@ -359,7 +475,7 @@ namespace YoungBob.Prototype.UI.Pages
                 float ratio = state.monster.coreMaxHp > 0 ? Mathf.Clamp01((float)state.monster.coreHp / state.monster.coreMaxHp) : 0f;
                 _monsterHpFillRect.anchorMax = new Vector2(ratio, 1f);
                 string pose = !string.IsNullOrEmpty(state.monster.currentPoseId) ? $" [{state.monster.currentPoseId}]" : "";
-                _monsterHpText.text = $"MONSTER HP: {state.monster.coreHp} / {state.monster.coreMaxHp}{pose}";
+                _monsterHpText.text = $"怪物生命：{state.monster.coreHp} / {state.monster.coreMaxHp}{pose}";
                 _monsterActionHintText.text = BuildMonsterActionHint(state.monster);
             }
             else
@@ -373,7 +489,7 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 var player = state.players[i];
                 var container = player.area == BattleArea.East ? _eastPlayerContainer : _westPlayerContainer;
-                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, new Color(0.2f, 0.36f, 0.31f), SlotHighlightMode.None);
+                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, new Color(0.2f, 0.36f, 0.31f), _isDetailedStatusMode, SlotHighlightMode.None);
                 _playerSlots.Add(slot);
             }
 
@@ -397,7 +513,7 @@ namespace YoungBob.Prototype.UI.Pages
 
                     var targetPosition = ResolvePartPosition(part, panelRect, state.monster.facing, state.monster.stance);
                     slot.SetTargetPosition(targetPosition, snapImmediately: false);
-                    slot.SetData(part, SlotHighlightMode.None);
+                    slot.SetData(part, _isDetailedStatusMode, SlotHighlightMode.None);
                     _monsterPartSlots.Add(slot);
                 }
 
@@ -435,6 +551,11 @@ namespace YoungBob.Prototype.UI.Pages
 
             if (state == null)
             {
+                _drawPileButton.gameObject.SetActive(false);
+                _discardPileButton.gameObject.SetActive(false);
+                _exhaustPileButton.gameObject.SetActive(false);
+                _effectTargetHintText.text = string.Empty;
+                ClosePilePopup();
                 return;
             }
 
@@ -442,7 +563,24 @@ namespace YoungBob.Prototype.UI.Pages
             if (player == null)
             {
                 _energyLabel.text = "";
+                _drawPileButton.gameObject.SetActive(false);
+                _discardPileButton.gameObject.SetActive(false);
+                _exhaustPileButton.gameObject.SetActive(false);
+                _effectTargetHintText.text = string.Empty;
+                ClosePilePopup();
                 return;
+            }
+
+            _drawPileButton.gameObject.SetActive(true);
+            _discardPileButton.gameObject.SetActive(true);
+            _exhaustPileButton.gameObject.SetActive(true);
+            _drawPileButton.GetComponentInChildren<Text>().text = $"牌库 {player.drawPile.Count}";
+            _discardPileButton.GetComponentInChildren<Text>().text = $"弃牌 {player.discardPile.Count}";
+            _exhaustPileButton.GetComponentInChildren<Text>().text = $"消耗 {player.exhaustPile.Count}";
+
+            if (_pilePopupMask.activeSelf)
+            {
+                RefreshPopup(player);
             }
 
             // Energy display
@@ -454,7 +592,7 @@ namespace YoungBob.Prototype.UI.Pages
                 if (i <= currentEnergy) energyIcons += "💎";
                 else energyIcons += "<color=#2a3c50>💎</color>";
             }
-            _energyLabel.text = $"ENERGY {energyIcons} ({currentEnergy}/{maxEnergy})";
+            _energyLabel.text = $"能量 {energyIcons} ({currentEnergy}/{maxEnergy})";
 
             if (!string.IsNullOrEmpty(_draggingCardInstanceId) && !HasCardInHand(player, _draggingCardInstanceId))
             {
@@ -467,6 +605,7 @@ namespace YoungBob.Prototype.UI.Pages
                 ClearHighlights();
                 _draggingCardDefinition = null;
                 _draggingCardInstanceId = null;
+                _effectTargetHintText.text = string.Empty;
             }
 
             var canAct = Session.CanLocalPlayerAct();
@@ -476,8 +615,9 @@ namespace YoungBob.Prototype.UI.Pages
                 var cardState = player.hand[i];
                 var cardDef = Session.GetCardDefinition(cardState.cardId);
                 if (cardDef == null) continue;
+                var effectiveCost = BattleMechanics.GetEffectiveEnergyCost(cardState, cardDef);
                 
-                var isPlayable = canAct && player.energy >= cardDef.energyCost;
+                var isPlayable = canAct && player.energy >= effectiveCost;
 
                 // Skip the card that is currently being dragged (it's in the canvas already)
                 if (cardState.instanceId == _draggingCardInstanceId)
@@ -485,7 +625,7 @@ namespace YoungBob.Prototype.UI.Pages
                     continue;
                 }
 
-                var cardObject = UiFactory.CreateCard(_handContainer, "Card_" + cardState.instanceId, cardDef, isPlayable);
+                var cardObject = UiFactory.CreateCard(_handContainer, "Card_" + cardState.instanceId, cardDef, isPlayable, effectiveCost);
                 if (cardObject == null) continue;
 
                 var layoutElement = cardObject.AddComponent<LayoutElement>();
@@ -512,6 +652,87 @@ namespace YoungBob.Prototype.UI.Pages
             }
         }
 
+        private void OpenPilePopup(PileView view)
+        {
+            _currentPileView = view;
+            var player = Session.GetLocalBattlePlayer();
+            if (player == null)
+            {
+                return;
+            }
+
+            ShowPopup(player, RenderPilePopup);
+        }
+
+        private void ClosePilePopup()
+        {
+            _pilePopupMask.SetActive(false);
+            _popupContentRenderer = null;
+        }
+
+        private void ShowPopup(PlayerBattleState player, Action<PlayerBattleState, Transform> renderer)
+        {
+            _popupContentRenderer = renderer;
+            _pilePopupMask.SetActive(true);
+            RefreshPopup(player);
+        }
+
+        private void RefreshPopup(PlayerBattleState player)
+        {
+            if (!_pilePopupMask.activeSelf || _popupContentRenderer == null || player == null)
+            {
+                return;
+            }
+
+            ClearContainer(_pilePopupContent);
+            _popupContentRenderer(player, _pilePopupContent);
+        }
+
+        private void RenderPilePopup(PlayerBattleState player, Transform contentRoot)
+        {
+            if (player == null)
+            {
+                return;
+            }
+
+            var pile = GetCurrentPile(player);
+            _pilePopupTitle.text = BuildPileTitle(pile.Count);
+
+            if (pile.Count == 0)
+            {
+                var emptyText = UiFactory.CreateText(contentRoot, "EmptyText", 22, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 48f));
+                emptyText.text = "空";
+                emptyText.color = new Color(0.75f, 0.75f, 0.75f);
+                var emptyLayout = emptyText.gameObject.AddComponent<LayoutElement>();
+                emptyLayout.preferredWidth = 560f;
+                emptyLayout.preferredHeight = 72f;
+                return;
+            }
+
+            for (var i = 0; i < pile.Count; i++)
+            {
+                var cardState = pile[i];
+                var cardDef = Session.GetCardDefinition(cardState.cardId);
+                if (cardDef != null)
+                {
+                    var cardObj = UiFactory.CreateCard(contentRoot, "PileCard_" + cardState.instanceId, cardDef, false, BattleMechanics.GetEffectiveEnergyCost(cardState, cardDef));
+                    var layout = cardObj.AddComponent<LayoutElement>();
+                    layout.preferredWidth = _pilePopupGrid.cellSize.x;
+                    layout.preferredHeight = _pilePopupGrid.cellSize.y;
+                    var rect = cardObj.GetComponent<RectTransform>();
+                    rect.localScale = Vector3.one;
+                    continue;
+                }
+
+                var fallback = UiFactory.CreateText(contentRoot, "PileCardFallback_" + i, 18, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 40f));
+                fallback.text = cardState.cardId;
+                fallback.color = Color.white;
+                var fallbackLayout = fallback.gameObject.AddComponent<LayoutElement>();
+                fallbackLayout.preferredWidth = _pilePopupGrid.cellSize.x;
+                fallbackLayout.preferredHeight = _pilePopupGrid.cellSize.y;
+            }
+        }
+
         private void BeginCardDrag(BattleHandCardDragView view, string cardInstanceId, CardDefinition cardDef, PointerEventData eventData)
         {
             if (!Session.CanLocalPlayerAct())
@@ -524,6 +745,7 @@ namespace YoungBob.Prototype.UI.Pages
             _draggingCardView = view;
             view.FollowMouse = false;
             view.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -320f);
+            _effectTargetHintText.text = BuildEffectsTargetHint(cardDef);
 
             UpdateDragCurve(view, eventData.position);
             ApplyHighlight(cardDef, null, null, null);
@@ -556,10 +778,19 @@ namespace YoungBob.Prototype.UI.Pages
                 ClearHighlights();
                 _draggingCardDefinition = null;
                 _draggingCardInstanceId = null;
+                _effectTargetHintText.text = string.Empty;
                 return;
             }
 
-            var targetType = ParseTargetType(_draggingCardDefinition.targetType);
+            if (!TryParseTargetType(_draggingCardDefinition.targetType, out var targetType))
+            {
+                ClearHighlights();
+                _draggingCardDefinition = null;
+                _draggingCardInstanceId = null;
+                _draggingCardView = null;
+                _effectTargetHintText.text = string.Empty;
+                return;
+            }
             FindHoveredTargetsAtScreenPosition(view, eventData.position, out var hoveredPlayer, out var hoveredPart, out var hoveredArea);
 
             if (targetType == BattleTargetType.Area)
@@ -602,6 +833,7 @@ namespace YoungBob.Prototype.UI.Pages
                     _draggingCardDefinition = null;
                     _draggingCardInstanceId = null;
                     _draggingCardView = null;
+                    _effectTargetHintText.text = string.Empty;
                     return;
                 }
             }
@@ -610,6 +842,7 @@ namespace YoungBob.Prototype.UI.Pages
             _draggingCardDefinition = null;
             _draggingCardInstanceId = null;
             _draggingCardView = null;
+            _effectTargetHintText.text = string.Empty;
         }
 
         private void ApplyHighlight(CardDefinition cardDef, BattleUnitSlotView hoveredPlayer, MonsterPartSlotView hoveredPart, BattleAreaDropZoneView hoveredArea)
@@ -619,12 +852,15 @@ namespace YoungBob.Prototype.UI.Pages
                 return;
             }
 
-            var targetType = ParseTargetType(cardDef.targetType);
+            if (!TryParseTargetType(cardDef.targetType, out var targetType))
+            {
+                targetType = BattleTargetType.None;
+            }
             for (var i = 0; i < _playerSlots.Count; i++)
             {
                 var slot = _playerSlots[i];
                 var player = _lastState.GetPlayer(slot.UnitId);
-                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, GetHighlightModeForPlayer(cardDef, targetType, slot, hoveredPlayer));
+                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, _isDetailedStatusMode, GetHighlightModeForPlayer(cardDef, targetType, slot, hoveredPlayer));
             }
 
             for (var i = 0; i < _monsterPartSlots.Count; i++)
@@ -636,7 +872,7 @@ namespace YoungBob.Prototype.UI.Pages
                     continue;
                 }
 
-                slot.SetData(part, GetHighlightModeForPart(cardDef, targetType, slot, hoveredPart));
+                slot.SetData(part, _isDetailedStatusMode, GetHighlightModeForPart(cardDef, targetType, slot, hoveredPart));
             }
 
             for (var i = 0; i < _areaDropZones.Count; i++)
@@ -688,7 +924,7 @@ namespace YoungBob.Prototype.UI.Pages
 
         private SlotHighlightMode GetHighlightModeForPart(CardDefinition cardDef, BattleTargetType targetType, MonsterPartSlotView slot, MonsterPartSlotView hoveredSlot)
         {
-            if (!slot.IsAlive || !IsValidPartTarget(cardDef, targetType, slot))
+            if (!IsValidPartTarget(cardDef, targetType, slot))
             {
                 return SlotHighlightMode.None;
             }
@@ -723,7 +959,7 @@ namespace YoungBob.Prototype.UI.Pages
 
         private bool IsValidPartTarget(CardDefinition cardDef, BattleTargetType targetType, MonsterPartSlotView slot)
         {
-            if (slot == null || !slot.IsAlive || _lastState == null)
+            if (slot == null || _lastState == null)
             {
                 return false;
             }
@@ -964,7 +1200,7 @@ namespace YoungBob.Prototype.UI.Pages
             return null;
         }
 
-        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, Color color, SlotHighlightMode highlightMode)
+        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, Color color, bool detailedMode, SlotHighlightMode highlightMode)
         {
             var slotObject = new GameObject("UnitSlot_" + unitId);
             slotObject.transform.SetParent(parent, false);
@@ -1008,7 +1244,11 @@ namespace YoungBob.Prototype.UI.Pages
 
             // Armor
             var armorLabel = UiFactory.CreateText(slotObject.transform, "Armor", 18, TextAnchor.MiddleCenter, new Vector2(0f, 0.7f), new Vector2(0f, 0.7f), Vector2.zero, Vector2.zero);
-            armorLabel.GetComponent<RectTransform>().anchoredPosition = new Vector2(70f, 0f);
+            var armorRect = armorLabel.GetComponent<RectTransform>();
+            armorRect.anchoredPosition = new Vector2(70f, 0f);
+            armorRect.sizeDelta = new Vector2(130f, 28f);
+            armorLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+            armorLabel.verticalOverflow = VerticalWrapMode.Overflow;
             armorLabel.fontStyle = FontStyle.Bold;
             armorLabel.color = new Color(0.6f, 0.8f, 1f);
 
@@ -1019,7 +1259,7 @@ namespace YoungBob.Prototype.UI.Pages
 
             var slotView = slotObject.AddComponent<BattleUnitSlotView>();
             slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, color, highlightImage);
-            slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, highlightMode);
+            slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, vulnerableStacks, statuses, detailedMode, highlightMode);
             return slotView;
         }
 
@@ -1055,7 +1295,7 @@ namespace YoungBob.Prototype.UI.Pages
             var slotView = slotObject.AddComponent<MonsterPartSlotView>();
             slotView.Initialize(image, label, highlightImage);
             slotView.SetTargetPosition(position, snapImmediately: true);
-            slotView.SetData(part, highlightMode);
+            slotView.SetData(part, _isDetailedStatusMode, highlightMode);
             return slotView;
         }
 
@@ -1115,14 +1355,74 @@ namespace YoungBob.Prototype.UI.Pages
                 return string.Empty;
             }
 
-            var pose = string.IsNullOrEmpty(monster.currentPoseId) ? "idle" : monster.currentPoseId;
+            var pose = string.IsNullOrEmpty(monster.currentPoseId) ? "待机" : monster.currentPoseId;
             if (monster.hasActiveSkill && monster.activeSkill != null)
             {
-                var windup = monster.activeSkill.remainingWindup > 0 ? $" (windup {monster.activeSkill.remainingWindup})" : "";
-                return $"Action: {monster.activeSkill.displayName}{windup}  |  Pose: {pose}";
+                var windup = monster.activeSkill.remainingWindup > 0 ? $"（蓄力{monster.activeSkill.remainingWindup}）" : "";
+                return $"动作：{monster.activeSkill.displayName}{windup}  |  姿态：{pose}";
             }
 
-            return $"Action: waiting  |  Pose: {pose}";
+            return $"动作：待机  |  姿态：{pose}";
+        }
+
+        private static string BuildEffectsTargetHint(CardDefinition cardDef)
+        {
+            if (cardDef == null || cardDef.effects == null || cardDef.effects.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            bool hasCardTarget = false;
+            bool hasSelf = false;
+            bool hasAllEnemies = false;
+            bool hasAllAllies = false;
+            bool hasNone = false;
+            bool hasOther = false;
+
+            for (var i = 0; i < cardDef.effects.Length; i++)
+            {
+                var effect = cardDef.effects[i];
+                if (effect == null)
+                {
+                    continue;
+                }
+
+                var target = string.IsNullOrWhiteSpace(effect.target) ? "CardTarget" : effect.target;
+                if (string.Equals(target, "CardTarget", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasCardTarget = true;
+                }
+                else if (string.Equals(target, "Self", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasSelf = true;
+                }
+                else if (string.Equals(target, "AllEnemies", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasAllEnemies = true;
+                }
+                else if (string.Equals(target, "AllAllies", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasAllAllies = true;
+                }
+                else if (string.Equals(target, "None", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasNone = true;
+                }
+                else
+                {
+                    hasOther = true;
+                }
+            }
+
+            var parts = new List<string>();
+            if (hasCardTarget) parts.Add("需指向卡牌目标");
+            if (hasSelf) parts.Add("包含自身效果");
+            if (hasAllEnemies) parts.Add("包含全敌方效果");
+            if (hasAllAllies) parts.Add("包含全友方效果");
+            if (hasNone) parts.Add("包含无目标效果");
+            if (hasOther) parts.Add("包含特殊目标效果");
+
+            return parts.Count == 0 ? string.Empty : "目标提示：" + string.Join("，", parts);
         }
 
         private static Sprite GetPartSprite(string shape)
@@ -1138,12 +1438,89 @@ namespace YoungBob.Prototype.UI.Pages
             var range = string.IsNullOrEmpty(cardDef.rangeHeights) && string.IsNullOrEmpty(distance)
                 ? ""
                 : "\nRange: " + (string.IsNullOrEmpty(distance) ? "" : distance + " ") + (string.IsNullOrEmpty(cardDef.rangeHeights) ? "" : cardDef.rangeHeights);
-            return "Cost: " + cardDef.energyCost + "\nEffect: " + cardDef.effectType + "\nTarget: " + cardDef.targetType + range + "\nValue: " + cardDef.value;
+            var effectText = "None";
+            if (cardDef.effects != null && cardDef.effects.Length > 0)
+            {
+                var effectLines = new System.Text.StringBuilder();
+                for (var i = 0; i < cardDef.effects.Length; i++)
+                {
+                    var effect = cardDef.effects[i];
+                    if (effect == null || string.IsNullOrWhiteSpace(effect.op))
+                    {
+                        continue;
+                    }
+
+                    if (effectLines.Length > 0)
+                    {
+                        effectLines.Append(", ");
+                    }
+
+                    effectLines.Append(effect.op);
+                    if (effect.amount != 0)
+                    {
+                        effectLines.Append(" ");
+                        effectLines.Append(effect.amount);
+                    }
+                }
+
+                if (effectLines.Length > 0)
+                {
+                    effectText = effectLines.ToString();
+                }
+            }
+
+            return "Cost: " + cardDef.energyCost + "\nEffects: " + effectText + "\nTarget: " + cardDef.targetType + range;
         }
 
-        private static BattleTargetType ParseTargetType(string raw)
+        private static bool TryParseTargetType(string raw, out BattleTargetType targetType)
         {
-            return (BattleTargetType)System.Enum.Parse(typeof(BattleTargetType), raw, true);
+            targetType = BattleTargetType.None;
+            if (string.IsNullOrEmpty(raw))
+            {
+                return false;
+            }
+
+            return System.Enum.TryParse(raw, true, out targetType);
+        }
+
+        private List<BattleCardState> GetCurrentPile(PlayerBattleState player)
+        {
+            switch (_currentPileView)
+            {
+                case PileView.Draw:
+                    return player.drawPile;
+                case PileView.Discard:
+                    return player.discardPile;
+                case PileView.Exhaust:
+                    return player.exhaustPile;
+                default:
+                    return player.drawPile;
+            }
+        }
+
+        private string BuildPileTitle(int count)
+        {
+            switch (_currentPileView)
+            {
+                case PileView.Draw:
+                    return $"牌库 ({count})";
+                case PileView.Discard:
+                    return $"弃牌堆 ({count})";
+                case PileView.Exhaust:
+                    return $"消耗堆 ({count})";
+                default:
+                    return $"卡堆 ({count})";
+            }
+        }
+
+        private void ToggleStatusMode()
+        {
+            _isDetailedStatusMode = !_isDetailedStatusMode;
+            _statusModeButton.GetComponentInChildren<Text>().text = _isDetailedStatusMode ? "模式: 详" : "模式: 简";
+            if (_lastState != null)
+            {
+                RenderBoard(_lastState);
+            }
         }
 
         private void CreateAreaDropZone(Transform parent, string name, BattleArea area, Vector2 anchorMin, Vector2 anchorMax)

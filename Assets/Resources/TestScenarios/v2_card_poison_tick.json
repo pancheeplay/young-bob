@@ -1,0 +1,68 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_card_poison_tick",
+  "name": "V2 card poison tick",
+  "setup": {
+    "roomId": "v2_poison_room",
+    "stageId": "stage_boss_debug",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 1001,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p1",
+      "cardId": "assassin_poison_dart"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p1",
+      "cardInstanceId": "card:assassin_poison_dart",
+      "targetFaction": 2,
+      "targetUnitId": "$first_part",
+      "targetArea": 0,
+      "snapshotTag": "after_apply"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p1",
+      "snapshotTag": "after_monster_turn"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "part_status_equals",
+      "actualPath": "after_apply",
+      "partId": "$first_part",
+      "statusId": "Poison",
+      "expectedInt": 5,
+      "message": "poison applied"
+    },
+    {
+      "type": "part_field_equals",
+      "actualPath": "after_monster_turn",
+      "partId": "$first_part",
+      "field": "hp",
+      "expectedInt": 7,
+      "message": "poison tick damage applied"
+    },
+    {
+      "type": "part_status_equals",
+      "actualPath": "after_monster_turn",
+      "partId": "$first_part",
+      "statusId": "Poison",
+      "expectedInt": 4,
+      "message": "poison decays by 1"
+    }
+  ]
+}

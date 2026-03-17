@@ -38,18 +38,7 @@
       "targetFaction": 1,
       "targetUnitId": "p1",
       "targetArea": 0,
-      "snapshotTag": "self_curse_fail",
-      "allowFailure": true,
-      "expectedErrorContains": "Invalid curse target."
-    },
-    {
-      "action": "play_card",
-      "actorPlayerId": "p1",
-      "cardInstanceId": "card:curse_betrayal",
-      "targetFaction": 1,
-      "targetUnitId": "p2",
-      "targetArea": 0,
-      "snapshotTag": "ally_curse_success"
+      "snapshotTag": "self_curse_success"
     },
     {
       "action": "snapshot",
@@ -70,20 +59,14 @@
       "actualPath": "after_monster_turn"
     },
     {
-      "type": "snapshot_error_contains",
-      "message": "Playing curse on self should fail",
-      "expected": "Invalid curse target.",
-      "actualPath": "self_curse_fail"
-    },
-    {
       "type": "snapshot_contains",
-      "message": "Playing curse on ally should succeed",
+      "message": "Playing curse on self should succeed",
       "expected": "\"cardId\":\"curse_betrayal\"",
-      "actualPath": "ally_curse_success"
+      "actualPath": "self_curse_success"
     },
     {
       "type": "snapshot_contains",
-      "message": "Target ally gains Vulnerable",
+      "message": "Self gains Vulnerable",
       "expected": "\"vulnerableStacks\":2",
       "actualPath": "after_curse_play"
     }

@@ -36,17 +36,6 @@
       "targetFaction": 1,
       "targetUnitId": "guest",
       "targetArea": 0,
-      "snapshotTag": "guest_self_curse_fail",
-      "allowFailure": true,
-      "expectedErrorContains": "Invalid curse target."
-    },
-    {
-      "action": "play_card",
-      "actorPlayerId": "guest",
-      "cardInstanceId": "card:curse_betrayal",
-      "targetFaction": 1,
-      "targetUnitId": "host",
-      "targetArea": 0,
       "snapshotTag": "after_guest_curse"
     },
     {
@@ -72,14 +61,8 @@
       "actualPath": "after_monster_turn"
     },
     {
-      "type": "snapshot_error_contains",
-      "message": "Curse cannot target self",
-      "expected": "Invalid curse target.",
-      "actualPath": "guest_self_curse_fail"
-    },
-    {
       "type": "snapshot_contains",
-      "message": "Curse to ally applies Vulnerable",
+      "message": "Curse to self applies Vulnerable",
       "expected": "\"vulnerableStacks\":2",
       "actualPath": "after_guest_curse"
     },

@@ -1,0 +1,59 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_card_shield_slam",
+  "name": "V2 shield slam damage by armor",
+  "setup": {
+    "roomId": "v2_slam_room",
+    "stageId": "stage_boss_debug",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 1003,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_set_player_armor",
+      "actorPlayerId": "p1",
+      "targetUnitId": "p1",
+      "debugValue": 10
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p1",
+      "cardId": "warrior_shield_slam"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p1",
+      "cardInstanceId": "card:warrior_shield_slam",
+      "targetFaction": 2,
+      "targetUnitId": "$part:body",
+      "targetArea": 0,
+      "snapshotTag": "after_slam"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "part_field_equals",
+      "actualPath": "after_slam",
+      "partId": "body",
+      "field": "hp",
+      "expectedInt": 16,
+      "message": "body takes armor-scaled damage"
+    },
+    {
+      "type": "monster_core_hp_equals",
+      "actualPath": "after_slam",
+      "expectedInt": 50,
+      "message": "core hp reduced with part damage"
+    }
+  ]
+}

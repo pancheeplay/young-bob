@@ -1,0 +1,45 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_card_quick_jab_draw",
+  "name": "V2 quick jab draws card",
+  "setup": {
+    "roomId": "v2_quick_jab_room",
+    "stageId": "stage_boss_debug",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 1005,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p1",
+      "cardId": "assassin_quick_jab"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p1",
+      "cardInstanceId": "card:assassin_quick_jab",
+      "targetFaction": 2,
+      "targetUnitId": "$first_ground_part",
+      "targetArea": 0,
+      "snapshotTag": "after_quick_jab"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "event_log_contains",
+      "actualPath": "after_quick_jab",
+      "expected": "used >> drew <color=#F7E08A>1 card(s)</color>",
+      "message": "quick jab should damage then draw"
+    }
+  ]
+}

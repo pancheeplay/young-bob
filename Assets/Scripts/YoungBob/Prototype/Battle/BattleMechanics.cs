@@ -23,10 +23,16 @@ namespace YoungBob.Prototype.Battle
 
         public static int ApplyDamageToPart(BattleState state, MonsterPartState part, int amount, BattleCommandResult result)
         {
-            var previousHp = part.hp;
-            part.hp = Math.Max(0, part.hp - amount);
-            var applied = previousHp - part.hp;
-            state.monster.coreHp = Math.Max(0, state.monster.coreHp - amount);
+            var incoming = Math.Max(0, amount);
+            var coreBefore = state.monster.coreHp;
+            var appliedToCore = Math.Min(coreBefore, incoming);
+            state.monster.coreHp = coreBefore - appliedToCore;
+
+            // Part HP is a break gauge. Once broken, it stays at 0 and no longer blocks further damage.
+            if (!part.isBroken && part.hp > 0)
+            {
+                part.hp = Math.Max(0, part.hp - incoming);
+            }
 
             if (!part.isBroken && part.hp <= 0)
             {
@@ -45,7 +51,18 @@ namespace YoungBob.Prototype.Battle
                 });
             }
 
-            return applied;
+            return appliedToCore;
+        }
+
+        public static int GetEffectiveEnergyCost(BattleCardState card, Data.CardDefinition definition)
+        {
+            if (definition == null)
+            {
+                return 0;
+            }
+
+            var delta = card == null ? 0 : card.costDelta;
+            return Math.Max(0, definition.energyCost + delta);
         }
 
         public static int Heal(PlayerBattleState player, int amount)
@@ -107,7 +124,8 @@ namespace YoungBob.Prototype.Battle
             var moveCard = new BattleCardState
             {
                 instanceId = player.playerId + "_" + BattleEngine.MoveCardId + "_" + state.turnIndex + "_" + Guid.NewGuid().ToString("N"),
-                cardId = BattleEngine.MoveCardId
+                cardId = BattleEngine.MoveCardId,
+                costDelta = 0
             };
 
             if (player.hand.Count >= BattleEngine.MaxHandSize)
@@ -129,7 +147,8 @@ namespace YoungBob.Prototype.Battle
             var card = new BattleCardState
             {
                 instanceId = player.playerId + "_" + cardId + "_" + state.turnIndex + "_" + Guid.NewGuid().ToString("N"),
-                cardId = cardId
+                cardId = cardId,
+                costDelta = 0
             };
 
             if (player.hand.Count >= BattleEngine.MaxHandSize)
@@ -183,4 +202,5 @@ namespace YoungBob.Prototype.Battle
             });
         }
     }
+
 }

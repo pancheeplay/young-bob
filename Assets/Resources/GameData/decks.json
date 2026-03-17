@@ -4,18 +4,25 @@
       "id": "co_op_starter",
       "cards": [
         "priest_heal",
-        "priest_heal",
-        "warrior_charge",
-        "warrior_charge",
-        "warrior_slash",
-        "warrior_slash",
+        "assassin_quick_jab",
+        "assassin_quick_jab",
+        "assassin_chain_step",
+        "assassin_combo_finisher",
+        "assassin_air_sting",
+        "assassin_poison_dart",
+        "assassin_toxic_cloud",
+        "assassin_catalyst_strike",
+        "warrior_iron_wall",
+        "warrior_fortress",
+        "warrior_shield_slam",
         "warrior_horizontal_sweep",
-        "assassin_stab",
-        "assassin_stab",
-        "assassin_finisher",
-        "assassin_kick",
-        "assassin_kick",
-        "assassin_air_kill"
+        "warrior_battle_cry",
+        "warrior_multi_strike",
+        "utility_recycle",
+        "utility_borrow_card",
+        "utility_overclock",
+        "utility_tactical_forge",
+        "curse_basic"
       ]
     }
   ]

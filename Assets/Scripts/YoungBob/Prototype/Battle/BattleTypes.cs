@@ -90,6 +90,14 @@ namespace YoungBob.Prototype.Battle
     {
         public string instanceId;
         public string cardId;
+        public int costDelta;
+    }
+
+    [Serializable]
+    public sealed class BattleStatusState
+    {
+        public string id;
+        public int stacks;
     }
 
     [Serializable]
@@ -108,9 +116,11 @@ namespace YoungBob.Prototype.Battle
         public int cardsPlayedThisTurn;
         public int nextAttackBonus;
         public int attackChargeStage;
+        public List<BattleStatusState> statuses = new List<BattleStatusState>();
         public List<BattleCardState> drawPile = new List<BattleCardState>();
         public List<BattleCardState> hand = new List<BattleCardState>();
         public List<BattleCardState> discardPile = new List<BattleCardState>();
+        public List<BattleCardState> exhaustPile = new List<BattleCardState>();
     }
 
     [Serializable]
@@ -131,6 +141,7 @@ namespace YoungBob.Prototype.Battle
         public float radius;
         public string shape;
         public string[] lootOnBreak;
+        public List<BattleStatusState> statuses = new List<BattleStatusState>();
     }
 
     [Serializable]
