@@ -249,6 +249,7 @@ namespace YoungBob.Prototype.Battle
     {
         public string playerId;
         public string displayName;
+        public string starterDeckId;
     }
 
     [Serializable]

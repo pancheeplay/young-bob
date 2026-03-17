@@ -97,6 +97,7 @@ namespace YoungBob.Prototype.Data
         private readonly Dictionary<string, CardDefinition> _cards;
         private readonly Dictionary<string, EncounterDefinition> _encounters;
         private readonly Dictionary<string, DeckDefinition> _decks;
+        private readonly List<DeckDefinition> _deckList;
         private readonly Dictionary<string, MonsterDefinition> _monsters;
         private readonly List<StageDefinition> _stages;
         private readonly Dictionary<string, StageDefinition> _stagesById;
@@ -105,6 +106,7 @@ namespace YoungBob.Prototype.Data
             Dictionary<string, CardDefinition> cards,
             Dictionary<string, EncounterDefinition> encounters,
             Dictionary<string, DeckDefinition> decks,
+            List<DeckDefinition> deckList,
             Dictionary<string, MonsterDefinition> monsters,
             List<StageDefinition> stages,
             Dictionary<string, StageDefinition> stagesById)
@@ -112,6 +114,7 @@ namespace YoungBob.Prototype.Data
             _cards = cards;
             _encounters = encounters;
             _decks = decks;
+            _deckList = deckList;
             _monsters = monsters;
             _stages = stages;
             _stagesById = stagesById;
@@ -131,6 +134,9 @@ namespace YoungBob.Prototype.Data
                 DecksResourcePath,
                 catalog => catalog.decks,
                 item => item.id);
+            var deckList = LoadArrayCatalog<DeckCatalog, DeckDefinition>(
+                DecksResourcePath,
+                catalog => catalog.decks);
             var monsters = LoadCatalog<MonsterCatalog, MonsterDefinition>(
                 MonstersResourcePath,
                 catalog => catalog.monsters,
@@ -143,7 +149,7 @@ namespace YoungBob.Prototype.Data
             var stagesById = BuildStageLookup(stages);
             ValidateStageEncounters(stages, encounters);
 
-            return new GameDataRepository(cards, encounters, decks, monsters, stages, stagesById);
+            return new GameDataRepository(cards, encounters, decks, deckList, monsters, stages, stagesById);
         }
 
         public CardDefinition GetCard(string id)
@@ -210,6 +216,11 @@ namespace YoungBob.Prototype.Data
             }
 
             return result;
+        }
+
+        public IReadOnlyList<DeckDefinition> GetAllDecks()
+        {
+            return _deckList;
         }
 
         private static Dictionary<string, TItem> LoadCatalog<TCatalog, TItem>(

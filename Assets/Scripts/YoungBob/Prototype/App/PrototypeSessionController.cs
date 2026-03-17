@@ -14,6 +14,27 @@ namespace YoungBob.Prototype.App
         public string stageId;
         public string encounterId;
         public string starterDeckId;
+        public PlayerDeckChoicePayload[] playerDecks;
+    }
+
+    [Serializable]
+    public sealed class PlayerDeckChoicePayload
+    {
+        public string playerId;
+        public string deckId;
+    }
+
+    [Serializable]
+    public sealed class RoomStageSelectionPayload
+    {
+        public string stageId;
+    }
+
+    [Serializable]
+    public sealed class RoomDeckSelectionPayload
+    {
+        public string playerId;
+        public string deckId;
     }
 
     [Serializable]
@@ -43,15 +64,19 @@ namespace YoungBob.Prototype.App
     }
 
     public sealed class PrototypeSessionController
+        : IDisposable
     {
         private readonly IMultiplayerService _multiplayer;
         private readonly BattleEngine _battleEngine;
         private readonly GameDataRepository _dataRepository;
         private readonly IReadOnlyList<StageDefinition> _availableStages;
+        private readonly IReadOnlyList<DeckDefinition> _availableDecks;
 
         private RoomJoinedEvent _room;
         private int _seq;
-        private int _selectedStageIndex;
+        private readonly LobbySelectionState _lobbySelection;
+        private readonly SessionMessageGuard _messageGuard = new SessionMessageGuard();
+        private bool _disposed;
 
         public PrototypeSessionController(IMultiplayerService multiplayer, BattleEngine battleEngine, GameDataRepository dataRepository)
         {
@@ -59,7 +84,8 @@ namespace YoungBob.Prototype.App
             _battleEngine = battleEngine;
             _dataRepository = dataRepository;
             _availableStages = _dataRepository.GetAllStages();
-            _selectedStageIndex = 0;
+            _availableDecks = _dataRepository.GetAllDecks();
+            _lobbySelection = new LobbySelectionState(ResolveDefaultDeckId());
 
             _multiplayer.Connected += OnConnected;
             _multiplayer.TransportError += OnTransportError;
@@ -92,23 +118,28 @@ namespace YoungBob.Prototype.App
         {
             get
             {
-                if (_availableStages == null || _availableStages.Count == 0)
-                {
-                    return null;
-                }
-
-                if (_selectedStageIndex < 0 || _selectedStageIndex >= _availableStages.Count)
-                {
-                    _selectedStageIndex = 0;
-                }
-
-                return _availableStages[_selectedStageIndex];
+                return _lobbySelection.GetSelectedStage(_availableStages);
             }
         }
 
         public int AvailableStageCount
         {
             get { return _availableStages == null ? 0 : _availableStages.Count; }
+        }
+
+        public IReadOnlyList<StageDefinition> AvailableStages
+        {
+            get { return _availableStages; }
+        }
+
+        public IReadOnlyList<DeckDefinition> AvailableDecks
+        {
+            get { return _availableDecks; }
+        }
+
+        public string LocalSelectedDeckId
+        {
+            get { return _lobbySelection.LocalSelectedDeckId; }
         }
 
         public string AvailabilityText
@@ -119,6 +150,21 @@ namespace YoungBob.Prototype.App
                     ? _multiplayer.ServiceName + " service ready"
                     : _multiplayer.ServiceName + " service unavailable";
             }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _multiplayer.Connected -= OnConnected;
+            _multiplayer.TransportError -= OnTransportError;
+            _multiplayer.RoomJoined -= OnRoomJoined;
+            _multiplayer.RoomListUpdated -= OnRoomListUpdated;
+            _multiplayer.MessageReceived -= OnMessageReceived;
         }
 
         public void StartSession(string displayNameOverride = null)
@@ -194,7 +240,8 @@ namespace YoungBob.Prototype.App
             {
                 randomSeed = 24681357,
                 stageId = selectedStage.id,
-                starterDeckId = "co_op_starter"
+                starterDeckId = ResolveDefaultDeckId(),
+                playerDecks = BuildPlayerDeckChoices()
             };
 
             LogAdded?.Invoke("Broadcasting battle.start for room " + _room.roomId + " with stage " + selectedStage.id + ".");
@@ -203,24 +250,74 @@ namespace YoungBob.Prototype.App
 
         public void SelectPreviousStage()
         {
-            if (_availableStages == null || _availableStages.Count == 0)
+            if (!IsLocalHost)
             {
                 return;
             }
 
-            _selectedStageIndex = (_selectedStageIndex - 1 + _availableStages.Count) % _availableStages.Count;
+            if (!_lobbySelection.SelectPreviousStage(_availableStages))
+            {
+                return;
+            }
             StageSelectionChanged?.Invoke();
+            BroadcastStageSelection();
         }
 
         public void SelectNextStage()
         {
-            if (_availableStages == null || _availableStages.Count == 0)
+            if (!IsLocalHost)
             {
                 return;
             }
 
-            _selectedStageIndex = (_selectedStageIndex + 1) % _availableStages.Count;
+            if (!_lobbySelection.SelectNextStage(_availableStages))
+            {
+                return;
+            }
             StageSelectionChanged?.Invoke();
+            BroadcastStageSelection();
+        }
+
+        public void SelectStageById(string stageId)
+        {
+            if (!IsLocalHost)
+            {
+                return;
+            }
+
+            if (_lobbySelection.SelectStageById(_availableStages, stageId))
+            {
+                StageSelectionChanged?.Invoke();
+                BroadcastStageSelection();
+            }
+        }
+
+        public void SelectLocalDeck(string deckId)
+        {
+            if (string.IsNullOrWhiteSpace(deckId))
+            {
+                return;
+            }
+
+            try
+            {
+                _dataRepository.GetDeck(deckId);
+            }
+            catch (Exception ex)
+            {
+                LogAdded?.Invoke("Local deck selection rejected: invalid deck " + deckId + ". " + ex.Message);
+                return;
+            }
+
+            _lobbySelection.SelectLocalDeck(LocalPlayerId, deckId);
+
+            StageSelectionChanged?.Invoke();
+            BroadcastDeckSelection(LocalPlayerId, deckId);
+        }
+
+        public string GetSelectedDeckIdForPlayer(string playerId)
+        {
+            return _lobbySelection.GetSelectedDeckIdForPlayer(playerId, ResolveDefaultDeckId());
         }
 
         public void PlayCard(string cardInstanceId, BattleTargetFaction targetFaction, string targetUnitId, BattleArea targetArea)
@@ -328,16 +425,36 @@ namespace YoungBob.Prototype.App
                 _room = null;
                 CurrentRoom = null;
                 CurrentBattleState = null;
+                _lobbySelection.ClearRoomPlayerSelections();
+                ResetMessageTracking();
                 StatusChanged?.Invoke("Left room");
                 RoomChanged?.Invoke(null);
                 BattleStateChanged?.Invoke(null);
                 return;
             }
 
+            var roomChanged = _room == null || !string.Equals(_room.roomId, room.roomId, StringComparison.Ordinal);
+            if (roomChanged)
+            {
+                ResetMessageTracking();
+            }
+
             _room = room;
             CurrentRoom = room;
+            EnsureRoomDeckSelections(room);
             StatusChanged?.Invoke("Joined room " + room.roomId + " with " + room.players.Count + " players");
             RoomChanged?.Invoke(room);
+            StageSelectionChanged?.Invoke();
+
+            if (!string.IsNullOrWhiteSpace(LocalPlayerId))
+            {
+                BroadcastDeckSelection(LocalPlayerId, GetSelectedDeckIdForPlayer(LocalPlayerId));
+            }
+
+            if (IsLocalHost)
+            {
+                BroadcastStageSelection();
+            }
         }
 
         private void OnRoomListUpdated(IReadOnlyList<RoomListItem> rooms)
@@ -347,6 +464,16 @@ namespace YoungBob.Prototype.App
 
         private void OnMessageReceived(MultiplayerMessage message)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (!TryAcceptMessage(message))
+            {
+                return;
+            }
+
             LogAdded?.Invoke("Received message: " + message.type + " seq=" + message.seq + " sender=" + message.senderPlayerId);
             switch (message.type)
             {
@@ -362,13 +489,32 @@ namespace YoungBob.Prototype.App
                 case "battle.finish":
                     HandleBattleFinish(message);
                     break;
+                case "room.stage.select":
+                    HandleRoomStageSelection(message);
+                    break;
+                case "room.deck.select":
+                    HandleRoomDeckSelection(message);
+                    break;
+                default:
+                    LogAdded?.Invoke("Ignored unknown message type: " + message.type);
+                    break;
             }
         }
 
         private void HandleBattleStart(MultiplayerMessage message)
         {
             LogAdded?.Invoke("Handling battle.start for room " + message.roomId + ".");
-            var payload = JsonUtility.FromJson<BattleStartPayload>(message.payloadJson);
+            if (_room == null || _room.players == null)
+            {
+                LogAdded?.Invoke("battle.start ignored: no active room context.");
+                return;
+            }
+
+            if (!TryParsePayload(message, out BattleStartPayload payload))
+            {
+                return;
+            }
+
             var setup = new BattleSetupDefinition
             {
                 roomId = message.roomId,
@@ -384,11 +530,21 @@ namespace YoungBob.Prototype.App
                 setup.players.Add(new BattleParticipantDefinition
                 {
                     playerId = player.playerId,
-                    displayName = player.displayName
+                    displayName = player.displayName,
+                    starterDeckId = ResolvePlayerDeckId(payload, player.playerId)
                 });
             }
 
-            CurrentBattleState = _battleEngine.CreateInitialState(setup);
+            try
+            {
+                CurrentBattleState = _battleEngine.CreateInitialState(setup);
+            }
+            catch (Exception ex)
+            {
+                LogAdded?.Invoke("battle.start failed: " + ex.Message);
+                return;
+            }
+
             var monsterName = CurrentBattleState.monster == null ? "unknown" : CurrentBattleState.monster.displayName;
             LogAdded?.Invoke("Battle started against " + monsterName + ".");
             BattleStateChanged?.Invoke(CurrentBattleState);
@@ -401,7 +557,23 @@ namespace YoungBob.Prototype.App
                 return;
             }
 
-            var payload = JsonUtility.FromJson<BattleCommandPayload>(message.payloadJson);
+            if (!TryParsePayload(message, out BattleCommandPayload payload))
+            {
+                return;
+            }
+
+            if (!string.Equals(payload.actorPlayerId, message.senderPlayerId, StringComparison.Ordinal))
+            {
+                LogAdded?.Invoke("Rejected command: actor/sender mismatch.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(payload.action))
+            {
+                LogAdded?.Invoke("Rejected command: empty action.");
+                return;
+            }
+
             var result = _battleEngine.Apply(CurrentBattleState, new BattleCommand
             {
                 commandId = payload.commandId,
@@ -438,8 +610,17 @@ namespace YoungBob.Prototype.App
 
         private void HandleBattleCommit(MultiplayerMessage message)
         {
-            var payload = JsonUtility.FromJson<BattleCommitPayload>(message.payloadJson);
-            CurrentBattleState = JsonUtility.FromJson<BattleState>(payload.stateJson);
+            if (!TryParsePayload(message, out BattleCommitPayload payload))
+            {
+                return;
+            }
+
+            if (!TryParsePayloadJson(payload.stateJson, "battle.commit state", out BattleState state))
+            {
+                return;
+            }
+
+            CurrentBattleState = state;
             if (payload.events != null)
             {
                 for (var i = 0; i < payload.events.Length; i++)
@@ -466,11 +647,169 @@ namespace YoungBob.Prototype.App
             }
         }
 
+        private string ResolveDefaultDeckId()
+        {
+            if (_availableDecks != null)
+            {
+                for (var i = 0; i < _availableDecks.Count; i++)
+                {
+                    var deck = _availableDecks[i];
+                    if (deck == null || string.IsNullOrWhiteSpace(deck.id))
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(deck.id, "co_op_starter", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return deck.id;
+                    }
+                }
+
+                for (var i = 0; i < _availableDecks.Count; i++)
+                {
+                    var deck = _availableDecks[i];
+                    if (deck != null && !string.IsNullOrWhiteSpace(deck.id))
+                    {
+                        return deck.id;
+                    }
+                }
+            }
+
+            return "co_op_starter";
+        }
+
+        private void EnsureRoomDeckSelections(RoomJoinedEvent room)
+        {
+            _lobbySelection.EnsureRoomDeckSelections(room, LocalPlayerId, ResolveDefaultDeckId());
+        }
+
+        private PlayerDeckChoicePayload[] BuildPlayerDeckChoices()
+        {
+            return _lobbySelection.BuildPlayerDeckChoices(_room, ResolveDefaultDeckId());
+        }
+
+        private string ResolvePlayerDeckId(BattleStartPayload payload, string playerId)
+        {
+            if (payload != null && payload.playerDecks != null)
+            {
+                for (var i = 0; i < payload.playerDecks.Length; i++)
+                {
+                    var choice = payload.playerDecks[i];
+                    if (choice == null || !string.Equals(choice.playerId, playerId, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(choice.deckId))
+                    {
+                        return choice.deckId;
+                    }
+                }
+            }
+
+            if (payload != null && !string.IsNullOrWhiteSpace(payload.starterDeckId))
+            {
+                return payload.starterDeckId;
+            }
+
+            return ResolveDefaultDeckId();
+        }
+
+        private void BroadcastStageSelection()
+        {
+            if (_room == null || !IsLocalHost || SelectedStage == null)
+            {
+                return;
+            }
+
+            var payload = new RoomStageSelectionPayload
+            {
+                stageId = SelectedStage.id
+            };
+            Broadcast("room.stage.select", JsonUtility.ToJson(payload));
+        }
+
+        private void BroadcastDeckSelection(string playerId, string deckId)
+        {
+            if (_room == null || string.IsNullOrWhiteSpace(playerId) || string.IsNullOrWhiteSpace(deckId))
+            {
+                return;
+            }
+
+            var payload = new RoomDeckSelectionPayload
+            {
+                playerId = playerId,
+                deckId = deckId
+            };
+            Broadcast("room.deck.select", JsonUtility.ToJson(payload));
+        }
+
+        private void HandleRoomStageSelection(MultiplayerMessage message)
+        {
+            if (_room == null || !string.Equals(message.senderPlayerId, _room.hostPlayerId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (!TryParsePayload(message, out RoomStageSelectionPayload payload))
+            {
+                return;
+            }
+
+            if (payload == null || string.IsNullOrWhiteSpace(payload.stageId) || _availableStages == null)
+            {
+                return;
+            }
+
+            if (_lobbySelection.SelectStageById(_availableStages, payload.stageId))
+            {
+                StageSelectionChanged?.Invoke();
+            }
+        }
+
+        private void HandleRoomDeckSelection(MultiplayerMessage message)
+        {
+            if (!TryParsePayload(message, out RoomDeckSelectionPayload payload))
+            {
+                return;
+            }
+
+            if (payload == null || string.IsNullOrWhiteSpace(payload.playerId) || string.IsNullOrWhiteSpace(payload.deckId))
+            {
+                return;
+            }
+
+            if (!string.Equals(payload.playerId, message.senderPlayerId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            try
+            {
+                _dataRepository.GetDeck(payload.deckId);
+            }
+            catch (Exception ex)
+            {
+                LogAdded?.Invoke("Room deck selection rejected: invalid deck " + payload.deckId + ". " + ex.Message);
+                return;
+            }
+
+            _lobbySelection.ApplyRemoteDeckSelection(payload.playerId, payload.deckId, LocalPlayerId);
+
+            StageSelectionChanged?.Invoke();
+        }
+
         private void Broadcast(string type, string payloadJson)
         {
             if (_room == null)
             {
                 LogAdded?.Invoke("Broadcast skipped for " + type + ": room is null.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(LocalPlayerId))
+            {
+                LogAdded?.Invoke("Broadcast skipped for " + type + ": LocalPlayerId is empty.");
                 return;
             }
 
@@ -485,6 +824,33 @@ namespace YoungBob.Prototype.App
                 seq = _seq,
                 payloadJson = payloadJson
             });
+        }
+
+        private bool TryAcceptMessage(MultiplayerMessage message)
+        {
+            return _messageGuard.TryAccept(message, _room == null ? null : _room.roomId, Log);
+        }
+
+        private bool TryParsePayload<T>(MultiplayerMessage message, out T payload)
+            where T : class
+        {
+            return SessionPayloadParser.TryParsePayload(message, Log, out payload);
+        }
+
+        private bool TryParsePayloadJson<T>(string json, string context, out T payload)
+            where T : class
+        {
+            return SessionPayloadParser.TryParseJson(json, context, Log, out payload);
+        }
+
+        private void ResetMessageTracking()
+        {
+            _messageGuard.Reset();
+        }
+
+        private void Log(string message)
+        {
+            LogAdded?.Invoke(message);
         }
     }
 }

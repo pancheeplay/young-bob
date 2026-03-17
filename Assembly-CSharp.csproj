@@ -64,6 +64,7 @@
     <Analyzer Include="/Applications/Unity/Unity.app/Contents/Tools/Unity.SourceGenerators/Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/App/LobbySelectionState.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleHandCardDragView.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/AvatarManager.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleMechanics.cs" />
@@ -103,6 +104,7 @@
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/BattleInteraction.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleUnitSlotView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/CardEffectResolver.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/SelectionPopupView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleAreaDropZoneView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/MonsterPartSlotView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTargetResolver.cs" />
@@ -112,9 +114,11 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/UiFactory.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/RoomListUI.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/MoveData.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/App/SessionPayloadParser.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/FrameRateStats.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/GameManager.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/YoungBobUiManager.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/App/SessionMessageGuard.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/RuntimeConsolePanel.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/DebugRelayWebGlBridge.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Scene/YoungBobGameManager.cs" />

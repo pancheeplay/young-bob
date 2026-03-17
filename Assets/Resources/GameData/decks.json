@@ -24,6 +24,11 @@
         "utility_tactical_forge",
         "curse_basic"
       ]
+    },
+    {
+      "id" :"test",
+      "cards": [
+        "priest_heal"]
     }
   ]
 }

@@ -22,7 +22,6 @@ namespace YoungBob.Prototype.Battle
 
         public BattleState CreateInitialState(BattleSetupDefinition setup)
         {
-            var deck = _dataRepository.GetDeck(setup.starterDeckId);
             var state = new BattleState
             {
                 roomId = setup.roomId,
@@ -36,6 +35,7 @@ namespace YoungBob.Prototype.Battle
 
             foreach (var participant in setup.players)
             {
+                var deck = ResolveStarterDeck(setup, participant);
                 var player = new PlayerBattleState
                 {
                     playerId = participant.playerId,
@@ -76,6 +76,34 @@ namespace YoungBob.Prototype.Battle
             }
 
             return state;
+        }
+
+        private DeckDefinition ResolveStarterDeck(BattleSetupDefinition setup, BattleParticipantDefinition participant)
+        {
+            var requestedDeckId = participant == null ? null : participant.starterDeckId;
+            if (!string.IsNullOrWhiteSpace(requestedDeckId))
+            {
+                try
+                {
+                    return _dataRepository.GetDeck(requestedDeckId);
+                }
+                catch
+                {
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(setup.starterDeckId))
+            {
+                return _dataRepository.GetDeck(setup.starterDeckId);
+            }
+
+            var allDecks = _dataRepository.GetAllDecks();
+            if (allDecks != null && allDecks.Count > 0)
+            {
+                return allDecks[0];
+            }
+
+            throw new InvalidOperationException("No deck available for battle setup.");
         }
 
         public BattleCommandResult Apply(BattleState state, BattleCommand command)

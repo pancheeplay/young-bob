@@ -1,26 +1,27 @@
 {
   "stages": [
     {
+      "id": "stage_trial_1",
+      "name": "关卡 I",
+      "encounterIds": [
+        "slime_intro",
+        "dragon_curse_boss"
+      ]
+    },
+    {
       "id": "stage_slime_training",
-      "name": "Slime Training",
+      "name": "史莱姆测试",
       "encounterIds": [
         "slime_intro"
       ]
     },
     {
       "id": "stage_boss_debug",
-      "name": "Boss Debug",
+      "name": "Boss测试",
       "encounterIds": [
-        "dragon_curse_boss"
-      ]
-    },
-    {
-      "id": "stage_trial_1",
-      "name": "Trial Stage I",
-      "encounterIds": [
-        "slime_intro",
         "dragon_curse_boss"
       ]
     }
+    
   ]
 }
