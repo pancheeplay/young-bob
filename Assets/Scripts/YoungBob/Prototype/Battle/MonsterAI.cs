@@ -76,12 +76,12 @@ namespace YoungBob.Prototype.Battle
                 FaceArea(monster, target.area);
                 result.events.Add(new BattleEvent
                 {
-                    message = "<color=#8A8A8A>Monster action:</color> attacking " + BattleTextHelper.Unit(target.displayName) + "."
+                    message = "<color=#8A8A8A>怪物行动：</color> 攻击 " + BattleTextHelper.Unit(target.displayName) + "。"
                 });
                 var damage = BattleMechanics.ApplyDamage(target, 4);
                 result.events.Add(new BattleEvent
                 {
-                    message = BattleTextHelper.Unit(monster.displayName) + " attacks " + BattleTextHelper.Unit(target.displayName) + " for " + BattleTextHelper.DamageText(damage) + "."
+                    message = BattleTextHelper.Unit(monster.displayName) + " 攻击 " + BattleTextHelper.Unit(target.displayName) + "，造成 " + BattleTextHelper.DamageText(damage) + "。"
                 });
                 return;
             }
@@ -96,11 +96,11 @@ namespace YoungBob.Prototype.Battle
                 {
                     result.events.Add(new BattleEvent
                     {
-                        message = "<color=#8A8A8A>Monster action:</color> waiting for cooldowns."
+                        message = "<color=#8A8A8A>怪物行动：</color> 等待冷却。"
                     });
                     result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(monster.displayName) + " is waiting for an opening."
+                        message = BattleTextHelper.Unit(monster.displayName) + " 正在寻找出手时机。"
                     });
                     return;
                 }
@@ -132,7 +132,7 @@ namespace YoungBob.Prototype.Battle
                 monster.hasActiveSkill = true;
                 result.events.Add(new BattleEvent
                 {
-                    message = "<color=#8A8A8A>Monster AI:</color> selected " + BattleTextHelper.Card(skillDef.name) + " (cd=" + GetSkillCooldown(monster, skillIndex) + ")."
+                    message = "<color=#8A8A8A>怪物AI：</color> 选择了 " + BattleTextHelper.Card(skillDef.name) + "（冷却=" + GetSkillCooldown(monster, skillIndex) + "）。"
                 });
 
                 if (monster.activeSkill.remainingWindup > 0)
@@ -140,11 +140,11 @@ namespace YoungBob.Prototype.Battle
                     ApplyMonsterPose(monster, BattleEngine.PoseChargeId);
                     result.events.Add(new BattleEvent
                     {
-                        message = "<color=#8A8A8A>Monster action:</color> charging " + BattleTextHelper.Card(skillDef.name) + "."
+                        message = "<color=#8A8A8A>怪物行动：</color> 蓄力 " + BattleTextHelper.Card(skillDef.name) + "。"
                     });
                     result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(monster.displayName) + " begins charging " + BattleTextHelper.Card(skillDef.name) + "."
+                        message = BattleTextHelper.Unit(monster.displayName) + " 开始蓄力 " + BattleTextHelper.Card(skillDef.name) + "。"
                     });
                     return;
                 }
@@ -158,11 +158,11 @@ namespace YoungBob.Prototype.Battle
                     ApplyMonsterPose(monster, BattleEngine.PoseChargeId);
                     result.events.Add(new BattleEvent
                     {
-                        message = "<color=#8A8A8A>Monster action:</color> charging " + BattleTextHelper.Card(monster.activeSkill.displayName) + "."
+                        message = "<color=#8A8A8A>怪物行动：</color> 蓄力 " + BattleTextHelper.Card(monster.activeSkill.displayName) + "。"
                     });
                     result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(monster.displayName) + " continues charging " + BattleTextHelper.Card(monster.activeSkill.displayName) + "."
+                        message = BattleTextHelper.Unit(monster.displayName) + " 继续蓄力 " + BattleTextHelper.Card(monster.activeSkill.displayName) + "。"
                     });
                     return;
                 }
@@ -171,7 +171,7 @@ namespace YoungBob.Prototype.Battle
             ApplyMonsterPose(monster, string.IsNullOrWhiteSpace(monster.activeSkill.castPoseId) ? BattleEngine.PoseIdleId : monster.activeSkill.castPoseId);
             result.events.Add(new BattleEvent
             {
-                message = "<color=#8A8A8A>Monster action:</color> using " + BattleTextHelper.Card(monster.activeSkill.displayName) + "."
+                message = "<color=#8A8A8A>怪物行动：</color> 使用 " + BattleTextHelper.Card(monster.activeSkill.displayName) + "。"
             });
             ExecuteMonsterSkill(state, monster.activeSkill, result);
             StartSkillCooldown(monster, monster.activeSkill);
@@ -471,7 +471,7 @@ namespace YoungBob.Prototype.Battle
                 var damage = BattleMechanics.ApplyDamage(player, skill.damage);
                 result.events.Add(new BattleEvent
                 {
-                    message = BattleTextHelper.Unit(state.monster.displayName) + " hits " + BattleTextHelper.Unit(player.displayName) + " for " + BattleTextHelper.DamageText(damage) + " with " + BattleTextHelper.Card(skill.displayName) + "."
+                    message = BattleTextHelper.Unit(state.monster.displayName) + " 使用 " + BattleTextHelper.Card(skill.displayName) + " 命中 " + BattleTextHelper.Unit(player.displayName) + "，造成 " + BattleTextHelper.DamageText(damage) + "。"
                 });
 
                 if (!string.IsNullOrWhiteSpace(skill.onHitAddCardId))
@@ -479,7 +479,7 @@ namespace YoungBob.Prototype.Battle
                     BattleMechanics.AddCardToHandOrDiscard(state, player, skill.onHitAddCardId, forceIntoHand: true);
                     result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(player.displayName) + " received " + BattleTextHelper.Card(skill.onHitAddCardId) + " due to " + BattleTextHelper.Card(skill.displayName) + "."
+                        message = BattleTextHelper.Unit(player.displayName) + " 因 " + BattleTextHelper.Card(skill.displayName) + " 获得 " + BattleTextHelper.Card(skill.onHitAddCardId) + "。"
                     });
                 }
 
@@ -488,7 +488,7 @@ namespace YoungBob.Prototype.Battle
                     player.vulnerableStacks += skill.onHitApplyVulnerable;
                     result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(player.displayName) + " gained Vulnerable x" + skill.onHitApplyVulnerable + "."
+                        message = BattleTextHelper.Unit(player.displayName) + " 获得 易伤 x" + skill.onHitApplyVulnerable + "。"
                     });
                 }
 
@@ -499,7 +499,7 @@ namespace YoungBob.Prototype.Battle
             {
                 result.events.Add(new BattleEvent
                 {
-                    message = BattleTextHelper.Unit(state.monster.displayName) + " used " + BattleTextHelper.Card(skill.displayName) + " but hit nobody."
+                    message = BattleTextHelper.Unit(state.monster.displayName) + " 使用 " + BattleTextHelper.Card(skill.displayName) + "，但没有命中任何目标。"
                 });
             }
         }

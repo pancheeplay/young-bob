@@ -35,6 +35,7 @@ namespace YoungBob.Prototype.Scene
 
             _session.StatusChanged += HandleStatusChanged;
             _session.LogAdded += HandleLogAdded;
+            _session.RoomChatAdded += HandleRoomChatAdded;
             _session.RoomChanged += HandleRoomChanged;
             _session.RoomListChanged += HandleRoomListChanged;
             _session.BattleStateChanged += HandleBattleStateChanged;
@@ -47,6 +48,17 @@ namespace YoungBob.Prototype.Scene
 
         private void OnDestroy()
         {
+            if (_session != null)
+            {
+                _session.StatusChanged -= HandleStatusChanged;
+                _session.LogAdded -= HandleLogAdded;
+                _session.RoomChatAdded -= HandleRoomChatAdded;
+                _session.RoomChanged -= HandleRoomChanged;
+                _session.RoomListChanged -= HandleRoomListChanged;
+                _session.BattleStateChanged -= HandleBattleStateChanged;
+                _session.StageSelectionChanged -= HandleStageSelectionChanged;
+            }
+
             Application.logMessageReceived -= HandleUnityLog;
         }
 
@@ -54,7 +66,7 @@ namespace YoungBob.Prototype.Scene
         {
             if (_statusText != null)
             {
-                _statusText.text = "Transport: " + _session.ServiceName + "\nStatus: " + message;
+                _statusText.text = "传输: " + _session.ServiceName + "\n状态: " + message;
             }
         }
 
@@ -85,6 +97,14 @@ namespace YoungBob.Prototype.Scene
         private void HandleRoomListChanged(IReadOnlyList<RoomListItem> rooms)
         {
             _lobbyPage.RenderRooms(rooms);
+        }
+
+        private void HandleRoomChatAdded(string message)
+        {
+            if (_battlePage != null)
+            {
+                _battlePage.AppendBattleLog(message);
+            }
         }
 
         private void HandleStageSelectionChanged()
@@ -227,7 +247,7 @@ namespace YoungBob.Prototype.Scene
             }
 
             // Exclude technical logs
-            if (message.StartsWith("[") || message.Contains("Received message") || message.Contains("Sending message"))
+            if (message.StartsWith("[") || message.Contains("收到消息") || message.Contains("发送消息"))
             {
                 return false;
             }

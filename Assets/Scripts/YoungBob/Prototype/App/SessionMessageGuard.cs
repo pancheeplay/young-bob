@@ -13,31 +13,31 @@ namespace YoungBob.Prototype.App
         {
             if (message == null)
             {
-                log?.Invoke("Ignored message: message is null.");
+                log?.Invoke("忽略消息：消息为空。");
                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(currentRoomId))
             {
-                log?.Invoke("Ignored message " + message.type + ": no joined room.");
+                log?.Invoke("忽略消息 " + message.type + "：当前未加入房间。");
                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(message.type))
             {
-                log?.Invoke("Ignored message: empty type.");
+                log?.Invoke("忽略消息：类型为空。");
                 return false;
             }
 
             if (!string.Equals(message.roomId, currentRoomId, StringComparison.Ordinal))
             {
-                log?.Invoke("Ignored message " + message.type + ": room mismatch.");
+                log?.Invoke("忽略消息 " + message.type + "：房间不匹配。");
                 return false;
             }
 
             if (!string.IsNullOrWhiteSpace(message.messageId) && !_processedMessageIds.Add(message.messageId))
             {
-                log?.Invoke("Ignored message " + message.type + ": duplicate messageId " + message.messageId + ".");
+                log?.Invoke("忽略消息 " + message.type + "：重复的 messageId " + message.messageId + "。");
                 return false;
             }
 
@@ -45,7 +45,7 @@ namespace YoungBob.Prototype.App
             {
                 if (_lastSeqBySender.TryGetValue(message.senderPlayerId, out var lastSeq) && message.seq <= lastSeq)
                 {
-                    log?.Invoke("Ignored message " + message.type + ": stale seq " + message.seq + " <= " + lastSeq + ".");
+                    log?.Invoke("忽略消息 " + message.type + "：过期 seq " + message.seq + " <= " + lastSeq + "。");
                     return false;
                 }
 

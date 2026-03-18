@@ -42,6 +42,9 @@ namespace YoungBob.Prototype.UI.Pages
         private readonly Text _monsterActionHintText;
         private readonly Text _effectTargetHintText;
         private readonly Button _statusModeButton;
+        private readonly Button _chatButton;
+        private readonly Text _chatButtonLabel;
+        private readonly GameObject _quickChatMask;
         private readonly Button _endTurnButton;
         private readonly Button _exitBattleButton;
         private readonly List<BattleUnitSlotView> _playerSlots = new List<BattleUnitSlotView>();
@@ -90,11 +93,25 @@ namespace YoungBob.Prototype.UI.Pages
 
             _exitBattleButton = UiFactory.CreateButton(Root.transform, "ExitBattle", "退出", Session.EndBattleAndReturnToLobby);
             var exRect = _exitBattleButton.GetComponent<RectTransform>();
-            exRect.anchorMin = new Vector2(0.42f, 0.94f);
-            exRect.anchorMax = new Vector2(0.58f, 0.98f);
+            exRect.anchorMin = new Vector2(0.30f, 0.94f);
+            exRect.anchorMax = new Vector2(0.42f, 0.98f);
             exRect.offsetMin = Vector2.zero;
             exRect.offsetMax = Vector2.zero;
             _exitBattleButton.image.color = new Color(0.4f, 0.2f, 0.2f, 0.6f);
+
+            _chatButton = UiFactory.CreateButton(Root.transform, "QuickChatButton", "聊天", ToggleQuickChatWheel);
+            var chatRect = _chatButton.GetComponent<RectTransform>();
+            chatRect.anchorMin = new Vector2(0.44f, 0.94f);
+            chatRect.anchorMax = new Vector2(0.56f, 0.98f);
+            chatRect.offsetMin = Vector2.zero;
+            chatRect.offsetMax = Vector2.zero;
+            _chatButton.image.color = new Color(0.22f, 0.36f, 0.52f, 0.75f);
+            _chatButtonLabel = _chatButton.GetComponentInChildren<Text>();
+            _chatButtonLabel.fontSize = 22;
+
+            _quickChatMask = BuildQuickChatWheel(Root.transform);
+            _quickChatMask.transform.SetAsLastSibling();
+            _quickChatMask.SetActive(false);
 
             // --- Board Panel (Portrait, Horizon-based) ---
             var boardPanel = UiFactory.CreatePanel(Root.transform, "BoardPanel", new Color(0.08f, 0.1f, 0.12f), new Vector2(0f, 0.45f), new Vector2(1f, 0.88f), new Vector2(20f, 0f), new Vector2(-20f, 0f));
@@ -392,6 +409,8 @@ namespace YoungBob.Prototype.UI.Pages
                 _summaryText.text = "等待战斗开始...";
                 _endTurnButton.interactable = false;
                 _exitBattleButton.interactable = false;
+                _chatButton.interactable = false;
+                CloseQuickChatWheel();
                 _isUserScrolling = false;
                 RefreshJumpToLatestButton();
                 return;
@@ -407,6 +426,7 @@ namespace YoungBob.Prototype.UI.Pages
             
             _endTurnButton.interactable = Session.CanLocalPlayerAct();
             _exitBattleButton.interactable = true;
+            _chatButton.interactable = true;
         }
 
         public void AppendBattleLog(string message)
@@ -1521,6 +1541,99 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 RenderBoard(_lastState);
             }
+        }
+
+        private void ToggleQuickChatWheel()
+        {
+            if (_quickChatMask == null)
+            {
+                return;
+            }
+
+            if (_quickChatMask.activeSelf)
+            {
+                CloseQuickChatWheel();
+            }
+            else
+            {
+                OpenQuickChatWheel();
+            }
+        }
+
+        private void OpenQuickChatWheel()
+        {
+            if (_quickChatMask == null)
+            {
+                return;
+            }
+
+            _quickChatMask.transform.SetAsLastSibling();
+            _quickChatMask.SetActive(true);
+            _chatButtonLabel.text = "收起";
+        }
+
+        private void CloseQuickChatWheel()
+        {
+            if (_quickChatMask == null)
+            {
+                return;
+            }
+
+            _quickChatMask.SetActive(false);
+            _chatButtonLabel.text = "聊天";
+        }
+
+        private void SendQuickChat(string presetId)
+        {
+            Session.SendQuickChat(presetId);
+            CloseQuickChatWheel();
+        }
+
+        private GameObject BuildQuickChatWheel(Transform parent)
+        {
+            var mask = UiFactory.CreatePanel(parent, "QuickChatMask", new Color(0f, 0f, 0f, 0.55f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            var backgroundButton = mask.AddComponent<Button>();
+            var backgroundImage = mask.GetComponent<Image>();
+            backgroundImage.color = new Color(0f, 0f, 0f, 0.55f);
+            backgroundButton.targetGraphic = backgroundImage;
+            backgroundButton.onClick.AddListener(CloseQuickChatWheel);
+
+            var wheel = UiFactory.CreatePanel(mask.transform, "QuickChatWheel", new Color(0.12f, 0.15f, 0.19f, 0.98f), new Vector2(0.16f, 0.32f), new Vector2(0.84f, 0.64f), Vector2.zero, Vector2.zero);
+            var wheelRect = wheel.GetComponent<RectTransform>();
+            wheelRect.anchorMin = new Vector2(0.16f, 0.32f);
+            wheelRect.anchorMax = new Vector2(0.84f, 0.64f);
+            wheelRect.offsetMin = Vector2.zero;
+            wheelRect.offsetMax = Vector2.zero;
+
+            var title = UiFactory.CreateText(wheel.transform, "Title", 24, TextAnchor.MiddleCenter, new Vector2(0f, 0.72f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            title.text = "选择快捷语";
+            title.fontStyle = FontStyle.Bold;
+
+            CreateQuickChatWheelButton(wheel.transform, "Top", "打得不错", new Vector2(0f, 150f), "good_play");
+            CreateQuickChatWheelButton(wheel.transform, "Left", "抱歉", new Vector2(-180f, 0f), "sorry");
+            CreateQuickChatWheelButton(wheel.transform, "Right", "谢谢你", new Vector2(180f, 0f), "thanks");
+            CreateQuickChatWheelButton(wheel.transform, "Bottom", "救我!", new Vector2(0f, -150f), "help");
+
+            var cancel = UiFactory.CreateButton(wheel.transform, "Cancel", "取消", CloseQuickChatWheel);
+            var cancelRect = cancel.GetComponent<RectTransform>();
+            cancelRect.anchorMin = new Vector2(0.38f, 0.04f);
+            cancelRect.anchorMax = new Vector2(0.62f, 0.18f);
+            cancelRect.offsetMin = Vector2.zero;
+            cancelRect.offsetMax = Vector2.zero;
+            cancel.image.color = new Color(0.34f, 0.25f, 0.24f, 0.95f);
+
+            return mask;
+        }
+
+        private void CreateQuickChatWheelButton(Transform parent, string name, string label, Vector2 anchoredPosition, string presetId)
+        {
+            var button = UiFactory.CreateButton(parent, name, label, anchoredPosition, () => SendQuickChat(presetId));
+            var rect = button.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = new Vector2(180f, 72f);
+            button.image.color = new Color(0.22f, 0.34f, 0.48f, 0.98f);
         }
 
         private void CreateAreaDropZone(Transform parent, string name, BattleArea area, Vector2 anchorMin, Vector2 anchorMax)

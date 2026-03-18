@@ -72,7 +72,7 @@ namespace YoungBob.Prototype.Battle
             state.monster = MonsterAI.BuildMonster(openingMonsterDefinition, setup.randomSeed);
             if (state.monster == null && !string.IsNullOrWhiteSpace(openingEncounterId))
             {
-                throw new InvalidOperationException("Encounter has no monster definition: " + openingEncounterId);
+                throw new InvalidOperationException("遭遇没有怪物定义: " + openingEncounterId);
             }
 
             return state;
@@ -103,7 +103,7 @@ namespace YoungBob.Prototype.Battle
                 return allDecks[0];
             }
 
-            throw new InvalidOperationException("No deck available for battle setup.");
+            throw new InvalidOperationException("战斗初始化时没有可用牌组。");
         }
 
         public BattleCommandResult Apply(BattleState state, BattleCommand command)
@@ -111,32 +111,32 @@ namespace YoungBob.Prototype.Battle
             var result = new BattleCommandResult();
             if (state.phase == BattlePhase.Victory || state.phase == BattlePhase.Defeat)
             {
-                result.error = "Battle already finished.";
+                result.error = "战斗已经结束。";
                 return result;
             }
 
             if (state.phase != BattlePhase.PlayerTurn)
             {
-                result.error = "Players cannot act right now.";
+                result.error = "当前不是玩家行动阶段。";
                 return result;
             }
 
             var actingPlayer = state.GetPlayer(command.actorPlayerId);
             if (actingPlayer == null)
             {
-                result.error = "Unknown player.";
+                result.error = "未知玩家。";
                 return result;
             }
 
             if (actingPlayer.hp <= 0)
             {
-                result.error = "Player is down.";
+                result.error = "该玩家已倒下。";
                 return result;
             }
 
             if (actingPlayer.hasEndedTurn)
             {
-                result.error = "Player already ended turn.";
+                result.error = "该玩家已经结束回合。";
                 return result;
             }
 
@@ -147,7 +147,7 @@ namespace YoungBob.Prototype.Battle
                 case "end_turn":
                     return EndTurn(state, actingPlayer);
                 default:
-                    result.error = "Unknown action: " + command.action;
+                    result.error = "未知操作：" + command.action;
                     return result;
             }
         }
@@ -158,7 +158,7 @@ namespace YoungBob.Prototype.Battle
             var card = actingPlayer.hand.Find(item => item.instanceId == command.cardInstanceId);
             if (card == null)
             {
-                result.error = "Card not found in hand.";
+                result.error = "手牌中没有找到该牌。";
                 return result;
             }
 
@@ -166,21 +166,21 @@ namespace YoungBob.Prototype.Battle
             var effectiveCost = BattleMechanics.GetEffectiveEnergyCost(card, definition);
             if (actingPlayer.energy < effectiveCost)
             {
-                result.error = "Not enough energy.";
+                result.error = "能量不足。";
                 return result;
             }
 
             var targetType = BattleTargetResolver.ParseTargetType(definition.targetType);
             if (targetType == BattleTargetType.None)
             {
-                result.error = "Invalid card target type.";
+                result.error = "卡牌目标类型无效。";
                 return result;
             }
 
             var handIndex = actingPlayer.hand.IndexOf(card);
             if (handIndex < 0)
             {
-                result.error = "Card not found in hand.";
+                result.error = "手牌中没有找到该牌。";
                 return result;
             }
 
@@ -216,12 +216,12 @@ namespace YoungBob.Prototype.Battle
             player.hasEndedTurn = true;
             result.events.Add(new BattleEvent
             {
-                message = BattleTextHelper.Actor(player.displayName) + " ended their turn."
+                message = BattleTextHelper.Actor(player.displayName) + " 结束了回合。"
             });
 
             if (!BattleTargetResolver.HaveAllAlivePlayersEnded(state.players))
             {
-                state.currentPrompt = "Waiting for teammates to end turn";
+                state.currentPrompt = "等待队友结束回合";
                 result.success = true;
                 return result;
             }
@@ -237,8 +237,8 @@ namespace YoungBob.Prototype.Battle
             if (state.monster == null)
             {
                 state.phase = BattlePhase.Defeat;
-                state.currentPrompt = "Defeat";
-                result.events.Add(new BattleEvent { message = "No monster present." });
+                state.currentPrompt = "失败";
+                result.events.Add(new BattleEvent { message = "当前没有怪物。" });
                 return;
             }
 
@@ -267,8 +267,8 @@ namespace YoungBob.Prototype.Battle
             if (BattleTargetResolver.AllPlayersDead(state.players))
             {
                 state.phase = BattlePhase.Defeat;
-                state.currentPrompt = "Defeat";
-                result.events.Add(new BattleEvent { message = "The party was defeated." });
+                state.currentPrompt = "失败";
+                result.events.Add(new BattleEvent { message = "队伍被击败了。"});
                 return;
             }
 
@@ -297,7 +297,7 @@ namespace YoungBob.Prototype.Battle
             state.currentPrompt = BuildTeamTurnPrompt(state);
             result.events.Add(new BattleEvent
             {
-                message = "<color=#E6C36A>Turn " + state.turnIndex + " begins.</color>"
+                message = "<color=#E6C36A>第 " + state.turnIndex + " 回合开始。</color>"
             });
         }
 
@@ -341,27 +341,27 @@ namespace YoungBob.Prototype.Battle
             if (encounterIds == null || encounterIds.Length == 0)
             {
                 state.phase = BattlePhase.Victory;
-                state.currentPrompt = "Victory";
+                state.currentPrompt = "胜利";
                 result.events.Add(new BattleEvent
                 {
-                    message = "<color=#7FD67F>The monster was defeated. Victory.</color>"
+                    message = "<color=#7FD67F>怪物已被击败。胜利。</color>"
                 });
                 return;
             }
 
-            var clearedEncounterName = string.IsNullOrWhiteSpace(state.encounterId) ? "unknown" : state.encounterId;
+            var clearedEncounterName = string.IsNullOrWhiteSpace(state.encounterId) ? "未知" : state.encounterId;
             var hasNextEncounter = state.stageEncounterIndex + 1 < encounterIds.Length;
             if (!hasNextEncounter)
             {
                 state.phase = BattlePhase.Victory;
-                state.currentPrompt = "Stage Cleared";
+                state.currentPrompt = "关卡完成";
                 result.events.Add(new BattleEvent
                 {
-                    message = "<color=#7FD67F>Encounter cleared:</color> " + clearedEncounterName
+                    message = "<color=#7FD67F>遭遇已完成：</color> " + clearedEncounterName
                 });
                 result.events.Add(new BattleEvent
                 {
-                    message = "<color=#7FD67F>Stage cleared:</color> " + (string.IsNullOrWhiteSpace(state.stageName) ? state.stageId : state.stageName)
+                    message = "<color=#7FD67F>关卡已完成：</color> " + (string.IsNullOrWhiteSpace(state.stageName) ? state.stageId : state.stageName)
                 });
                 return;
             }
@@ -390,11 +390,11 @@ namespace YoungBob.Prototype.Battle
             state.currentPrompt = BuildTeamTurnPrompt(state);
             result.events.Add(new BattleEvent
             {
-                message = "<color=#7FD67F>Encounter cleared:</color> " + clearedEncounterName
+                message = "<color=#7FD67F>遭遇已完成：</color> " + clearedEncounterName
             });
             result.events.Add(new BattleEvent
             {
-                message = "<color=#7FD67F>Next encounter:</color> " + state.encounterId + " (" + (state.stageEncounterIndex + 1) + "/" + encounterIds.Length + ")"
+                message = "<color=#7FD67F>下一场遭遇：</color> " + state.encounterId + "（" + (state.stageEncounterIndex + 1) + "/" + encounterIds.Length + "）"
             });
         }
 
@@ -403,10 +403,10 @@ namespace YoungBob.Prototype.Battle
             var encounterTotal = state.stageEncounterIds == null ? 0 : state.stageEncounterIds.Length;
             if (encounterTotal <= 0)
             {
-                return "Team turn";
+                return "队伍回合";
             }
 
-            return "Team turn - Encounter " + (state.stageEncounterIndex + 1) + "/" + encounterTotal;
+            return "队伍回合 - 遭遇 " + (state.stageEncounterIndex + 1) + "/" + encounterTotal;
         }
 
         private void ResolveInitialStageAndEncounter(
@@ -422,7 +422,7 @@ namespace YoungBob.Prototype.Battle
             {
                 var monster = _dataRepository.GetMonster(setup.monsterId);
                 state.stageId = string.IsNullOrWhiteSpace(setup.stageId) ? "monster_debug" : setup.stageId;
-                state.stageName = "Monster Debug";
+                state.stageName = "怪物调试";
                 state.stageEncounterIds = new[] { "monster:" + setup.monsterId };
                 state.stageEncounterIndex = 0;
                 state.encounterId = state.stageEncounterIds[0];
@@ -459,11 +459,11 @@ namespace YoungBob.Prototype.Battle
 
             if (string.IsNullOrWhiteSpace(setup.encounterId))
             {
-                throw new InvalidOperationException("Battle setup requires stageId, monsterId, or encounterId.");
+                throw new InvalidOperationException("战斗初始化需要 stageId、monsterId 或 encounterId。");
             }
 
             state.stageId = "legacy_single_encounter";
-            state.stageName = "Single Encounter";
+            state.stageName = "单场遭遇";
             state.stageEncounterIds = new[] { setup.encounterId };
             state.stageEncounterIndex = 0;
             state.encounterId = setup.encounterId;

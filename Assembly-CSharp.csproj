@@ -100,8 +100,8 @@
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/TapSDKService.cs" />
     <Compile Include="Assets/TutorialInfo/Scripts/Readme.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioModels.cs" />
-    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/BattlePage.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/BattleInteraction.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/BattlePage.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleUnitSlotView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/CardEffectResolver.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/SelectionPopupView.cs" />

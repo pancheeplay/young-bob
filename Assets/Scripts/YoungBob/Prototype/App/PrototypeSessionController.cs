@@ -78,6 +78,12 @@ namespace YoungBob.Prototype.App
         private readonly SessionMessageGuard _messageGuard = new SessionMessageGuard();
         private bool _disposed;
 
+        private const string QuickChatMessageType = "room.quick_chat";
+        private const string QuickChatGoodPlayId = "good_play";
+        private const string QuickChatSorryId = "sorry";
+        private const string QuickChatThanksId = "thanks";
+        private const string QuickChatHelpId = "help";
+
         public PrototypeSessionController(IMultiplayerService multiplayer, BattleEngine battleEngine, GameDataRepository dataRepository)
         {
             _multiplayer = multiplayer;
@@ -99,6 +105,7 @@ namespace YoungBob.Prototype.App
         public event Action<IReadOnlyList<RoomListItem>> RoomListChanged;
         public event Action<BattleState> BattleStateChanged;
         public event Action<string> LogAdded;
+        public event Action<string> RoomChatAdded;
         public event Action StageSelectionChanged;
 
         public BattleState CurrentBattleState { get; private set; }
@@ -172,31 +179,31 @@ namespace YoungBob.Prototype.App
             var suffix = UnityEngine.Random.Range(1000, 9999);
             var playerId = "player_" + suffix;
             var displayName = string.IsNullOrWhiteSpace(displayNameOverride) ? SystemInfo.deviceName : displayNameOverride.Trim();
-            StatusChanged?.Invoke("Connecting with " + _multiplayer.ServiceName + "...");
+            StatusChanged?.Invoke("正在连接 " + _multiplayer.ServiceName + "...");
             _multiplayer.Connect(playerId, displayName);
         }
 
         public void BeginMatchmaking()
         {
-            StatusChanged?.Invoke("Matching room...");
+            StatusChanged?.Invoke("正在匹配房间...");
             _multiplayer.MatchOrCreateRoom();
         }
 
         public void CreateRoom()
         {
-            StatusChanged?.Invoke("Creating room...");
+            StatusChanged?.Invoke("正在创建房间...");
             _multiplayer.CreateRoom();
         }
 
         public void LeaveRoom()
         {
-            StatusChanged?.Invoke("Leaving room...");
+            StatusChanged?.Invoke("正在离开房间...");
             _multiplayer.LeaveRoom();
         }
 
         public void Disconnect()
         {
-            StatusChanged?.Invoke("Disconnecting...");
+            StatusChanged?.Invoke("正在断开连接...");
             _multiplayer.Disconnect();
         }
 
@@ -207,32 +214,32 @@ namespace YoungBob.Prototype.App
 
         public void JoinRoom(string roomId)
         {
-            StatusChanged?.Invoke("Joining room...");
+            StatusChanged?.Invoke("正在加入房间...");
             _multiplayer.JoinRoom(roomId);
         }
 
         public void StartBattle()
         {
-            LogAdded?.Invoke("StartBattle clicked.");
+            LogAdded?.Invoke("点击了开始关卡。");
             if (_room == null)
             {
-                StatusChanged?.Invoke("Join a room first.");
-                LogAdded?.Invoke("StartBattle aborted: room is null.");
+                StatusChanged?.Invoke("请先加入房间。");
+                LogAdded?.Invoke("开始关卡已取消：房间为空。");
                 return;
             }
 
             if (!IsLocalHost)
             {
-                StatusChanged?.Invoke("Only the host can start battle.");
-                LogAdded?.Invoke("StartBattle aborted: local player is not host.");
+                StatusChanged?.Invoke("只有房主才能开始关卡。");
+                LogAdded?.Invoke("开始关卡已取消：本地玩家不是房主。");
                 return;
             }
 
             var selectedStage = SelectedStage;
             if (selectedStage == null)
             {
-                StatusChanged?.Invoke("No stage available.");
-                LogAdded?.Invoke("StartBattle aborted: no stage available.");
+                StatusChanged?.Invoke("没有可用关卡。");
+                LogAdded?.Invoke("开始关卡已取消：没有可用关卡。");
                 return;
             }
 
@@ -244,7 +251,7 @@ namespace YoungBob.Prototype.App
                 playerDecks = BuildPlayerDeckChoices()
             };
 
-            LogAdded?.Invoke("Broadcasting battle.start for room " + _room.roomId + " with stage " + selectedStage.id + ".");
+            LogAdded?.Invoke("正在广播 battle.start，房间 " + _room.roomId + "，关卡 " + selectedStage.id + "。");
             Broadcast("battle.start", JsonUtility.ToJson(payload));
         }
 
@@ -305,7 +312,7 @@ namespace YoungBob.Prototype.App
             }
             catch (Exception ex)
             {
-                LogAdded?.Invoke("Local deck selection rejected: invalid deck " + deckId + ". " + ex.Message);
+                LogAdded?.Invoke("本地牌组选择被拒绝：无效牌组 " + deckId + "。 " + ex.Message);
                 return;
             }
 
@@ -313,6 +320,26 @@ namespace YoungBob.Prototype.App
 
             StageSelectionChanged?.Invoke();
             BroadcastDeckSelection(LocalPlayerId, deckId);
+        }
+
+        public void SendQuickChat(string presetId)
+        {
+            if (string.IsNullOrWhiteSpace(presetId))
+            {
+                return;
+            }
+
+            if (_room == null || string.IsNullOrWhiteSpace(LocalPlayerId))
+            {
+                return;
+            }
+
+            var payload = new QuickChatPayload
+            {
+                presetId = presetId
+            };
+
+            Broadcast(QuickChatMessageType, JsonUtility.ToJson(payload));
         }
 
         public string GetSelectedDeckIdForPlayer(string playerId)
@@ -409,7 +436,7 @@ namespace YoungBob.Prototype.App
         private void OnConnected(string localPlayerId)
         {
             LocalPlayerId = localPlayerId;
-            StatusChanged?.Invoke("Connected as " + localPlayerId);
+            StatusChanged?.Invoke("已连接，玩家ID " + localPlayerId);
         }
 
         private void OnTransportError(string message)
@@ -427,7 +454,7 @@ namespace YoungBob.Prototype.App
                 CurrentBattleState = null;
                 _lobbySelection.ClearRoomPlayerSelections();
                 ResetMessageTracking();
-                StatusChanged?.Invoke("Left room");
+                StatusChanged?.Invoke("已离开房间");
                 RoomChanged?.Invoke(null);
                 BattleStateChanged?.Invoke(null);
                 return;
@@ -442,7 +469,7 @@ namespace YoungBob.Prototype.App
             _room = room;
             CurrentRoom = room;
             EnsureRoomDeckSelections(room);
-            StatusChanged?.Invoke("Joined room " + room.roomId + " with " + room.players.Count + " players");
+            StatusChanged?.Invoke("已加入房间 " + room.roomId + "，当前玩家 " + room.players.Count + " 人");
             RoomChanged?.Invoke(room);
             StageSelectionChanged?.Invoke();
 
@@ -474,7 +501,7 @@ namespace YoungBob.Prototype.App
                 return;
             }
 
-            LogAdded?.Invoke("Received message: " + message.type + " seq=" + message.seq + " sender=" + message.senderPlayerId);
+            LogAdded?.Invoke("收到消息： " + message.type + " seq=" + message.seq + " sender=" + message.senderPlayerId);
             switch (message.type)
             {
                 case "battle.start":
@@ -495,18 +522,21 @@ namespace YoungBob.Prototype.App
                 case "room.deck.select":
                     HandleRoomDeckSelection(message);
                     break;
+                case QuickChatMessageType:
+                    HandleRoomQuickChat(message);
+                    break;
                 default:
-                    LogAdded?.Invoke("Ignored unknown message type: " + message.type);
+                    LogAdded?.Invoke("忽略未知消息类型： " + message.type);
                     break;
             }
         }
 
         private void HandleBattleStart(MultiplayerMessage message)
         {
-            LogAdded?.Invoke("Handling battle.start for room " + message.roomId + ".");
+            LogAdded?.Invoke("正在处理 battle.start，房间 " + message.roomId + "。");
             if (_room == null || _room.players == null)
             {
-                LogAdded?.Invoke("battle.start ignored: no active room context.");
+                LogAdded?.Invoke("battle.start 已忽略：没有有效的房间上下文。");
                 return;
             }
 
@@ -541,12 +571,12 @@ namespace YoungBob.Prototype.App
             }
             catch (Exception ex)
             {
-                LogAdded?.Invoke("battle.start failed: " + ex.Message);
+                LogAdded?.Invoke("battle.start 失败： " + ex.Message);
                 return;
             }
 
-            var monsterName = CurrentBattleState.monster == null ? "unknown" : CurrentBattleState.monster.displayName;
-            LogAdded?.Invoke("Battle started against " + monsterName + ".");
+            var monsterName = CurrentBattleState.monster == null ? "未知" : CurrentBattleState.monster.displayName;
+            LogAdded?.Invoke("战斗开始，对手为 " + monsterName + "。");
             BattleStateChanged?.Invoke(CurrentBattleState);
         }
 
@@ -564,13 +594,13 @@ namespace YoungBob.Prototype.App
 
             if (!string.Equals(payload.actorPlayerId, message.senderPlayerId, StringComparison.Ordinal))
             {
-                LogAdded?.Invoke("Rejected command: actor/sender mismatch.");
+                LogAdded?.Invoke("拒绝指令：行动者与发送者不一致。");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(payload.action))
             {
-                LogAdded?.Invoke("Rejected command: empty action.");
+                LogAdded?.Invoke("拒绝指令：操作为空。");
                 return;
             }
 
@@ -587,7 +617,7 @@ namespace YoungBob.Prototype.App
 
             if (!result.success && !string.IsNullOrEmpty(result.error))
             {
-                LogAdded?.Invoke("Rejected command: " + result.error);
+                LogAdded?.Invoke("拒绝指令： " + result.error);
                 return;
             }
 
@@ -790,7 +820,7 @@ namespace YoungBob.Prototype.App
             }
             catch (Exception ex)
             {
-                LogAdded?.Invoke("Room deck selection rejected: invalid deck " + payload.deckId + ". " + ex.Message);
+                LogAdded?.Invoke("房间牌组选择被拒绝：无效牌组 " + payload.deckId + "。 " + ex.Message);
                 return;
             }
 
@@ -799,22 +829,44 @@ namespace YoungBob.Prototype.App
             StageSelectionChanged?.Invoke();
         }
 
+        private void HandleRoomQuickChat(MultiplayerMessage message)
+        {
+            if (!TryParsePayload(message, out QuickChatPayload payload))
+            {
+                return;
+            }
+
+            if (payload == null || string.IsNullOrWhiteSpace(payload.presetId))
+            {
+                return;
+            }
+
+            var speakerName = ResolvePlayerDisplayName(message.senderPlayerId);
+            var chatText = ResolveQuickChatText(payload.presetId);
+            if (string.IsNullOrWhiteSpace(chatText))
+            {
+                return;
+            }
+
+            RoomChatAdded?.Invoke(speakerName + ": " + chatText);
+        }
+
         private void Broadcast(string type, string payloadJson)
         {
             if (_room == null)
             {
-                LogAdded?.Invoke("Broadcast skipped for " + type + ": room is null.");
+                LogAdded?.Invoke("跳过广播 " + type + "：房间为空。");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(LocalPlayerId))
             {
-                LogAdded?.Invoke("Broadcast skipped for " + type + ": LocalPlayerId is empty.");
+                LogAdded?.Invoke("跳过广播 " + type + "：LocalPlayerId 为空。");
                 return;
             }
 
             _seq += 1;
-            LogAdded?.Invoke("Sending message " + type + " seq=" + _seq + " room=" + _room.roomId + ".");
+            LogAdded?.Invoke("发送消息 " + type + " seq=" + _seq + " room=" + _room.roomId + "。");
             _multiplayer.Send(new MultiplayerMessage
             {
                 messageId = Guid.NewGuid().ToString("N"),
@@ -851,6 +903,48 @@ namespace YoungBob.Prototype.App
         private void Log(string message)
         {
             LogAdded?.Invoke(message);
+        }
+
+        private string ResolvePlayerDisplayName(string playerId)
+        {
+            if (_room != null && _room.players != null)
+            {
+                for (var i = 0; i < _room.players.Count; i++)
+                {
+                    var player = _room.players[i];
+                    if (player != null && string.Equals(player.playerId, playerId, StringComparison.Ordinal))
+                    {
+                        return string.IsNullOrWhiteSpace(player.displayName) ? player.playerId : player.displayName;
+                    }
+                }
+            }
+
+            return string.IsNullOrWhiteSpace(playerId) ? "未知玩家" : playerId;
+        }
+
+        private static string ResolveQuickChatText(string presetId)
+        {
+            if (string.Equals(presetId, QuickChatGoodPlayId, StringComparison.OrdinalIgnoreCase))
+            {
+                return "打得不错!";
+            }
+
+            if (string.Equals(presetId, QuickChatSorryId, StringComparison.OrdinalIgnoreCase))
+            {
+                return "抱歉!";
+            }
+
+            if (string.Equals(presetId, QuickChatThanksId, StringComparison.OrdinalIgnoreCase))
+            {
+                return "谢谢你!";
+            }
+
+            if (string.Equals(presetId, QuickChatHelpId, StringComparison.OrdinalIgnoreCase))
+            {
+                return "救我!";
+            }
+
+            return null;
         }
     }
 }

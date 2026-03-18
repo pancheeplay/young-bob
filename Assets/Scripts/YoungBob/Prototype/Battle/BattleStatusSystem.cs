@@ -90,7 +90,7 @@ namespace YoungBob.Prototype.Battle
                 AddStacks(part.statuses, PoisonStatusId, -1);
                 result.events.Add(new BattleEvent
                 {
-                    message = BattleTextHelper.Unit(part.displayName) + " suffers " + BattleTextHelper.DamageText(applied) + " from poison."
+                    message = BattleTextHelper.Unit(part.displayName) + " 受到" + BattleTextHelper.DamageText(applied) + "，来自中毒。"
                 });
             }
         }
@@ -120,7 +120,7 @@ namespace YoungBob.Prototype.Battle
                 AddStacks(player.statuses, PoisonStatusId, -1);
                 result.events.Add(new BattleEvent
                 {
-                    message = BattleTextHelper.Unit(player.displayName) + " suffers " + BattleTextHelper.DamageText(applied) + " from poison."
+                    message = BattleTextHelper.Unit(player.displayName) + " 受到" + BattleTextHelper.DamageText(applied) + "，来自中毒。"
                 });
             }
         }

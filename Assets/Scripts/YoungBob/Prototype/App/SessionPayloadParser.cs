@@ -12,11 +12,11 @@ namespace YoungBob.Prototype.App
             payload = null;
             if (message == null || string.IsNullOrWhiteSpace(message.payloadJson))
             {
-                log?.Invoke("Ignored " + (message == null ? "unknown" : message.type) + ": empty payload.");
+                log?.Invoke("忽略 " + (message == null ? "未知消息" : message.type) + "：payload 为空。");
                 return false;
             }
 
-            return TryParseJson(message.payloadJson, "payload for " + message.type, log, out payload);
+            return TryParseJson(message.payloadJson, message.type + " 的 payload", log, out payload);
         }
 
         public static bool TryParseJson<T>(string json, string context, Action<string> log, out T payload)
@@ -25,7 +25,7 @@ namespace YoungBob.Prototype.App
             payload = null;
             if (string.IsNullOrWhiteSpace(json))
             {
-                log?.Invoke("Ignored " + context + ": empty json.");
+                log?.Invoke("忽略 " + context + "：json 为空。");
                 return false;
             }
 
@@ -35,13 +35,13 @@ namespace YoungBob.Prototype.App
             }
             catch (Exception ex)
             {
-                log?.Invoke("Failed to parse " + context + ": " + ex.Message);
+                log?.Invoke("解析 " + context + " 失败：" + ex.Message);
                 return false;
             }
 
             if (payload == null)
             {
-                log?.Invoke("Failed to parse " + context + ": parsed null.");
+                log?.Invoke("解析 " + context + " 失败：结果为空。");
                 return false;
             }
 

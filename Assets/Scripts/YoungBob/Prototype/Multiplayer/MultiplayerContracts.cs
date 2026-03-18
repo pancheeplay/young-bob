@@ -33,6 +33,12 @@ namespace YoungBob.Prototype.Multiplayer
     }
 
     [Serializable]
+    public sealed class QuickChatPayload
+    {
+        public string presetId;
+    }
+
+    [Serializable]
     public sealed class RoomListItem
     {
         public string roomId;

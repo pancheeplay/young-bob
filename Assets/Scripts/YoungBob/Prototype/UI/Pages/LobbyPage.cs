@@ -14,7 +14,7 @@ namespace YoungBob.Prototype.UI.Pages
             : base(parent, "LobbyPage", session, new Color(0.13f, 0.16f, 0.19f), new Vector2(0f, 0f), new Vector2(1f, 0.8f))
         {
             var title = UiFactory.CreateText(Root.transform, "Title", 36, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(40f, -120f), new Vector2(-40f, -40f));
-            title.text = "Young Bob Lobby";
+            title.text = "Young Bob 大厅";
 
             var controlsPanel = UiFactory.CreatePanel(Root.transform, "Controls", Color.clear, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(40f, -450f), new Vector2(-40f, -150f));
             var grid = controlsPanel.AddComponent<GridLayoutGroup>();
@@ -25,13 +25,13 @@ namespace YoungBob.Prototype.UI.Pages
             grid.constraintCount = 2;
             grid.childAlignment = TextAnchor.MiddleCenter;
 
-            UiFactory.CreateButton(controlsPanel.transform, "CreateButton", "Create Room", Session.CreateRoom);
-            UiFactory.CreateButton(controlsPanel.transform, "MatchButton", "Match Room", Session.BeginMatchmaking);
-            UiFactory.CreateButton(controlsPanel.transform, "RefreshButton", "Refresh", Session.RefreshRoomList);
-            UiFactory.CreateButton(controlsPanel.transform, "DisconnectButton", "Disconnect", Session.Disconnect);
+            UiFactory.CreateButton(controlsPanel.transform, "CreateButton", "创建房间", Session.CreateRoom);
+            UiFactory.CreateButton(controlsPanel.transform, "MatchButton", "匹配房间", Session.BeginMatchmaking);
+            UiFactory.CreateButton(controlsPanel.transform, "RefreshButton", "刷新", Session.RefreshRoomList);
+            UiFactory.CreateButton(controlsPanel.transform, "DisconnectButton", "断开连接", Session.Disconnect);
 
             var roomsText = UiFactory.CreateText(Root.transform, "RoomsTitle", 28, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(40f, -520f), new Vector2(-40f, -470f));
-            roomsText.text = "Available Rooms";
+            roomsText.text = "可用房间";
 
             var roomListPanel = UiFactory.CreatePanel(Root.transform, "RoomListPanel", new Color(0.1f, 0.12f, 0.15f), new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(40f, 40f), new Vector2(-40f, -540f));
             var layout = roomListPanel.AddComponent<VerticalLayoutGroup>();
@@ -52,7 +52,7 @@ namespace YoungBob.Prototype.UI.Pages
             if (rooms == null || rooms.Count == 0)
             {
                 var empty = UiFactory.CreateText(_roomButtonContainer, "Empty", 24, TextAnchor.MiddleCenter);
-                empty.text = "No rooms found.";
+                empty.text = "未找到房间。";
                 var le = empty.gameObject.AddComponent<LayoutElement>();
                 le.preferredHeight = 100f;
                 return;
@@ -67,4 +67,3 @@ namespace YoungBob.Prototype.UI.Pages
         }
     }
 }
-

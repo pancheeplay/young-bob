@@ -20,15 +20,19 @@ namespace YoungBob.Prototype.UI.Pages
 
         private readonly Text _roomText;
         private readonly Text _playersText;
+        private readonly Text _chatText;
         private readonly Button _stageSelectButton;
         private readonly Text _stageSelectLabel;
         private readonly Text _stageSummaryText;
         private readonly Button _deckSelectButton;
         private readonly Text _deckSelectLabel;
         private readonly Text _deckSummaryText;
+        private readonly Button _chatButton;
+        private readonly GameObject _quickChatMask;
         private readonly Button _startBattleButton;
         private readonly Button _leaveRoomButton;
         private readonly SelectionPopupView _selectionPopup;
+        private readonly List<string> _chatMessages = new List<string>();
 
         private SelectorMode _selectorMode = SelectorMode.None;
         private RoomJoinedEvent _lastRoom;
@@ -97,11 +101,16 @@ namespace YoungBob.Prototype.UI.Pages
             _selectionPopup = new SelectionPopupView(Root.transform, "RoomSelector");
             _selectionPopup.Closed += () => { _selectorMode = SelectorMode.None; };
 
+            _chatText = null;
+            _chatButton = null;
+            _quickChatMask = null;
+
             Hide();
         }
 
         public void Render(RoomJoinedEvent room)
         {
+            var previousRoomId = _lastRoom == null ? null : _lastRoom.roomId;
             _lastRoom = room;
             if (room == null)
             {
@@ -117,6 +126,12 @@ namespace YoungBob.Prototype.UI.Pages
                 _leaveRoomButton.interactable = false;
                 _selectionPopup.Hide();
                 return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(previousRoomId) && !string.Equals(previousRoomId, room.roomId, System.StringComparison.Ordinal))
+            {
+                _chatMessages.Clear();
+                _chatText.text = string.Empty;
             }
 
             _roomText.text = "房间: " + room.roomId + "\n主机: " + room.hostPlayerId;
@@ -183,6 +198,22 @@ namespace YoungBob.Prototype.UI.Pages
             _deckSummaryText.text = deck == null
                 ? "无法读取牌组信息"
                 : BuildDeckSummary(deck, includePreview: true);
+        }
+
+        public void AppendChatMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            _chatMessages.Add(message);
+            while (_chatMessages.Count > 6)
+            {
+                _chatMessages.RemoveAt(0);
+            }
+
+            _chatText.text = string.Join("\n", _chatMessages.ToArray());
         }
 
         private void OpenSelector(SelectorMode mode)
@@ -292,6 +323,74 @@ namespace YoungBob.Prototype.UI.Pages
 
             Debug.Log("[RoomPage] Deck selector items=" + items.Count + " selectedId=" + selectedDeckId);
             _selectionPopup.Show("选择牌组", "每位玩家独立选择自己的牌组。当前选中项已高亮并带“已选 ✓”标记。", items, "没有可用牌组");
+        }
+
+        private void OpenQuickChatWheel()
+        {
+            if (_lastRoom == null)
+            {
+                return;
+            }
+
+            _quickChatMask.SetActive(true);
+        }
+
+        private void CloseQuickChatWheel()
+        {
+            _quickChatMask.SetActive(false);
+        }
+
+        private void SendQuickChat(string presetId)
+        {
+            Session.SendQuickChat(presetId);
+            CloseQuickChatWheel();
+        }
+
+        private GameObject BuildQuickChatWheel(Transform parent)
+        {
+            var mask = UiFactory.CreatePanel(parent, "QuickChatMask", new Color(0f, 0f, 0f, 0.6f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            var backgroundButton = mask.AddComponent<Button>();
+            var backgroundImage = mask.GetComponent<Image>();
+            backgroundImage.color = new Color(0f, 0f, 0f, 0.6f);
+            backgroundButton.targetGraphic = backgroundImage;
+            backgroundButton.onClick.AddListener(CloseQuickChatWheel);
+
+            var wheel = UiFactory.CreatePanel(mask.transform, "QuickChatWheel", new Color(0.12f, 0.15f, 0.19f, 0.98f), new Vector2(0.16f, 0.34f), new Vector2(0.84f, 0.66f), Vector2.zero, Vector2.zero);
+            var wheelRect = wheel.GetComponent<RectTransform>();
+            wheelRect.anchorMin = new Vector2(0.16f, 0.34f);
+            wheelRect.anchorMax = new Vector2(0.84f, 0.66f);
+            wheelRect.offsetMin = Vector2.zero;
+            wheelRect.offsetMax = Vector2.zero;
+
+            var title = UiFactory.CreateText(wheel.transform, "Title", 24, TextAnchor.MiddleCenter, new Vector2(0f, 0.72f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            title.text = "选择快捷语";
+            title.fontStyle = FontStyle.Bold;
+
+            CreateQuickChatWheelButton(wheel.transform, "Top", "打得不错", new Vector2(0f, 150f), "good_play");
+            CreateQuickChatWheelButton(wheel.transform, "Left", "抱歉", new Vector2(-180f, 0f), "sorry");
+            CreateQuickChatWheelButton(wheel.transform, "Right", "谢谢你", new Vector2(180f, 0f), "thanks");
+            CreateQuickChatWheelButton(wheel.transform, "Bottom", "救我!", new Vector2(0f, -150f), "help");
+
+            var cancel = UiFactory.CreateButton(wheel.transform, "Cancel", "取消", CloseQuickChatWheel);
+            var cancelRect = cancel.GetComponent<RectTransform>();
+            cancelRect.anchorMin = new Vector2(0.38f, 0.04f);
+            cancelRect.anchorMax = new Vector2(0.62f, 0.18f);
+            cancelRect.offsetMin = Vector2.zero;
+            cancelRect.offsetMax = Vector2.zero;
+            cancel.image.color = new Color(0.34f, 0.25f, 0.24f, 0.95f);
+
+            return mask;
+        }
+
+        private void CreateQuickChatWheelButton(Transform parent, string name, string label, Vector2 anchoredPosition, string presetId)
+        {
+            var button = UiFactory.CreateButton(parent, name, label, anchoredPosition, () => SendQuickChat(presetId));
+            var rect = button.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = new Vector2(180f, 72f);
+            button.image.color = new Color(0.22f, 0.34f, 0.48f, 0.98f);
         }
 
         private DeckDefinition TryGetDeckById(string deckId)

@@ -47,7 +47,7 @@ namespace YoungBob.Prototype.Battle
 
                 result.events.Add(new BattleEvent
                 {
-                    message = "<color=#FFC874>Part broken:</color> " + BattleTextHelper.Unit(part.displayName)
+                    message = "<color=#FFC874>部位破坏：</color> " + BattleTextHelper.Unit(part.displayName)
                 });
             }
 
@@ -195,10 +195,10 @@ namespace YoungBob.Prototype.Battle
             }
 
             state.phase = BattlePhase.Victory;
-            state.currentPrompt = "Victory";
+            state.currentPrompt = "胜利";
             result.events.Add(new BattleEvent
             {
-                message = "<color=#7FD67F>The monster was defeated. Victory.</color>"
+                message = "<color=#7FD67F>怪物已被击败。胜利。</color>"
             });
         }
     }
