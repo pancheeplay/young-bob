@@ -141,7 +141,6 @@ namespace YoungBob.Prototype.Battle
         public float radius;
         public string shape;
         public string[] lootOnBreak;
-        public List<BattleStatusState> statuses = new List<BattleStatusState>();
     }
 
     [Serializable]
@@ -169,6 +168,7 @@ namespace YoungBob.Prototype.Battle
         public int coreHp;
         public BattleFacing facing;
         public BattleStance stance;
+        public List<BattleStatusState> statuses = new List<BattleStatusState>();
         public List<MonsterPartState> parts = new List<MonsterPartState>();
         public bool hasActiveSkill;
         public MonsterSkillState activeSkill;

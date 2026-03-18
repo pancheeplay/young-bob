@@ -40,7 +40,7 @@
     {
       "type": "event_log_contains",
       "actualPath": "after_monster_turn",
-      "expected": "received >> gained Vulnerable x1",
+      "expected": "获得 <color=#C9A0FF>curse_betrayal</color> >> 获得 易伤 x1",
       "message": "monster skill event order: add curse card then apply vulnerable"
     }
   ]

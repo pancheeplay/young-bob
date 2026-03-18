@@ -50,6 +50,10 @@ internal static class AssertionEngine
                     EvaluateMonsterCoreHpEquals(report, assertion, i);
                     break;
 
+                case "monster_status_equals":
+                    EvaluateMonsterStatusEquals(report, assertion, i);
+                    break;
+
                 case "part_field_equals":
                     EvaluatePartFieldEquals(report, assertion, i);
                     break;
@@ -310,6 +314,20 @@ internal static class AssertionEngine
         }
     }
 
+    private static void EvaluateMonsterStatusEquals(ScenarioReport report, ScenarioAssertion assertion, int index)
+    {
+        if (!TryGetState(report, assertion.actualPath, index, out var state))
+        {
+            return;
+        }
+
+        var actual = state.monster == null ? 0 : GetStatusStacks(state.monster.statuses, assertion.statusId);
+        if (actual != assertion.expectedInt)
+        {
+            report.failures.Add($"assertion[{index}] monster status {assertion.statusId} expected {assertion.expectedInt}, got {actual}");
+        }
+    }
+
     private static void EvaluatePartFieldEquals(ScenarioReport report, ScenarioAssertion assertion, int index)
     {
         if (!TryGetState(report, assertion.actualPath, index, out var state))
@@ -345,23 +363,7 @@ internal static class AssertionEngine
 
     private static void EvaluatePartStatusEquals(ScenarioReport report, ScenarioAssertion assertion, int index)
     {
-        if (!TryGetState(report, assertion.actualPath, index, out var state))
-        {
-            return;
-        }
-
-        var part = ResolvePart(state, assertion.partId);
-        if (part == null)
-        {
-            report.failures.Add($"assertion[{index}] part not found: {assertion.partId}");
-            return;
-        }
-
-        var actual = GetStatusStacks(part.statuses, assertion.statusId);
-        if (actual != assertion.expectedInt)
-        {
-            report.failures.Add($"assertion[{index}] part {assertion.partId} status {assertion.statusId} expected {assertion.expectedInt}, got {actual}");
-        }
+        report.failures.Add($"assertion[{index}] part_status_equals is deprecated. Use monster_status_equals.");
     }
 
     private static void EvaluatePhaseEquals(ScenarioReport report, ScenarioAssertion assertion, int index)

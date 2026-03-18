@@ -77,6 +77,7 @@ public sealed class GameDataRepository
     private readonly Dictionary<string, CardDefinition> _cards;
     private readonly Dictionary<string, EncounterDefinition> _encounters;
     private readonly Dictionary<string, DeckDefinition> _decks;
+    private readonly List<DeckDefinition> _deckList;
     private readonly Dictionary<string, YoungBob.Prototype.Battle.MonsterDefinition> _monsters;
     private readonly List<StageDefinition> _stages;
     private readonly Dictionary<string, StageDefinition> _stagesById;
@@ -85,6 +86,7 @@ public sealed class GameDataRepository
         Dictionary<string, CardDefinition> cards,
         Dictionary<string, EncounterDefinition> encounters,
         Dictionary<string, DeckDefinition> decks,
+        List<DeckDefinition> deckList,
         Dictionary<string, YoungBob.Prototype.Battle.MonsterDefinition> monsters,
         List<StageDefinition> stages,
         Dictionary<string, StageDefinition> stagesById)
@@ -92,6 +94,7 @@ public sealed class GameDataRepository
         _cards = cards;
         _encounters = encounters;
         _decks = decks;
+        _deckList = deckList;
         _monsters = monsters;
         _stages = stages;
         _stagesById = stagesById;
@@ -111,6 +114,9 @@ public sealed class GameDataRepository
             Path.Combine(rootDirectory, "decks.json"),
             catalog => catalog.decks,
             item => item.id);
+        var deckList = LoadArrayCatalog<DeckCatalog, DeckDefinition>(
+            Path.Combine(rootDirectory, "decks.json"),
+            catalog => catalog.decks);
         var monsters = LoadCatalog<MonsterCatalog, YoungBob.Prototype.Battle.MonsterDefinition>(
             Path.Combine(rootDirectory, "monsters.json"),
             catalog => catalog.monsters,
@@ -123,7 +129,7 @@ public sealed class GameDataRepository
         var stagesById = BuildStageLookup(stages);
         ValidateStageEncounters(stages, encounters);
 
-        return new GameDataRepository(cards, encounters, decks, monsters, stages, stagesById);
+        return new GameDataRepository(cards, encounters, decks, deckList, monsters, stages, stagesById);
     }
 
     public CardDefinition GetCard(string id)
@@ -190,6 +196,11 @@ public sealed class GameDataRepository
     public IReadOnlyList<StageDefinition> GetAllStages()
     {
         return _stages;
+    }
+
+    public IReadOnlyList<DeckDefinition> GetAllDecks()
+    {
+        return _deckList;
     }
 
     private static Dictionary<string, TItem> LoadCatalog<TCatalog, TItem>(

@@ -269,7 +269,7 @@ namespace YoungBob.Prototype.Battle
             {
                 var poison = target.IsPlayer
                     ? BattleStatusSystem.GetStacks(target.Player.statuses, BattleStatusSystem.PoisonStatusId)
-                    : BattleStatusSystem.GetStacks(target.Part.statuses, BattleStatusSystem.PoisonStatusId);
+                    : BattleStatusSystem.GetStacks(context.state.monster == null ? null : context.state.monster.statuses, BattleStatusSystem.PoisonStatusId);
                 return (int)Math.Round(poison * effect.ratio);
             }
 
@@ -471,10 +471,10 @@ namespace YoungBob.Prototype.Battle
                     }
                     else
                     {
-                        var total = BattleStatusSystem.AddStacks(target.Part.statuses, effect.statusId, amount);
+                        var total = BattleStatusSystem.AddStacks(context.state.monster == null ? null : context.state.monster.statuses, effect.statusId, amount);
                         context.result.events.Add(new BattleEvent
                         {
-                            message = BattleTextHelper.Unit(target.Part.displayName) + " 获得 " + effect.statusId + " x" + amount + "（总计 " + total + "）。"
+                            message = BattleTextHelper.Unit(context.state.monster == null ? "怪物" : context.state.monster.displayName) + " 获得 " + effect.statusId + " x" + amount + "（总计 " + total + "）。"
                         });
                     }
 

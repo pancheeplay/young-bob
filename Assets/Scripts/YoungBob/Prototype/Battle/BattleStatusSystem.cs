@@ -67,32 +67,24 @@ namespace YoungBob.Prototype.Battle
 
         public static void TickPoisonOnMonsterAtTurnStart(BattleState state, BattleCommandResult result)
         {
-            if (state == null || state.monster == null || state.monster.parts == null)
+            if (state == null || state.monster == null)
             {
                 return;
             }
 
-            for (var i = 0; i < state.monster.parts.Count; i++)
+            var poison = GetStacks(state.monster.statuses, PoisonStatusId);
+            if (poison <= 0)
             {
-                var part = state.monster.parts[i];
-                if (part == null)
-                {
-                    continue;
-                }
-
-                var poison = GetStacks(part.statuses, PoisonStatusId);
-                if (poison <= 0)
-                {
-                    continue;
-                }
-
-                var applied = BattleMechanics.ApplyDamageToPart(state, part, poison, result);
-                AddStacks(part.statuses, PoisonStatusId, -1);
-                result.events.Add(new BattleEvent
-                {
-                    message = BattleTextHelper.Unit(part.displayName) + " 受到" + BattleTextHelper.DamageText(applied) + "，来自中毒。"
-                });
+                return;
             }
+
+            var applied = Math.Min(state.monster.coreHp, Math.Max(0, poison));
+            state.monster.coreHp = Math.Max(0, state.monster.coreHp - applied);
+            AddStacks(state.monster.statuses, PoisonStatusId, -1);
+            result.events.Add(new BattleEvent
+            {
+                message = BattleTextHelper.Unit(state.monster.displayName) + " 受到" + BattleTextHelper.DamageText(applied) + "，来自中毒。"
+            });
         }
 
         public static void TickPoisonOnPlayersAtTurnStart(BattleState state, BattleCommandResult result)

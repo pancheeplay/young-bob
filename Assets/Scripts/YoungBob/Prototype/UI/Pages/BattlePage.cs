@@ -40,6 +40,7 @@ namespace YoungBob.Prototype.UI.Pages
         private readonly RectTransform _monsterHpFillRect;
         private readonly Text _monsterHpText;
         private readonly Text _monsterActionHintText;
+        private readonly Text _monsterStatusHintText;
         private readonly Text _effectTargetHintText;
         private readonly Button _statusModeButton;
         private readonly Button _chatButton;
@@ -75,7 +76,7 @@ namespace YoungBob.Prototype.UI.Pages
             _canvas = parent.GetComponent<Canvas>();
 
             // --- Top Header (Turn Info & End Turn) ---
-            var headerPanel = UiFactory.CreatePanel(Root.transform, "Header", new Color(0.18f, 0.2f, 0.23f), new Vector2(0f, 0.9f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            var headerPanel = UiFactory.CreatePanel(Root.transform, "Header", new Color(0.18f, 0.2f, 0.23f), new Vector2(0f, 0.92f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             _summaryText = UiFactory.CreateText(headerPanel.transform, "Summary", 24, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(0.65f, 1f), new Vector2(30f, 0f), new Vector2(-10f, 0f));
             _summaryText.fontStyle = FontStyle.Bold;
             _summaryText.supportRichText = true;
@@ -114,7 +115,7 @@ namespace YoungBob.Prototype.UI.Pages
             _quickChatMask.SetActive(false);
 
             // --- Board Panel (Portrait, Horizon-based) ---
-            var boardPanel = UiFactory.CreatePanel(Root.transform, "BoardPanel", new Color(0.08f, 0.1f, 0.12f), new Vector2(0f, 0.45f), new Vector2(1f, 0.88f), new Vector2(20f, 0f), new Vector2(-20f, 0f));
+            var boardPanel = UiFactory.CreatePanel(Root.transform, "BoardPanel", new Color(0.08f, 0.1f, 0.12f), new Vector2(0f, 0.45f), new Vector2(1f, 0.91f), new Vector2(10f, 0f), new Vector2(-10f, 0f));
             _boardPanelRect = boardPanel.GetComponent<RectTransform>();
 
             // Invisible drop zones (Created at the back, but in front of board panel itself)
@@ -154,6 +155,9 @@ namespace YoungBob.Prototype.UI.Pages
             _monsterActionHintText = UiFactory.CreateText(monsterPanel.transform, "MonsterActionHint", 18, TextAnchor.MiddleCenter, new Vector2(0.08f, 0.08f), new Vector2(0.92f, 0.16f), Vector2.zero, Vector2.zero);
             _monsterActionHintText.color = new Color(0.72f, 0.72f, 0.72f, 0.75f);
             _monsterActionHintText.raycastTarget = false;
+            _monsterStatusHintText = UiFactory.CreateText(monsterPanel.transform, "MonsterStatusHint", 17, TextAnchor.MiddleCenter, new Vector2(0.08f, 0.02f), new Vector2(0.92f, 0.08f), Vector2.zero, Vector2.zero);
+            _monsterStatusHintText.color = new Color(0.79f, 0.82f, 0.85f, 0.72f);
+            _monsterStatusHintText.raycastTarget = false;
 
             _effectTargetHintText = UiFactory.CreateText(Root.transform, "EffectTargetHint", 18, TextAnchor.MiddleCenter, new Vector2(0.15f, 0.425f), new Vector2(0.85f, 0.45f), Vector2.zero, Vector2.zero);
             _effectTargetHintText.color = new Color(0.9f, 0.92f, 0.95f, 0.9f);
@@ -170,7 +174,7 @@ namespace YoungBob.Prototype.UI.Pages
             _eastPlayerContainer = eastPanel.transform;
 
             // --- Battle Log (Scrollable) ---
-            var logBase = UiFactory.CreatePanel(Root.transform, "LogBase", new Color(0.05f, 0.05f, 0.06f, 0.92f), new Vector2(0f, 0.28f), new Vector2(1f, 0.44f), new Vector2(25f, 5f), new Vector2(-25f, -5f));
+            var logBase = UiFactory.CreatePanel(Root.transform, "LogBase", new Color(0.05f, 0.05f, 0.06f, 0.92f), new Vector2(0f, 0.28f), new Vector2(1f, 0.44f), new Vector2(15f, 5f), new Vector2(-15f, -5f));
             
             var scrollView = new GameObject("LogScroll");
             scrollView.transform.SetParent(logBase.transform, false);
@@ -216,13 +220,11 @@ namespace YoungBob.Prototype.UI.Pages
             _jumpToLatestButton.gameObject.SetActive(false);
             
             // --- Hand ---
-            var handPanel = UiFactory.CreatePanel(Root.transform, "HandPanel", new Color(0.12f, 0.14f, 0.18f, 0.7f), new Vector2(0f, 0.08f), new Vector2(1f, 0.27f), new Vector2(10f, 10f), new Vector2(-10f, 10f));
+            var handPanel = UiFactory.CreatePanel(Root.transform, "HandPanel", new Color(0.12f, 0.14f, 0.18f, 0.7f), new Vector2(0f, 0.05f), new Vector2(1f, 0.27f), new Vector2(10f, 10f), new Vector2(-10f, 5f));
             _handPanelRect = handPanel.GetComponent<RectTransform>();
 
-            var handHeader = UiFactory.CreatePanel(handPanel.transform, "HandHeader", new Color(0.10f, 0.12f, 0.16f, 0.95f), Vector2.zero, new Vector2(1f, 0.30f), new Vector2(10f, 8f), new Vector2(-10f, -4f));
+            var handHeader = UiFactory.CreatePanel(handPanel.transform, "HandHeader", new Color(0.10f, 0.12f, 0.16f, 0.95f), new Vector2(0f, 0.76f), new Vector2(1f, 1f), new Vector2(10f, 5f), new Vector2(-10f, -5f));
             var handHeaderRect = handHeader.GetComponent<RectTransform>();
-            handHeaderRect.anchorMin = new Vector2(0f, 0.72f);
-            handHeaderRect.anchorMax = new Vector2(1f, 1f);
 
             _energyLabel = UiFactory.CreateText(handHeader.transform, "EnergyLabel", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(0.56f, 1f), new Vector2(18f, 0f), new Vector2(0f, 0f));
             _energyLabel.fontStyle = FontStyle.Bold;
@@ -233,9 +235,9 @@ namespace YoungBob.Prototype.UI.Pages
             handScrollArea.transform.SetParent(handPanel.transform, false);
             var hsRect = handScrollArea.AddComponent<RectTransform>();
             hsRect.anchorMin = new Vector2(0f, 0f);
-            hsRect.anchorMax = new Vector2(1f, 0.72f);
+            hsRect.anchorMax = new Vector2(1f, 0.76f);
             hsRect.offsetMin = new Vector2(10f, 10f);
-            hsRect.offsetMax = new Vector2(-10f, -4f);
+            hsRect.offsetMax = new Vector2(-10f, -5f);
 
             var handScroll = handScrollArea.AddComponent<ScrollRect>();
             var handViewport = new GameObject("Viewport");
@@ -251,7 +253,7 @@ namespace YoungBob.Prototype.UI.Pages
             handContentRect.pivot = new Vector2(0f, 0.5f);
             var handLayout = handContent.AddComponent<HorizontalLayoutGroup>();
             handLayout.spacing = 15f;
-            handLayout.padding = new RectOffset(20, 20, 20, 20);
+            handLayout.padding = new RectOffset(20, 20, 15, 15);
             handLayout.childAlignment = TextAnchor.MiddleLeft;
             handLayout.childControlWidth = handLayout.childControlHeight = false;
             handLayout.childForceExpandWidth = handLayout.childForceExpandHeight = false;
@@ -340,7 +342,7 @@ namespace YoungBob.Prototype.UI.Pages
             _pilePopupContent = popupContentObj.transform;
             _pilePopupMask.SetActive(false);
 
-            var settingsBar = UiFactory.CreatePanel(Root.transform, "BattleSettingsBar", new Color(0.09f, 0.11f, 0.14f, 0.95f), new Vector2(0f, 0f), new Vector2(1f, 0.08f), new Vector2(10f, 10f), new Vector2(-10f, -2f));
+            var settingsBar = UiFactory.CreatePanel(Root.transform, "BattleSettingsBar", new Color(0.09f, 0.11f, 0.14f, 0.95f), new Vector2(0f, 0f), new Vector2(1f, 0.045f), new Vector2(10f, 5f), new Vector2(-10f, -2f));
             var settingsLayout = settingsBar.AddComponent<HorizontalLayoutGroup>();
             settingsLayout.childAlignment = TextAnchor.MiddleLeft;
             settingsLayout.childControlWidth = false;
@@ -348,7 +350,7 @@ namespace YoungBob.Prototype.UI.Pages
             settingsLayout.childForceExpandWidth = false;
             settingsLayout.childForceExpandHeight = false;
             settingsLayout.spacing = 10f;
-            settingsLayout.padding = new RectOffset(12, 12, 6, 6);
+            settingsLayout.padding = new RectOffset(12, 12, 4, 4);
 
             _statusModeButton = UiFactory.CreateButton(settingsBar.transform, "StatusMode", "模式: 详", ToggleStatusMode);
             _statusModeButton.image.color = new Color(0.24f, 0.32f, 0.46f);
@@ -492,6 +494,7 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 ClearMonsterPartViews();
                 _monsterActionHintText.text = string.Empty;
+                _monsterStatusHintText.text = string.Empty;
                 return;
             }
 
@@ -503,11 +506,13 @@ namespace YoungBob.Prototype.UI.Pages
                 string pose = !string.IsNullOrEmpty(state.monster.currentPoseId) ? $" [{state.monster.currentPoseId}]" : "";
                 _monsterHpText.text = $"怪物生命：{state.monster.coreHp} / {state.monster.coreMaxHp}{pose}";
                 _monsterActionHintText.text = BuildMonsterActionHint(state.monster);
+                _monsterStatusHintText.text = BuildMonsterStatusesText(state.monster.statuses, _isDetailedStatusMode);
             }
             else
             {
                 ClearMonsterPartViews();
                 _monsterActionHintText.text = string.Empty;
+                _monsterStatusHintText.text = string.Empty;
             }
 
             // Render Players in their respective areas
@@ -655,8 +660,8 @@ namespace YoungBob.Prototype.UI.Pages
                 if (cardObject == null) continue;
 
                 var layoutElement = cardObject.AddComponent<LayoutElement>();
-                layoutElement.preferredWidth = 200f;
-                layoutElement.preferredHeight = 280f;
+                layoutElement.preferredWidth = 140f;
+                layoutElement.preferredHeight = 196f;
 
                 var dragView = cardObject.AddComponent<BattleHandCardDragView>();
                 dragView.Initialize(_canvas);
@@ -1389,6 +1394,44 @@ namespace YoungBob.Prototype.UI.Pages
             }
 
             return $"动作：待机  |  姿态：{pose}";
+        }
+
+        private static string BuildMonsterStatusesText(List<BattleStatusState> statuses, bool detailedMode)
+        {
+            if (statuses == null || statuses.Count == 0)
+            {
+                return "<color=#9ca3af>状态：无</color>";
+            }
+
+            var parts = new List<string>();
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                var status = statuses[i];
+                if (status == null || status.stacks <= 0 || string.IsNullOrWhiteSpace(status.id))
+                {
+                    continue;
+                }
+
+                if (string.Equals(status.id, "Poison", StringComparison.OrdinalIgnoreCase))
+                {
+                    parts.Add((detailedMode ? "中毒" : "☠") + status.stacks);
+                }
+                else if (string.Equals(status.id, "Strength", StringComparison.OrdinalIgnoreCase))
+                {
+                    parts.Add((detailedMode ? "力量" : "💪") + status.stacks);
+                }
+                else
+                {
+                    parts.Add(status.id + ":" + status.stacks);
+                }
+            }
+
+            if (parts.Count == 0)
+            {
+                return "<color=#9ca3af>状态：无</color>";
+            }
+
+            return "<color=#cbd5e1>状态：" + string.Join(" ", parts) + "</color>";
         }
 
         private static string BuildEffectsTargetHint(CardDefinition cardDef)

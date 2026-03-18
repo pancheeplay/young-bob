@@ -38,7 +38,7 @@
     {
       "type": "event_log_contains",
       "actualPath": "after_quick_jab",
-      "expected": "used >> drew <color=#F7E08A>1 card(s)</color>",
+      "expected": "使用 >> 抽了 <color=#F7E08A>1张牌</color>",
       "message": "quick jab should damage then draw"
     }
   ]

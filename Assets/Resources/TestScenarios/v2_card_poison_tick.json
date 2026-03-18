@@ -41,25 +41,21 @@
   ],
   "assertions": [
     {
-      "type": "part_status_equals",
+      "type": "monster_status_equals",
       "actualPath": "after_apply",
-      "partId": "$first_part",
       "statusId": "Poison",
       "expectedInt": 5,
       "message": "poison applied"
     },
     {
-      "type": "part_field_equals",
+      "type": "monster_core_hp_equals",
       "actualPath": "after_monster_turn",
-      "partId": "$first_part",
-      "field": "hp",
-      "expectedInt": 7,
+      "expectedInt": 55,
       "message": "poison tick damage applied"
     },
     {
-      "type": "part_status_equals",
+      "type": "monster_status_equals",
       "actualPath": "after_monster_turn",
-      "partId": "$first_part",
       "statusId": "Poison",
       "expectedInt": 4,
       "message": "poison decays by 1"
