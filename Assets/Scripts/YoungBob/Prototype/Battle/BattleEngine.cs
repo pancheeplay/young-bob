@@ -8,7 +8,6 @@ namespace YoungBob.Prototype.Battle
         internal const int BaseEnergyPerTurn = 3;
         internal const int CardsDrawnPerTurn = 2;
         internal const int MaxHandSize = 5;
-        internal const string MoveCardId = "move";
         internal const string PoseIdleId = "idle";
         internal const string PoseChargeId = "charge";
         internal const string PoseAttackId = "attack";
@@ -65,7 +64,6 @@ namespace YoungBob.Prototype.Battle
 
                 BattleMechanics.Shuffle(player.drawPile, setup.randomSeed ^ participant.playerId.GetHashCode());
                 BattleMechanics.DrawCards(state, player, CardsDrawnPerTurn);
-                BattleMechanics.AddMoveCard(state, player);
                 state.players.Add(player);
             }
 
@@ -288,7 +286,6 @@ namespace YoungBob.Prototype.Battle
                     state.players[i].cardsPlayedThisTurn = 0;
                     ResetTemporaryCardModifiers(state.players[i]);
                     BattleMechanics.DrawCards(state, state.players[i], CardsDrawnPerTurn);
-                    BattleMechanics.AddMoveCard(state, state.players[i]);
                 }
             }
 
@@ -383,7 +380,6 @@ namespace YoungBob.Prototype.Battle
                 {
                     player.energy = BaseEnergyPerTurn;
                     BattleMechanics.DrawCards(state, player, CardsDrawnPerTurn);
-                    BattleMechanics.AddMoveCard(state, player);
                 }
             }
 

@@ -215,21 +215,27 @@ namespace YoungBob.Prototype.UI.Pages
             jumpRect.offsetMin = jumpRect.offsetMax = Vector2.zero;
             _jumpToLatestButton.gameObject.SetActive(false);
             
-            // --- Energy Area (Inside Hand Panel Top Left) ---
-            _energyLabel = UiFactory.CreateText(Root.transform, "EnergyLabel", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0.235f), new Vector2(0.4f, 0.27f), new Vector2(35f, 0f), new Vector2(0f, -6f));
+            // --- Hand ---
+            var handPanel = UiFactory.CreatePanel(Root.transform, "HandPanel", new Color(0.12f, 0.14f, 0.18f, 0.7f), new Vector2(0f, 0.08f), new Vector2(1f, 0.27f), new Vector2(10f, 10f), new Vector2(-10f, 10f));
+            _handPanelRect = handPanel.GetComponent<RectTransform>();
+
+            var handHeader = UiFactory.CreatePanel(handPanel.transform, "HandHeader", new Color(0.10f, 0.12f, 0.16f, 0.95f), Vector2.zero, new Vector2(1f, 0.30f), new Vector2(10f, 8f), new Vector2(-10f, -4f));
+            var handHeaderRect = handHeader.GetComponent<RectTransform>();
+            handHeaderRect.anchorMin = new Vector2(0f, 0.72f);
+            handHeaderRect.anchorMax = new Vector2(1f, 1f);
+
+            _energyLabel = UiFactory.CreateText(handHeader.transform, "EnergyLabel", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(0.56f, 1f), new Vector2(18f, 0f), new Vector2(0f, 0f));
             _energyLabel.fontStyle = FontStyle.Bold;
             _energyLabel.color = new Color(0.4f, 0.7f, 1f);
             _energyLabel.raycastTarget = false;
 
-            // --- Hand ---
-            var handPanel = UiFactory.CreatePanel(Root.transform, "HandPanel", new Color(0.12f, 0.14f, 0.18f, 0.7f), new Vector2(0f, 0.08f), new Vector2(1f, 0.27f), new Vector2(10f, 10f), new Vector2(-10f, 10f));
-            _handPanelRect = handPanel.GetComponent<RectTransform>();
             var handScrollArea = new GameObject("HandScroll");
             handScrollArea.transform.SetParent(handPanel.transform, false);
             var hsRect = handScrollArea.AddComponent<RectTransform>();
-            hsRect.anchorMin = Vector2.zero;
-            hsRect.anchorMax = Vector2.one;
-            hsRect.offsetMin = hsRect.offsetMax = Vector2.zero;
+            hsRect.anchorMin = new Vector2(0f, 0f);
+            hsRect.anchorMax = new Vector2(1f, 0.72f);
+            hsRect.offsetMin = new Vector2(10f, 10f);
+            hsRect.offsetMax = new Vector2(-10f, -4f);
 
             var handScroll = handScrollArea.AddComponent<ScrollRect>();
             var handViewport = new GameObject("Viewport");
@@ -258,28 +264,28 @@ namespace YoungBob.Prototype.UI.Pages
             handScroll.horizontal = true;
             _handContainer = handContent.transform;
 
-            _drawPileButton = UiFactory.CreateButton(handPanel.transform, "DrawPileButton", "牌库 0", () => OpenPilePopup(PileView.Draw));
+            _drawPileButton = UiFactory.CreateButton(handHeader.transform, "DrawPileButton", "牌库 0", () => OpenPilePopup(PileView.Draw));
             var drawRect = _drawPileButton.GetComponent<RectTransform>();
-            drawRect.anchorMin = new Vector2(0.64f, 0.8f);
-            drawRect.anchorMax = new Vector2(0.75f, 0.97f);
+            drawRect.anchorMin = new Vector2(0.58f, 0.14f);
+            drawRect.anchorMax = new Vector2(0.73f, 0.86f);
             drawRect.offsetMin = Vector2.zero;
             drawRect.offsetMax = Vector2.zero;
             _drawPileButton.image.color = new Color(0.2f, 0.28f, 0.45f, 0.95f);
             _drawPileButton.GetComponentInChildren<Text>().fontSize = 16;
 
-            _discardPileButton = UiFactory.CreateButton(handPanel.transform, "DiscardPileButton", "弃牌 0", () => OpenPilePopup(PileView.Discard));
+            _discardPileButton = UiFactory.CreateButton(handHeader.transform, "DiscardPileButton", "弃牌 0", () => OpenPilePopup(PileView.Discard));
             var discardRect = _discardPileButton.GetComponent<RectTransform>();
-            discardRect.anchorMin = new Vector2(0.76f, 0.8f);
-            discardRect.anchorMax = new Vector2(0.87f, 0.97f);
+            discardRect.anchorMin = new Vector2(0.74f, 0.14f);
+            discardRect.anchorMax = new Vector2(0.86f, 0.86f);
             discardRect.offsetMin = Vector2.zero;
             discardRect.offsetMax = Vector2.zero;
             _discardPileButton.image.color = new Color(0.32f, 0.24f, 0.2f, 0.95f);
             _discardPileButton.GetComponentInChildren<Text>().fontSize = 16;
 
-            _exhaustPileButton = UiFactory.CreateButton(handPanel.transform, "ExhaustPileButton", "消耗 0", () => OpenPilePopup(PileView.Exhaust));
+            _exhaustPileButton = UiFactory.CreateButton(handHeader.transform, "ExhaustPileButton", "消耗 0", () => OpenPilePopup(PileView.Exhaust));
             var exhaustRect = _exhaustPileButton.GetComponent<RectTransform>();
-            exhaustRect.anchorMin = new Vector2(0.88f, 0.8f);
-            exhaustRect.anchorMax = new Vector2(0.99f, 0.97f);
+            exhaustRect.anchorMin = new Vector2(0.87f, 0.14f);
+            exhaustRect.anchorMax = new Vector2(0.98f, 0.86f);
             exhaustRect.offsetMin = Vector2.zero;
             exhaustRect.offsetMax = Vector2.zero;
             _exhaustPileButton.image.color = new Color(0.26f, 0.2f, 0.36f, 0.95f);

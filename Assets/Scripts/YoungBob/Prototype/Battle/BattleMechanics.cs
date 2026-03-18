@@ -119,24 +119,6 @@ namespace YoungBob.Prototype.Battle
             return true;
         }
 
-        public static void AddMoveCard(BattleState state, PlayerBattleState player)
-        {
-            var moveCard = new BattleCardState
-            {
-                instanceId = player.playerId + "_" + BattleEngine.MoveCardId + "_" + state.turnIndex + "_" + Guid.NewGuid().ToString("N"),
-                cardId = BattleEngine.MoveCardId,
-                costDelta = 0
-            };
-
-            if (player.hand.Count >= BattleEngine.MaxHandSize)
-            {
-                player.discardPile.Add(moveCard);
-                return;
-            }
-
-            player.hand.Add(moveCard);
-        }
-
         public static void AddCardToHandOrDiscard(BattleState state, PlayerBattleState player, string cardId, bool forceIntoHand = false)
         {
             if (state == null || player == null || string.IsNullOrWhiteSpace(cardId))

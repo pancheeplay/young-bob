@@ -3,6 +3,7 @@
     {
       "id": "co_op_starter",
       "cards": [
+        "move",
         "priest_heal",
         "assassin_quick_jab",
         "assassin_quick_jab",
@@ -28,6 +29,7 @@
     {
       "id" :"test",
       "cards": [
+        "move",
         "priest_heal"]
     }
   ]
