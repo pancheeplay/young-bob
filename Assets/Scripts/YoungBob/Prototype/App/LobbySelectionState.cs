@@ -10,6 +10,7 @@ namespace YoungBob.Prototype.App
         private int _selectedStageIndex;
         private string _selectedLocalDeckId;
         private readonly Dictionary<string, string> _playerSelectedDeckById = new Dictionary<string, string>();
+        private readonly HashSet<string> _confirmedDeckSelectionPlayerIds = new HashSet<string>(StringComparer.Ordinal);
 
         public LobbySelectionState(string initialLocalDeckId)
         {
@@ -86,6 +87,7 @@ namespace YoungBob.Prototype.App
             if (!string.IsNullOrWhiteSpace(localPlayerId))
             {
                 _playerSelectedDeckById[localPlayerId] = deckId;
+                _confirmedDeckSelectionPlayerIds.Add(localPlayerId);
             }
         }
 
@@ -104,6 +106,7 @@ namespace YoungBob.Prototype.App
             if (room == null || room.players == null)
             {
                 _playerSelectedDeckById.Clear();
+                _confirmedDeckSelectionPlayerIds.Clear();
                 return;
             }
 
@@ -120,6 +123,11 @@ namespace YoungBob.Prototype.App
                     _playerSelectedDeckById[playerId] = string.Equals(playerId, localPlayerId, StringComparison.Ordinal)
                         ? _selectedLocalDeckId
                         : defaultDeckId;
+                }
+
+                if (string.Equals(playerId, localPlayerId, StringComparison.Ordinal))
+                {
+                    _confirmedDeckSelectionPlayerIds.Add(playerId);
                 }
             }
 
@@ -153,15 +161,76 @@ namespace YoungBob.Prototype.App
         public void ApplyRemoteDeckSelection(string playerId, string deckId, string localPlayerId)
         {
             _playerSelectedDeckById[playerId] = deckId;
+            _confirmedDeckSelectionPlayerIds.Add(playerId);
             if (string.Equals(playerId, localPlayerId, StringComparison.Ordinal))
             {
                 _selectedLocalDeckId = deckId;
             }
         }
 
+        public bool HasConfirmedDeckSelection(string playerId)
+        {
+            return !string.IsNullOrWhiteSpace(playerId) && _confirmedDeckSelectionPlayerIds.Contains(playerId);
+        }
+
+        public bool HasAllConfirmedDeckSelections(RoomJoinedEvent room, string localPlayerId)
+        {
+            if (room == null || room.players == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < room.players.Count; i++)
+            {
+                var playerId = room.players[i].playerId;
+                if (string.IsNullOrWhiteSpace(playerId))
+                {
+                    continue;
+                }
+
+                if (string.Equals(playerId, localPlayerId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!_confirmedDeckSelectionPlayerIds.Contains(playerId))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public string[] GetUnconfirmedDeckSelectionPlayerIds(RoomJoinedEvent room, string localPlayerId)
+        {
+            if (room == null || room.players == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var missing = new List<string>();
+            for (var i = 0; i < room.players.Count; i++)
+            {
+                var playerId = room.players[i].playerId;
+                if (string.IsNullOrWhiteSpace(playerId) || string.Equals(playerId, localPlayerId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!_confirmedDeckSelectionPlayerIds.Contains(playerId))
+                {
+                    missing.Add(playerId);
+                }
+            }
+
+            return missing.ToArray();
+        }
+
         public void ClearRoomPlayerSelections()
         {
             _playerSelectedDeckById.Clear();
+            _confirmedDeckSelectionPlayerIds.Clear();
         }
     }
 }

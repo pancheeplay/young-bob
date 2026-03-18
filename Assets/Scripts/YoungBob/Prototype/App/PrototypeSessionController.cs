@@ -243,6 +243,21 @@ namespace YoungBob.Prototype.App
                 return;
             }
 
+            if (!_lobbySelection.HasAllConfirmedDeckSelections(_room, LocalPlayerId))
+            {
+                var missingPlayers = _lobbySelection.GetUnconfirmedDeckSelectionPlayerIds(_room, LocalPlayerId);
+                var missingNames = new List<string>();
+                for (var i = 0; i < missingPlayers.Length; i++)
+                {
+                    missingNames.Add(ResolvePlayerDisplayName(missingPlayers[i]));
+                }
+
+                var missingText = missingNames.Count == 0 ? "其他玩家" : string.Join("、", missingNames.ToArray());
+                StatusChanged?.Invoke("等待所有玩家确认牌组...");
+                LogAdded?.Invoke("开始关卡已取消：等待 " + missingText + " 的牌组选择同步完成。");
+                return;
+            }
+
             var payload = new BattleStartPayload
             {
                 randomSeed = 24681357,
@@ -411,6 +426,14 @@ namespace YoungBob.Prototype.App
                 && player != null
                 && player.hp > 0
                 && !player.hasEndedTurn;
+        }
+
+        public bool CanStartBattle()
+        {
+            return _room != null
+                && IsLocalHost
+                && SelectedStage != null
+                && _lobbySelection.HasAllConfirmedDeckSelections(_room, LocalPlayerId);
         }
 
         public void EndBattleAndReturnToLobby()

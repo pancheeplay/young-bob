@@ -139,7 +139,7 @@ namespace YoungBob.Prototype.UI.Pages
             RenderStageSection(room);
             RenderDeckSection();
 
-            _startBattleButton.interactable = room.localPlayerId == room.hostPlayerId && room.players.Count >= 1 && Session.SelectedStage != null;
+            _startBattleButton.interactable = Session.CanStartBattle();
             _leaveRoomButton.interactable = true;
 
             if (_selectionPopup.IsOpen && _selectorMode != SelectorMode.None)

@@ -212,6 +212,7 @@ namespace YoungBob.Prototype.Multiplayer
         private async Task ReceiveLoopAsync(CancellationToken token)
         {
             var buffer = new byte[16 * 1024];
+            var messageBuffer = new List<byte>(32 * 1024);
             try
             {
                 while (!token.IsCancellationRequested && _socket != null && _socket.State == WebSocketState.Open)
@@ -222,7 +223,26 @@ namespace YoungBob.Prototype.Multiplayer
                         break;
                     }
 
-                    var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                    if (result.Count > 0)
+                    {
+                        for (var i = 0; i < result.Count; i++)
+                        {
+                            messageBuffer.Add(buffer[i]);
+                        }
+                    }
+
+                    if (!result.EndOfMessage)
+                    {
+                        continue;
+                    }
+
+                    if (messageBuffer.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    var json = Encoding.UTF8.GetString(messageBuffer.ToArray());
+                    messageBuffer.Clear();
                     // Debug.Log("[DebugRelay] Received packet: " + json);
                     HandlePacket(json);
                 }
