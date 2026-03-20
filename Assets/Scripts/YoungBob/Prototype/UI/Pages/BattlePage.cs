@@ -1253,49 +1253,54 @@ namespace YoungBob.Prototype.UI.Pages
             var infoBase = new GameObject("Info");
             infoBase.transform.SetParent(slotObject.transform, false);
             var infoRect = infoBase.AddComponent<RectTransform>();
-            infoRect.anchorMin = new Vector2(0f, -0.92f);
-            infoRect.anchorMax = new Vector2(1f, -0.05f);
+            infoRect.anchorMin = new Vector2(0f, -0.98f);
+            infoRect.anchorMax = new Vector2(1f, 0.00f);
             infoRect.offsetMin = Vector2.zero;
             infoRect.offsetMax = Vector2.zero;
 
             // Name
-            var nameLabel = UiFactory.CreateText(infoBase.transform, "Name", 20, TextAnchor.MiddleCenter, new Vector2(0f, 0.65f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            var nameLabel = UiFactory.CreateText(infoBase.transform, "Name", 20, TextAnchor.MiddleCenter, new Vector2(0f, 0.78f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             nameLabel.fontStyle = FontStyle.Bold;
 
             // Threat bar
-            var threatBase = UiFactory.CreatePanel(infoBase.transform, "ThreatBar", new Color(0.08f, 0.1f, 0.12f, 0.92f), new Vector2(0f, 0.39f), new Vector2(1f, 0.62f), Vector2.zero, Vector2.zero);
+            var threatBase = UiFactory.CreatePanel(infoBase.transform, "ThreatBar", new Color(0.08f, 0.1f, 0.12f, 0.92f), new Vector2(0f, 0.62f), new Vector2(1f, 0.72f), Vector2.zero, Vector2.zero);
             threatBase.GetComponent<Image>().raycastTarget = false;
-            var threatLabel = UiFactory.CreateText(threatBase.transform, "ThreatLabel", 12, TextAnchor.MiddleCenter, new Vector2(0f, 0.54f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-            threatLabel.fontStyle = FontStyle.Bold;
-            threatLabel.raycastTarget = false;
             var threatSegmentFills = new Image[3];
             var threatSegmentLabels = new Text[3];
             for (var i = 0; i < 3; i++)
             {
-                var segment = UiFactory.CreatePanel(threatBase.transform, "Segment_" + i, new Color(0.14f, 0.16f, 0.19f, 0.95f), new Vector2(i / 3f, 0.07f), new Vector2((i + 1) / 3f, 0.46f), new Vector2(1f, 1f), new Vector2(-1f, -1f));
+                var segment = UiFactory.CreatePanel(threatBase.transform, "Segment_" + i, new Color(0.14f, 0.16f, 0.19f, 0.95f), new Vector2(i / 3f, 0f), new Vector2((i + 1) / 3f, 1f), new Vector2(1f, 1f), new Vector2(-1f, -1f));
                 segment.GetComponent<Image>().raycastTarget = false;
                 var fill = UiFactory.CreatePanel(segment.transform, "Fill", new Color(0.2f, 0.8f, 0.3f, 0.95f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
                 var fillImage = fill.GetComponent<Image>();
                 fillImage.raycastTarget = false;
                 threatSegmentFills[i] = fillImage;
-                var segmentLabel = UiFactory.CreateText(segment.transform, "Label", 10, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-                segmentLabel.fontStyle = FontStyle.Bold;
-                segmentLabel.raycastTarget = false;
-                threatSegmentLabels[i] = segmentLabel;
             }
+            var threatTick20 = UiFactory.CreatePanel(threatBase.transform, "Tick20", new Color(0.92f, 0.95f, 1f, 0.55f), new Vector2(1f / 3f, 0f), new Vector2(1f / 3f, 1f), new Vector2(-1f, 0f), new Vector2(1f, 0f));
+            threatTick20.GetComponent<Image>().raycastTarget = false;
+            var threatTick40 = UiFactory.CreatePanel(threatBase.transform, "Tick40", new Color(0.92f, 0.95f, 1f, 0.55f), new Vector2(2f / 3f, 0f), new Vector2(2f / 3f, 1f), new Vector2(-1f, 0f), new Vector2(1f, 0f));
+            threatTick40.GetComponent<Image>().raycastTarget = false;
 
             // HP Bar
             var barColor = faction == BattleTargetFaction.Allies ? new Color(0.2f, 0.8f, 0.3f) : new Color(0.8f, 0.2f, 0.2f);
             var (hpBarBg, hpFill) = UiFactory.CreateProgressBar(infoBase.transform, "HPBar", barColor, new Vector2(110f, 14f));
-            hpBarBg.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -22f);
+            hpBarBg.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -11f);
 
             var hpLabel = UiFactory.CreateText(hpBarBg.transform, "HPNumeric", 14, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             hpLabel.color = Color.white;
 
-            // Status (Charge/Bonus)
-            var statusLabel = UiFactory.CreateText(infoBase.transform, "Status", 16, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0.22f), Vector2.zero, Vector2.zero);
+            // Status (Charge/Bonus/General buffs)
+            var statusLabel = UiFactory.CreateText(infoBase.transform, "Status", 15, TextAnchor.MiddleCenter, new Vector2(0f, 0.24f), new Vector2(1f, 0.38f), Vector2.zero, Vector2.zero);
             statusLabel.fontStyle = FontStyle.Bold;
             statusLabel.color = new Color(1f, 0.8f, 0.2f);
+            statusLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+            statusLabel.verticalOverflow = VerticalWrapMode.Truncate;
+
+            var secretLabel = UiFactory.CreateText(infoBase.transform, "SecretStatus", 12, TextAnchor.UpperCenter, new Vector2(0f, 0.03f), new Vector2(1f, 0.21f), Vector2.zero, Vector2.zero);
+            secretLabel.fontStyle = FontStyle.Bold;
+            secretLabel.color = new Color(0.75f, 0.87f, 1f, 0.96f);
+            secretLabel.horizontalOverflow = HorizontalWrapMode.Wrap;
+            secretLabel.verticalOverflow = VerticalWrapMode.Truncate;
 
             // Armor
             var armorLabel = UiFactory.CreateText(slotObject.transform, "Armor", 18, TextAnchor.MiddleCenter, new Vector2(0f, 0.7f), new Vector2(0f, 0.7f), Vector2.zero, Vector2.zero);
@@ -1313,7 +1318,7 @@ namespace YoungBob.Prototype.UI.Pages
             var highlightImage = borderObj.GetComponent<Image>();
 
             var slotView = slotObject.AddComponent<BattleUnitSlotView>();
-            slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, threatBase.GetComponent<RectTransform>(), threatSegmentFills, threatSegmentLabels, threatLabel, color, highlightImage);
+            slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, secretLabel, threatBase.GetComponent<RectTransform>(), threatSegmentFills, threatSegmentLabels, null, color, highlightImage);
             slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, vulnerableStacks, statuses, threatValue, threatTier, secretSummary, detailedMode, highlightMode);
             return slotView;
         }
@@ -1470,7 +1475,8 @@ namespace YoungBob.Prototype.UI.Pages
                 return string.Empty;
             }
 
-            var secretParts = new List<string>();
+            var distinctSecrets = 0;
+            var totalSecretStacks = 0;
             for (var i = 0; i < player.statuses.Count; i++)
             {
                 var status = player.statuses[i];
@@ -1479,18 +1485,18 @@ namespace YoungBob.Prototype.UI.Pages
                     continue;
                 }
 
-                var label = ResolveSecretDisplayName(status.id, detailedMode);
-                secretParts.Add(label + "x" + status.stacks);
+                distinctSecrets++;
+                totalSecretStacks += status.stacks;
             }
 
-            if (secretParts.Count == 0)
+            if (distinctSecrets <= 0 || totalSecretStacks <= 0)
             {
                 return string.Empty;
             }
 
             return detailedMode
-                ? "奥秘[" + string.Join(" ", secretParts) + "]"
-                : "奥[" + string.Join(" ", secretParts) + "]";
+                ? $"奥秘 {distinctSecrets}种/{totalSecretStacks}层"
+                : $"奥{totalSecretStacks}";
         }
 
         private static bool IsSecretStatusId(string statusId)

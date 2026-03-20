@@ -26,6 +26,7 @@ namespace YoungBob.Prototype.UI.Battle
         private Text _nameLabel;
         private Text _hpLabel;
         private Text _armorLabel;
+        private Text _secretLabel;
         private Color _baseColor;
 
         private Text _statusLabel;
@@ -34,7 +35,7 @@ namespace YoungBob.Prototype.UI.Battle
         public BattleTargetFaction Faction { get; private set; }
         public bool IsAlive { get; private set; }
 
-        public void Initialize(Image background, Text nameLabel, Text hpLabel, RectTransform hpFillRect, Text armorLabel, Text statusLabel, RectTransform threatFillRoot, Image[] threatSegmentFills, Text[] threatSegmentLabels, Text threatLabel, Color baseColor, Image highlightBorder)
+        public void Initialize(Image background, Text nameLabel, Text hpLabel, RectTransform hpFillRect, Text armorLabel, Text statusLabel, Text secretLabel, RectTransform threatFillRoot, Image[] threatSegmentFills, Text[] threatSegmentLabels, Text threatLabel, Color baseColor, Image highlightBorder)
         {
             _background = background;
             _nameLabel = nameLabel;
@@ -43,6 +44,7 @@ namespace YoungBob.Prototype.UI.Battle
             if (_hpFillRect != null) _hpFillImage = _hpFillRect.GetComponent<Image>();
             _armorLabel = armorLabel;
             _statusLabel = statusLabel;
+            _secretLabel = secretLabel;
             _threatFillRoot = threatFillRoot;
             _threatLabel = threatLabel;
             for (var i = 0; i < _threatSegmentFills.Length; i++)
@@ -85,9 +87,16 @@ namespace YoungBob.Prototype.UI.Battle
 
             if (_statusLabel != null)
             {
-                var status = BuildStatusText(charge, bonus, vulnerableStacks, statuses, secretSummary, detailedMode);
+                var status = BuildStatusText(charge, bonus, vulnerableStacks, statuses, detailedMode);
                 _statusLabel.text = status;
                 _statusLabel.gameObject.SetActive(!string.IsNullOrEmpty(status) && IsAlive);
+            }
+
+            if (_secretLabel != null)
+            {
+                var secrets = BuildSecretText(secretSummary, statuses, detailedMode);
+                _secretLabel.text = secrets;
+                _secretLabel.gameObject.SetActive(!string.IsNullOrEmpty(secrets) && IsAlive);
             }
             
             if (IsAlive)
@@ -122,6 +131,7 @@ namespace YoungBob.Prototype.UI.Battle
                 
                 if (_armorLabel != null) _armorLabel.gameObject.SetActive(false);
                 if (_statusLabel != null) _statusLabel.gameObject.SetActive(false);
+                if (_secretLabel != null) _secretLabel.gameObject.SetActive(false);
                 if (_hpFillRect != null && _hpFillRect.parent != null) _hpFillRect.parent.gameObject.SetActive(false);
                 
                 var cg = GetComponent<CanvasGroup>();
@@ -155,16 +165,9 @@ namespace YoungBob.Prototype.UI.Battle
 
             var resolvedTier = ResolveThreatTier(threatValue, threatTier);
             var clampedValue = Mathf.Max(0, threatValue);
-            var tierNames = new[] { "I", "II", "III" };
-            var tierIndex = Mathf.Clamp(resolvedTier - 1, 0, 2);
-            var tierTitle = tierNames[tierIndex];
-            var valueLabel = clampedValue >= 60 ? "60+" : clampedValue + "/60";
-
             if (_threatLabel != null)
             {
-                _threatLabel.gameObject.SetActive(true);
-                _threatLabel.text = $"仇恨 {tierTitle}  {valueLabel}";
-                _threatLabel.color = GetThreatTierColor(resolvedTier);
+                _threatLabel.gameObject.SetActive(false);
             }
 
             var segmentProgress = new[]
@@ -190,12 +193,7 @@ namespace YoungBob.Prototype.UI.Battle
                 }
 
                 var label = _threatSegmentLabels[i];
-                if (label != null)
-                {
-                    label.gameObject.SetActive(true);
-                    label.text = i == 0 ? "0-20" : (i == 1 ? "20-40" : "40-60+");
-                    label.color = i == currentTierIndex ? new Color(1f, 1f, 1f, 0.95f) : new Color(0.82f, 0.84f, 0.88f, 0.85f);
-                }
+                if (label != null) label.gameObject.SetActive(false);
             }
         }
 
@@ -232,7 +230,7 @@ namespace YoungBob.Prototype.UI.Battle
             }
         }
 
-        private static string BuildStatusText(int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, string secretSummary, bool detailedMode)
+        private static string BuildStatusText(int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, bool detailedMode)
         {
             var sb = new StringBuilder();
             if (charge > 0) sb.Append(detailedMode ? "蓄力" : "⚡").Append(charge).Append(' ');
@@ -268,17 +266,38 @@ namespace YoungBob.Prototype.UI.Battle
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(secretSummary))
-            {
-                if (sb.Length > 0)
-                {
-                    sb.Append(' ');
-                }
+            return sb.ToString().TrimEnd();
+        }
 
-                sb.Append(secretSummary);
+        private static string BuildSecretText(string secretSummary, List<BattleStatusState> statuses, bool detailedMode)
+        {
+            var lines = new List<string>();
+            if (statuses != null)
+            {
+                for (var i = 0; i < statuses.Count; i++)
+                {
+                    var status = statuses[i];
+                    if (status == null || status.stacks <= 0 || !IsSecretStatusId(status.id))
+                    {
+                        continue;
+                    }
+
+                    var name = ResolveSecretDisplayName(status.id, detailedMode);
+                    lines.Add((detailedMode ? "奥秘 " : "奥 ") + name + " x" + status.stacks);
+                }
             }
 
-            return sb.ToString().TrimEnd();
+            if (!string.IsNullOrWhiteSpace(secretSummary))
+            {
+                if (!detailedMode || lines.Count == 0)
+                {
+                    return secretSummary;
+                }
+
+                lines.Insert(0, secretSummary);
+            }
+
+            return lines.Count > 0 ? string.Join("\n", lines) : string.Empty;
         }
 
         private static bool IsSecretStatusId(string statusId)
@@ -290,6 +309,31 @@ namespace YoungBob.Prototype.UI.Battle
 
             return statusId.IndexOf("secret", System.StringComparison.OrdinalIgnoreCase) >= 0
                 || statusId.IndexOf("奥秘", System.StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string ResolveSecretDisplayName(string statusId, bool detailedMode)
+        {
+            if (string.IsNullOrWhiteSpace(statusId))
+            {
+                return detailedMode ? "通用" : "通";
+            }
+
+            if (string.Equals(statusId, BattleStatusSystem.SecretGuardStatusId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "护卫" : "护";
+            }
+
+            if (string.Equals(statusId, BattleStatusSystem.SecretCounterattackStatusId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "反制" : "反";
+            }
+
+            if (string.Equals(statusId, BattleStatusSystem.SecretSidestepOnHitStatusId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "切边" : "切";
+            }
+
+            return statusId;
         }
     }
 }

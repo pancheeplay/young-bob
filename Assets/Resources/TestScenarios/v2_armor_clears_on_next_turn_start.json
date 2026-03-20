@@ -1,7 +1,7 @@
 {
   "scenarioVersion": 2,
-  "id": "v2_armor_clears_on_end_turn",
-  "name": "V2 armor clears on end turn",
+  "id": "v2_armor_clears_on_next_turn_start",
+  "name": "V2 armor clears on next turn start",
   "setup": {
     "roomId": "v2_armor_clear_room",
     "stageId": "stage_boss_debug",
@@ -11,6 +11,10 @@
       {
         "playerId": "p1",
         "displayName": "Alpha"
+      },
+      {
+        "playerId": "p2",
+        "displayName": "Beta"
       }
     ]
   },
@@ -18,6 +22,10 @@
     {
       "action": "debug_clear_hand",
       "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p2"
     },
     {
       "action": "debug_add_card_to_hand",
@@ -36,7 +44,12 @@
     {
       "action": "end_turn",
       "actorPlayerId": "p1",
-      "snapshotTag": "after_end_turn"
+      "snapshotTag": "after_p1_end_turn"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p2",
+      "snapshotTag": "after_round_restart"
     }
   ],
   "assertions": [
@@ -50,20 +63,28 @@
     },
     {
       "type": "player_field_equals",
-      "actualPath": "after_end_turn",
+      "actualPath": "after_p1_end_turn",
+      "playerId": "p1",
+      "field": "armor",
+      "expectedInt": 8,
+      "message": "armor remains after ending the current turn"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_round_restart",
       "playerId": "p1",
       "field": "armor",
       "expectedInt": 0,
-      "message": "armor is removed when the player's turn ends"
+      "message": "armor is removed at the start of the next turn"
     },
     {
       "type": "event_contains",
-      "actualPath": "after_end_turn",
+      "actualPath": "after_round_restart",
       "eventId": "lose_armor",
       "target": "Alpha",
       "field": "amount",
       "expectedInt": 8,
-      "message": "end turn emits armor loss event"
+      "message": "next turn start emits armor loss event"
     }
   ]
 }

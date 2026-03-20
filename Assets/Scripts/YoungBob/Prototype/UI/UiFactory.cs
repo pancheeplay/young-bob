@@ -5,6 +5,23 @@ namespace YoungBob.Prototype.UI
 {
     internal static class UiFactory
     {
+        private static Font _defaultFont;
+
+        public static void SetDefaultFont(Font font)
+        {
+            _defaultFont = font;
+        }
+
+        private static Font GetDefaultFont()
+        {
+            if (_defaultFont == null)
+            {
+                _defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            }
+
+            return _defaultFont;
+        }
+
         public static GameObject CreatePanel(Transform parent, string name, Color color, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax)
         {
             var panel = new GameObject(name);
@@ -29,7 +46,7 @@ namespace YoungBob.Prototype.UI
             var textObject = new GameObject(name);
             textObject.transform.SetParent(parent, false);
             var text = textObject.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = GetDefaultFont();
             text.fontSize = fontSize;
             text.alignment = alignment;
             text.color = new Color(0.92f, 0.93f, 0.95f);

@@ -13,6 +13,10 @@ namespace YoungBob.Prototype.Scene
 {
     public sealed class YoungBobUiManager : MonoBehaviour
     {
+        private const string DefaultUiFontPath = "Assets/TapOnlineBattleDemo/Fonts/Noto Barlow SemiBold.ttf";
+
+        [SerializeField] private Font _defaultUiFont;
+
         private PrototypeSessionController _session;
         private Canvas _canvas;
         private Text _statusText;
@@ -26,6 +30,7 @@ namespace YoungBob.Prototype.Scene
         public void Initialize(YoungBobGameManager gameManager, PrototypeSessionController session)
         {
             _session = session;
+            UiFactory.SetDefaultFont(ResolveDefaultUiFont());
             EnsureCanvas();
 
             _lobbyPage = new LobbyPage(_canvas.transform, _session);
@@ -44,6 +49,19 @@ namespace YoungBob.Prototype.Scene
 
             ShowLobby();
             HandleStatusChanged(_session.AvailabilityText);
+        }
+
+        private Font ResolveDefaultUiFont()
+        {
+            if (_defaultUiFont != null)
+            {
+                return _defaultUiFont;
+            }
+
+#if UNITY_EDITOR
+            _defaultUiFont = UnityEditor.AssetDatabase.LoadAssetAtPath<Font>(DefaultUiFontPath);
+#endif
+            return _defaultUiFont;
         }
 
         private void OnDestroy()

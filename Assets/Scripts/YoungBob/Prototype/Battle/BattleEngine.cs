@@ -214,18 +214,6 @@ namespace YoungBob.Prototype.Battle
         {
             var result = new BattleCommandResult();
             BattleStatusSystem.ConsumeStacks(player, BattleStatusSystem.TempStrengthStatusId);
-            if (player.armor > 0)
-            {
-                var lostArmor = player.armor;
-                player.armor = 0;
-                result.events.Add(new BattleEvent
-                {
-                    eventId = "lose_armor",
-                    target = player.displayName,
-                    amount = lostArmor
-                });
-            }
-
             player.hasEndedTurn = true;
             result.events.Add(new BattleEvent
             {
@@ -299,10 +287,23 @@ namespace YoungBob.Prototype.Battle
             {
                 if (state.players[i].hp > 0)
                 {
-                    state.players[i].energy = BaseEnergyPerTurn;
-                    state.players[i].cardsPlayedThisTurn = 0;
-                    ResetTemporaryCardModifiers(state.players[i]);
-                    BattleMechanics.DrawCards(state, state.players[i], CardsDrawnPerTurn);
+                    var player = state.players[i];
+                    if (player.armor > 0)
+                    {
+                        var lostArmor = player.armor;
+                        player.armor = 0;
+                        result.events.Add(new BattleEvent
+                        {
+                            eventId = "lose_armor",
+                            target = player.displayName,
+                            amount = lostArmor
+                        });
+                    }
+
+                    player.energy = BaseEnergyPerTurn;
+                    player.cardsPlayedThisTurn = 0;
+                    ResetTemporaryCardModifiers(player);
+                    BattleMechanics.DrawCards(state, player, CardsDrawnPerTurn);
                 }
             }
 

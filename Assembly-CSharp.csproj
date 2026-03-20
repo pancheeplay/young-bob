@@ -95,7 +95,6 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/TapTapRuntimeMultiplayerService.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/LobbyPage.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleEngine.cs" />
-    <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleEventFormatter.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/RoomCustomProperties.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/PageBase.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/TapSDKService.cs" />
@@ -118,6 +117,7 @@
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/MoveData.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/App/SessionPayloadParser.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/FrameRateStats.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleEventFormatter.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/GameManager.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/YoungBobUiManager.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleThreatSystem.cs" />
