@@ -94,7 +94,7 @@ namespace YoungBob.Prototype.UI.Battle
 
             if (_secretLabel != null)
             {
-                var secrets = BuildSecretText(secretSummary, statuses, detailedMode);
+                var secrets = BuildSecretText(statuses, detailedMode);
                 _secretLabel.text = secrets;
                 _secretLabel.gameObject.SetActive(!string.IsNullOrEmpty(secrets) && IsAlive);
             }
@@ -269,7 +269,7 @@ namespace YoungBob.Prototype.UI.Battle
             return sb.ToString().TrimEnd();
         }
 
-        private static string BuildSecretText(string secretSummary, List<BattleStatusState> statuses, bool detailedMode)
+        private static string BuildSecretText(List<BattleStatusState> statuses, bool detailedMode)
         {
             var lines = new List<string>();
             if (statuses != null)
@@ -285,16 +285,6 @@ namespace YoungBob.Prototype.UI.Battle
                     var name = ResolveSecretDisplayName(status.id, detailedMode);
                     lines.Add((detailedMode ? "奥秘 " : "奥 ") + name + " x" + status.stacks);
                 }
-            }
-
-            if (!string.IsNullOrWhiteSpace(secretSummary))
-            {
-                if (!detailedMode || lines.Count == 0)
-                {
-                    return secretSummary;
-                }
-
-                lines.Insert(0, secretSummary);
             }
 
             return lines.Count > 0 ? string.Join("\n", lines) : string.Empty;
