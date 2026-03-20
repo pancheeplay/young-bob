@@ -1,0 +1,95 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_threat_reset_on_encounter",
+  "name": "V2 新遭遇时仇恨清零",
+  "setup": {
+    "roomId": "v2_threat_reset_room",
+    "stageId": "stage_trial_1",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 20260320,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p1",
+      "cardId": "warrior_taunt"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p1",
+      "cardInstanceId": "card:warrior_taunt",
+      "targetFaction": 1,
+      "targetUnitId": "p1",
+      "targetArea": 0,
+      "snapshotTag": "after_taunt"
+    },
+    {
+      "action": "debug_damage_monster",
+      "debugValue": 1000
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p1",
+      "cardId": "warrior_battle_cry"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p1",
+      "cardInstanceId": "card:warrior_battle_cry",
+      "targetFaction": 1,
+      "targetUnitId": "p1",
+      "targetArea": 0,
+      "snapshotTag": "after_encounter_transition"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_taunt",
+      "playerId": "p1",
+      "field": "threatValue",
+      "expectedInt": 20,
+      "message": "挑衅使仇恨+20"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_taunt",
+      "playerId": "p1",
+      "field": "threatTier",
+      "expectedInt": 2,
+      "message": "20点仇恨进入2级"
+    },
+    {
+      "type": "snapshot_contains",
+      "actualPath": "after_encounter_transition",
+      "expected": "\"encounterId\":\"dragon_curse_boss\"",
+      "message": "成功切换到下一场遭遇"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_encounter_transition",
+      "playerId": "p1",
+      "field": "threatValue",
+      "expectedInt": 0,
+      "message": "新遭遇时仇恨值清零"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_encounter_transition",
+      "playerId": "p1",
+      "field": "threatTier",
+      "expectedInt": 1,
+      "message": "新遭遇时仇恨层级重置为1"
+    }
+  ]
+}

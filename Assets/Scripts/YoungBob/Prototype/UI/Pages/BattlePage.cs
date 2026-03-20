@@ -520,7 +520,8 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 var player = state.players[i];
                 var container = player.area == BattleArea.East ? _eastPlayerContainer : _westPlayerContainer;
-                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, new Color(0.2f, 0.36f, 0.31f), _isDetailedStatusMode, SlotHighlightMode.None);
+                var secretSummary = BuildPlayerSecretSummary(player, _isDetailedStatusMode);
+                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, player.threatValue, player.threatTier, secretSummary, new Color(0.2f, 0.36f, 0.31f), _isDetailedStatusMode, SlotHighlightMode.None);
                 _playerSlots.Add(slot);
             }
 
@@ -891,7 +892,8 @@ namespace YoungBob.Prototype.UI.Pages
             {
                 var slot = _playerSlots[i];
                 var player = _lastState.GetPlayer(slot.UnitId);
-                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, _isDetailedStatusMode, GetHighlightModeForPlayer(cardDef, targetType, slot, hoveredPlayer));
+                var secretSummary = BuildPlayerSecretSummary(player, _isDetailedStatusMode);
+                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, player.threatValue, player.threatTier, secretSummary, _isDetailedStatusMode, GetHighlightModeForPlayer(cardDef, targetType, slot, hoveredPlayer));
             }
 
             for (var i = 0; i < _monsterPartSlots.Count; i++)
@@ -1231,7 +1233,7 @@ namespace YoungBob.Prototype.UI.Pages
             return null;
         }
 
-        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, Color color, bool detailedMode, SlotHighlightMode highlightMode)
+        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, int threatValue, int threatTier, string secretSummary, Color color, bool detailedMode, SlotHighlightMode highlightMode)
         {
             var slotObject = new GameObject("UnitSlot_" + unitId);
             slotObject.transform.SetParent(parent, false);
@@ -1241,7 +1243,7 @@ namespace YoungBob.Prototype.UI.Pages
             rect.anchorMin = new Vector2(0.5f, 0.3f);
             rect.anchorMax = new Vector2(0.5f, 0.3f);
             rect.pivot = new Vector2(0.5f, 0f);
-            rect.sizeDelta = new Vector2(130f, 160f);
+            rect.sizeDelta = new Vector2(142f, 188f);
 
             var bg = slotObject.AddComponent<Image>();
             bg.color = color;
@@ -1251,7 +1253,7 @@ namespace YoungBob.Prototype.UI.Pages
             var infoBase = new GameObject("Info");
             infoBase.transform.SetParent(slotObject.transform, false);
             var infoRect = infoBase.AddComponent<RectTransform>();
-            infoRect.anchorMin = new Vector2(0f, -0.7f);
+            infoRect.anchorMin = new Vector2(0f, -0.92f);
             infoRect.anchorMax = new Vector2(1f, -0.05f);
             infoRect.offsetMin = Vector2.zero;
             infoRect.offsetMax = Vector2.zero;
@@ -1260,16 +1262,38 @@ namespace YoungBob.Prototype.UI.Pages
             var nameLabel = UiFactory.CreateText(infoBase.transform, "Name", 20, TextAnchor.MiddleCenter, new Vector2(0f, 0.65f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             nameLabel.fontStyle = FontStyle.Bold;
 
+            // Threat bar
+            var threatBase = UiFactory.CreatePanel(infoBase.transform, "ThreatBar", new Color(0.08f, 0.1f, 0.12f, 0.92f), new Vector2(0f, 0.39f), new Vector2(1f, 0.62f), Vector2.zero, Vector2.zero);
+            threatBase.GetComponent<Image>().raycastTarget = false;
+            var threatLabel = UiFactory.CreateText(threatBase.transform, "ThreatLabel", 12, TextAnchor.MiddleCenter, new Vector2(0f, 0.54f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            threatLabel.fontStyle = FontStyle.Bold;
+            threatLabel.raycastTarget = false;
+            var threatSegmentFills = new Image[3];
+            var threatSegmentLabels = new Text[3];
+            for (var i = 0; i < 3; i++)
+            {
+                var segment = UiFactory.CreatePanel(threatBase.transform, "Segment_" + i, new Color(0.14f, 0.16f, 0.19f, 0.95f), new Vector2(i / 3f, 0.07f), new Vector2((i + 1) / 3f, 0.46f), new Vector2(1f, 1f), new Vector2(-1f, -1f));
+                segment.GetComponent<Image>().raycastTarget = false;
+                var fill = UiFactory.CreatePanel(segment.transform, "Fill", new Color(0.2f, 0.8f, 0.3f, 0.95f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                var fillImage = fill.GetComponent<Image>();
+                fillImage.raycastTarget = false;
+                threatSegmentFills[i] = fillImage;
+                var segmentLabel = UiFactory.CreateText(segment.transform, "Label", 10, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                segmentLabel.fontStyle = FontStyle.Bold;
+                segmentLabel.raycastTarget = false;
+                threatSegmentLabels[i] = segmentLabel;
+            }
+
             // HP Bar
             var barColor = faction == BattleTargetFaction.Allies ? new Color(0.2f, 0.8f, 0.3f) : new Color(0.8f, 0.2f, 0.2f);
             var (hpBarBg, hpFill) = UiFactory.CreateProgressBar(infoBase.transform, "HPBar", barColor, new Vector2(110f, 14f));
-            hpBarBg.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -15f);
+            hpBarBg.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -22f);
 
             var hpLabel = UiFactory.CreateText(hpBarBg.transform, "HPNumeric", 14, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             hpLabel.color = Color.white;
 
             // Status (Charge/Bonus)
-            var statusLabel = UiFactory.CreateText(infoBase.transform, "Status", 18, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0.35f), Vector2.zero, Vector2.zero);
+            var statusLabel = UiFactory.CreateText(infoBase.transform, "Status", 16, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0.22f), Vector2.zero, Vector2.zero);
             statusLabel.fontStyle = FontStyle.Bold;
             statusLabel.color = new Color(1f, 0.8f, 0.2f);
 
@@ -1289,8 +1313,8 @@ namespace YoungBob.Prototype.UI.Pages
             var highlightImage = borderObj.GetComponent<Image>();
 
             var slotView = slotObject.AddComponent<BattleUnitSlotView>();
-            slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, color, highlightImage);
-            slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, vulnerableStacks, statuses, detailedMode, highlightMode);
+            slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, threatBase.GetComponent<RectTransform>(), threatSegmentFills, threatSegmentLabels, threatLabel, color, highlightImage);
+            slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, vulnerableStacks, statuses, threatValue, threatTier, secretSummary, detailedMode, highlightMode);
             return slotView;
         }
 
@@ -1432,6 +1456,77 @@ namespace YoungBob.Prototype.UI.Pages
             }
 
             return "<color=#cbd5e1>状态：" + string.Join(" ", parts) + "</color>";
+        }
+
+        private static string BuildPlayerSecretSummary(PlayerBattleState player, bool detailedMode)
+        {
+            if (player == null)
+            {
+                return string.Empty;
+            }
+
+            if (player.statuses == null || player.statuses.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var secretParts = new List<string>();
+            for (var i = 0; i < player.statuses.Count; i++)
+            {
+                var status = player.statuses[i];
+                if (status == null || status.stacks <= 0 || !IsSecretStatusId(status.id))
+                {
+                    continue;
+                }
+
+                var label = ResolveSecretDisplayName(status.id, detailedMode);
+                secretParts.Add(label + "x" + status.stacks);
+            }
+
+            if (secretParts.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return detailedMode
+                ? "奥秘[" + string.Join(" ", secretParts) + "]"
+                : "奥[" + string.Join(" ", secretParts) + "]";
+        }
+
+        private static bool IsSecretStatusId(string statusId)
+        {
+            if (string.IsNullOrWhiteSpace(statusId))
+            {
+                return false;
+            }
+
+            return statusId.IndexOf("secret", StringComparison.OrdinalIgnoreCase) >= 0
+                || statusId.IndexOf("奥秘", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string ResolveSecretDisplayName(string statusId, bool detailedMode)
+        {
+            if (string.IsNullOrWhiteSpace(statusId))
+            {
+                return detailedMode ? "奥秘" : "奥";
+            }
+
+            if (string.Equals(statusId, BattleStatusSystem.SecretGuardStatusId, StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "护卫" : "护";
+            }
+
+            if (string.Equals(statusId, BattleStatusSystem.SecretCounterattackStatusId, StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "反制" : "反";
+            }
+
+            if (string.Equals(statusId, BattleStatusSystem.SecretSidestepOnHitStatusId, StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "切边" : "切";
+            }
+
+            return statusId;
         }
 
         private static string BuildEffectsTargetHint(CardDefinition cardDef)

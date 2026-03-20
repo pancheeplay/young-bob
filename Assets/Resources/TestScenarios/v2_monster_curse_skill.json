@@ -38,9 +38,9 @@
       "message": "monster skill applies vulnerable"
     },
     {
-      "type": "event_log_contains",
+      "type": "event_sequence",
       "actualPath": "after_monster_turn",
-      "expected": "获得 <color=#C9A0FF>curse_betrayal</color> >> 获得 易伤 x1",
+      "expected": "monster_gain_card >> apply_vulnerable",
       "message": "monster skill event order: add curse card then apply vulnerable"
     }
   ]

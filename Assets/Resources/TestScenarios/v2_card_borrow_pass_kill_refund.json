@@ -1,0 +1,83 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_card_borrow_pass_kill_refund",
+  "name": "V2 借过一下 击杀返能并换边",
+  "setup": {
+    "roomId": "v2_borrow_pass_room",
+    "stageId": "stage_slime_training",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 20260320,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p1",
+      "cardId": "assassin_borrow_pass"
+    },
+    {
+      "action": "debug_damage_monster",
+      "debugValue": 18,
+      "snapshotTag": "after_prepare_low_hp"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p1",
+      "cardInstanceId": "card:assassin_borrow_pass",
+      "targetFaction": 2,
+      "targetUnitId": "$first_ground_part",
+      "targetArea": 0,
+      "snapshotTag": "after_borrow_pass"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "monster_core_hp_equals",
+      "actualPath": "after_borrow_pass",
+      "expectedInt": 0,
+      "message": "借过一下结算后击杀怪物核心"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_borrow_pass",
+      "playerId": "p1",
+      "field": "energy",
+      "expectedInt": 3,
+      "message": "借过一下击杀后返还1点能量（净消耗0）"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_borrow_pass",
+      "playerId": "p1",
+      "field": "area",
+      "expectedInt": 2,
+      "message": "借过一下结算后移动到对侧"
+    },
+    {
+      "type": "event_contains",
+      "actualPath": "after_borrow_pass",
+      "eventId": "move_area",
+      "field": "area",
+      "expectedInt": 2,
+      "message": "日志包含换边结果"
+    },
+    {
+      "type": "event_contains",
+      "actualPath": "after_borrow_pass",
+      "eventId": "refund_energy",
+      "target": "Alpha",
+      "field": "amount",
+      "expectedInt": 1,
+      "message": "日志包含返能"
+    }
+  ]
+}

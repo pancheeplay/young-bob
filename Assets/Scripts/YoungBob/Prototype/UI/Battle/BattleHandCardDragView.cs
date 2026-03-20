@@ -7,6 +7,7 @@ namespace YoungBob.Prototype.UI.Battle
 {
     internal sealed class BattleHandCardDragView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
+        private const float DragScaleMultiplier = 1.28f;
         private RectTransform _rectTransform;
         private CanvasGroup _canvasGroup;
         private Canvas _canvas;
@@ -58,7 +59,7 @@ namespace YoungBob.Prototype.UI.Battle
             _rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             _rectTransform.pivot = new Vector2(0.5f, 0.5f);
             
-            _rectTransform.localScale = _originalLocalScale * 1.15f;
+            _rectTransform.localScale = _originalLocalScale * DragScaleMultiplier;
             _canvasGroup.blocksRaycasts = false;
             BeganDrag?.Invoke(this, eventData);
         }

@@ -51,7 +51,7 @@ internal sealed class ScenarioRunner
                     tag = tag,
                     success = result.success,
                     error = result.error ?? string.Empty,
-                    events = result.events ?? new List<string>()
+                    events = result.events ?? new List<BattleEvent>()
                 });
 
                 var expectedFailure = !result.success && step.allowFailure

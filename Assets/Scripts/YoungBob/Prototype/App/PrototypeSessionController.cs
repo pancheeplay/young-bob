@@ -678,7 +678,11 @@ namespace YoungBob.Prototype.App
             {
                 for (var i = 0; i < payload.events.Length; i++)
                 {
-                    LogAdded?.Invoke(payload.events[i].message);
+                    var logText = BattleEventFormatter.Format(payload.events[i], richText: true);
+                    if (!string.IsNullOrWhiteSpace(logText))
+                    {
+                        LogAdded?.Invoke(logText);
+                    }
                 }
             }
 

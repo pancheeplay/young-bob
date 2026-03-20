@@ -15,9 +15,12 @@
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleTargetResolver.cs" Link="Battle/BattleTargetResolver.cs" />
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleTargetingRules.cs" Link="Battle/BattleTargetingRules.cs" />
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleStatusSystem.cs" Link="Battle/BattleStatusSystem.cs" />
+    <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleThreatSystem.cs" Link="Battle/BattleThreatSystem.cs" />
+    <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleSecretSystem.cs" Link="Battle/BattleSecretSystem.cs" />
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/CardEffectResolver.cs" Link="Battle/CardEffectResolver.cs" />
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/MonsterAI.cs" Link="Battle/MonsterAI.cs" />
     <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleTextHelper.cs" Link="Battle/BattleTextHelper.cs" />
+    <Compile Include="../../Assets/Scripts/YoungBob/Prototype/Battle/BattleEventFormatter.cs" Link="Battle/BattleEventFormatter.cs" />
     <Compile Include="*.cs" />
   </ItemGroup>
 </Project>

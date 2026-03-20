@@ -23,6 +23,13 @@
         "utility_borrow_card",
         "utility_overclock",
         "utility_tactical_forge",
+        "assassin_borrow_pass",
+        "utility_opening_ambush",
+        "utility_secret_guard",
+        "utility_secret_counter",
+        "assassin_reposition_combo",
+        "warrior_taunt",
+        "assassin_smoke_escape",
         "curse_basic"
       ]
     },

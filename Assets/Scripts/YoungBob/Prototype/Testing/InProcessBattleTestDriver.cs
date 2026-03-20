@@ -235,7 +235,7 @@ namespace YoungBob.Prototype.Testing
                 stateHash = ComputeSha256(stateJson),
                 eventMessages = commandResult == null
                     ? Array.Empty<string>()
-                    : commandResult.events.Select(item => item.message).ToArray(),
+                    : commandResult.events.Select(item => BattleEventFormatter.Format(item, richText: false)).ToArray(),
                 error = commandResult == null ? null : commandResult.error
             };
         }

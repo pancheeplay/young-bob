@@ -30,7 +30,7 @@ public sealed class StepTrace
     public string tag = string.Empty;
     public bool success;
     public string error = string.Empty;
-    public List<string> events = new();
+    public List<BattleEvent> events = new();
 }
 
 public sealed class SnapshotRecord
@@ -45,7 +45,7 @@ public sealed class StepResult
 {
     public bool success;
     public string? error;
-    public List<string> events = new();
+    public List<BattleEvent> events = new();
 }
 
 public sealed class ScenarioDefinition
@@ -109,6 +109,10 @@ public sealed class ScenarioAssertion
     public string cardId = string.Empty;
     public string statusId = string.Empty;
     public string field = string.Empty;
+    public string eventId = string.Empty;
+    public string actor = string.Empty;
+    public string target = string.Empty;
+    public string context = string.Empty;
     public int expectedInt;
     public bool expectedBool;
 }

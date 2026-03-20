@@ -56,9 +56,9 @@
   ],
   "assertions": [
     {
-      "type": "event_log_contains",
+      "type": "event_sequence",
       "actualPath": "after_quick_jab_full_hand",
-      "expected": "使用 >> 抽了 <color=#F7E08A>1张牌</color>",
+      "expected": "card_damage >> draw_cards",
       "message": "quick jab should draw with full hand after play-card leaves hand"
     }
   ]

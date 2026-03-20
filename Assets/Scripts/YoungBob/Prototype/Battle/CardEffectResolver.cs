@@ -23,7 +23,10 @@ namespace YoungBob.Prototype.Battle
                 { "CopyAndPlunder", new CopyAndPlunderEffectHandler() },
                 { "RecycleDiscardToHand", new RecycleDiscardToHandEffectHandler() },
                 { "ExhaustFromHand", new ExhaustFromHandEffectHandler() },
-                { "MoveArea", new MoveAreaEffectHandler() }
+                { "MoveArea", new MoveAreaEffectHandler() },
+                { "ModifyThreat", new ModifyThreatEffectHandler() },
+                { "AddSecret", new AddSecretEffectHandler() },
+                { "DamageAndMoveOnKill", new DamageAndMoveOnKillEffectHandler() }
             };
 
         public static void ResolveCardEffects(
@@ -346,15 +349,24 @@ namespace YoungBob.Prototype.Battle
                         var applied = BattleMechanics.ApplyDamage(target.Player, amount);
                         context.result.events.Add(new BattleEvent
                         {
-                            message = BattleTextHelper.Actor(context.actingPlayer.displayName) + " 使用 " + BattleTextHelper.Card(context.definition.name) + " 攻击 " + BattleTextHelper.Unit(target.Player.displayName) + "，造成 " + BattleTextHelper.DamageText(applied) + "。"
+                            eventId = "card_damage",
+                            actor = context.actingPlayer.displayName,
+                            cardId = context.definition.name,
+                            target = target.Player.displayName,
+                            amount = applied
                         });
                     }
                     else
                     {
                         var applied = BattleMechanics.ApplyDamageToPart(context.state, target.Part, amount, context.result);
+                        BattleThreatSystem.ApplyThreatFromDamage(context.actingPlayer, applied);
                         context.result.events.Add(new BattleEvent
                         {
-                            message = BattleTextHelper.Actor(context.actingPlayer.displayName) + " 使用 " + BattleTextHelper.Card(context.definition.name) + " 攻击 " + BattleTextHelper.Unit(target.Part.displayName) + "，造成 " + BattleTextHelper.DamageText(applied) + "。"
+                            eventId = "card_damage",
+                            actor = context.actingPlayer.displayName,
+                            cardId = context.definition.name,
+                            target = target.Part.displayName,
+                            amount = applied
                         });
                     }
 
@@ -382,7 +394,9 @@ namespace YoungBob.Prototype.Battle
                     var drawn = BattleMechanics.DrawCards(context.state, targets[i].Player, Math.Max(0, effect.amount));
                     context.result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(targets[i].Player.displayName) + " 抽了 " + BattleTextHelper.DrawText(drawn) + "。"
+                        eventId = "draw_cards",
+                        target = targets[i].Player.displayName,
+                        amount = drawn
                     });
                     opCount += 1;
                 }
@@ -408,7 +422,9 @@ namespace YoungBob.Prototype.Battle
                     var healed = BattleMechanics.Heal(targets[i].Player, Math.Max(0, effect.amount));
                     context.result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(targets[i].Player.displayName) + " 恢复了 " + BattleTextHelper.HealText(healed) + "。"
+                        eventId = "heal",
+                        target = targets[i].Player.displayName,
+                        amount = healed
                     });
                     opCount += 1;
                 }
@@ -435,7 +451,9 @@ namespace YoungBob.Prototype.Battle
                     targets[i].Player.armor += amount;
                     context.result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(targets[i].Player.displayName) + " 获得了 " + BattleTextHelper.ArmorText(amount) + "。"
+                        eventId = "gain_armor",
+                        target = targets[i].Player.displayName,
+                        amount = amount
                     });
                     opCount += 1;
                 }
@@ -466,7 +484,11 @@ namespace YoungBob.Prototype.Battle
                         var total = BattleStatusSystem.AddStacks(target.Player.statuses, effect.statusId, amount);
                         context.result.events.Add(new BattleEvent
                         {
-                            message = BattleTextHelper.Unit(target.Player.displayName) + " 获得 " + effect.statusId + " x" + amount + "（总计 " + total + "）。"
+                            eventId = "apply_status",
+                            target = target.Player.displayName,
+                            statusId = effect.statusId,
+                            amount = amount,
+                            amount2 = total
                         });
                     }
                     else
@@ -474,7 +496,11 @@ namespace YoungBob.Prototype.Battle
                         var total = BattleStatusSystem.AddStacks(context.state.monster == null ? null : context.state.monster.statuses, effect.statusId, amount);
                         context.result.events.Add(new BattleEvent
                         {
-                            message = BattleTextHelper.Unit(context.state.monster == null ? "怪物" : context.state.monster.displayName) + " 获得 " + effect.statusId + " x" + amount + "（总计 " + total + "）。"
+                            eventId = "apply_status",
+                            target = context.state.monster == null ? "怪物" : context.state.monster.displayName,
+                            statusId = effect.statusId,
+                            amount = amount,
+                            amount2 = total
                         });
                     }
 
@@ -482,6 +508,156 @@ namespace YoungBob.Prototype.Battle
                 }
 
                 return true;
+            }
+        }
+
+        private sealed class ModifyThreatEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    var target = targets[i];
+                    if (!target.IsPlayer)
+                    {
+                        error = "ModifyThreat 只能作用于玩家。";
+                        return false;
+                    }
+
+                    var total = BattleThreatSystem.ApplyThreatGain(target.Player, effect.amount);
+                    context.result.events.Add(new BattleEvent
+                    {
+                        eventId = "threat_change",
+                        target = target.Player.displayName,
+                        amount = effect.amount,
+                        amount2 = total,
+                        turn = target.Player.threatTier
+                    });
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class AddSecretEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                if (string.IsNullOrWhiteSpace(effect.statusId))
+                {
+                    error = "添加奥秘时缺少 statusId。";
+                    return false;
+                }
+
+                var amount = Math.Max(1, effect.amount);
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    var target = targets[i];
+                    if (!target.IsPlayer)
+                    {
+                        error = "AddSecret 只能作用于玩家。";
+                        return false;
+                    }
+
+                    var total = BattleStatusSystem.AddStacks(target.Player.statuses, effect.statusId, amount);
+                    context.result.events.Add(new BattleEvent
+                    {
+                        eventId = "gain_secret",
+                        target = target.Player.displayName,
+                        statusId = effect.statusId,
+                        amount = amount,
+                        amount2 = total
+                    });
+                    opCount += 1;
+                }
+
+                return true;
+            }
+        }
+
+        private sealed class DamageAndMoveOnKillEffectHandler : ICardEffectHandler
+        {
+            public bool RequiresTarget => true;
+
+            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            {
+                error = null;
+                if (context.state.monster == null)
+                {
+                    error = "没有敌方怪物。";
+                    return false;
+                }
+
+                var beforeCoreHp = context.state.monster.coreHp;
+                for (var i = 0; i < targets.Count; i++)
+                {
+                    var target = targets[i];
+                    if (target.IsPlayer || target.Part == null)
+                    {
+                        error = "借过一下只能选择怪物部位。";
+                        return false;
+                    }
+
+                    var damage = Math.Max(0, effect.amount);
+                    var applied = BattleMechanics.ApplyDamageToPart(context.state, target.Part, damage, context.result);
+                    BattleThreatSystem.ApplyThreatFromDamage(context.actingPlayer, applied);
+                    context.result.events.Add(new BattleEvent
+                    {
+                        eventId = "card_damage",
+                        actor = context.actingPlayer.displayName,
+                        cardId = context.definition.name,
+                        target = target.Part.displayName,
+                        amount = applied
+                    });
+                    opCount += 1;
+                }
+
+                var previousArea = context.actingPlayer.area;
+                var targetArea = ResolveOppositeArea(previousArea);
+                context.actingPlayer.area = targetArea;
+                context.result.events.Add(new BattleEvent
+                {
+                    eventId = "move_area",
+                    actor = context.actingPlayer.displayName,
+                    area = targetArea
+                });
+
+                if (beforeCoreHp > 0 && context.state.monster.coreHp <= 0)
+                {
+                    var refund = Math.Max(0, effect.amount2);
+                    if (refund > 0)
+                    {
+                        context.actingPlayer.energy += refund;
+                        context.result.events.Add(new BattleEvent
+                        {
+                            eventId = "refund_energy",
+                            target = context.actingPlayer.displayName,
+                            amount = refund
+                        });
+                    }
+                }
+
+                return true;
+            }
+
+            private static BattleArea ResolveOppositeArea(BattleArea area)
+            {
+                switch (area)
+                {
+                    case BattleArea.West:
+                        return BattleArea.East;
+                    case BattleArea.East:
+                        return BattleArea.West;
+                    default:
+                        return area;
+                }
             }
         }
 
@@ -513,15 +689,20 @@ namespace YoungBob.Prototype.Battle
                         var applied = BattleMechanics.ApplyDamage(target.Player, amount);
                         context.result.events.Add(new BattleEvent
                         {
-                            message = BattleTextHelper.Unit(target.Player.displayName) + " 受到" + BattleTextHelper.DamageText(applied) + "，来自护甲冲击。"
+                            eventId = "damage_by_armor",
+                            target = target.Player.displayName,
+                            amount = applied
                         });
                     }
                     else
                     {
                         var applied = BattleMechanics.ApplyDamageToPart(context.state, target.Part, amount, context.result);
+                        BattleThreatSystem.ApplyThreatFromDamage(context.actingPlayer, applied);
                         context.result.events.Add(new BattleEvent
                         {
-                            message = BattleTextHelper.Unit(target.Part.displayName) + " 受到" + BattleTextHelper.DamageText(applied) + "，来自护甲冲击。"
+                            eventId = "damage_by_armor",
+                            target = target.Part.displayName,
+                            amount = applied
                         });
                     }
 
@@ -550,7 +731,9 @@ namespace YoungBob.Prototype.Battle
                     targets[i].Player.vulnerableStacks += stacks;
                     context.result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(targets[i].Player.displayName) + " 获得易伤 x" + stacks + "。"
+                        eventId = "apply_vulnerable",
+                        target = targets[i].Player.displayName,
+                        amount = stacks
                     });
                     opCount += 1;
                 }
@@ -569,7 +752,9 @@ namespace YoungBob.Prototype.Battle
                 context.actingPlayer.energy = Math.Max(0, context.actingPlayer.energy + effect.amount);
                 context.result.events.Add(new BattleEvent
                 {
-                    message = BattleTextHelper.Unit(context.actingPlayer.displayName) + " 能量变化 " + effect.amount + "。"
+                    eventId = "modify_energy",
+                    target = context.actingPlayer.displayName,
+                    amount = effect.amount
                 });
                 opCount += 1;
                 return true;
@@ -597,7 +782,9 @@ namespace YoungBob.Prototype.Battle
                     var applied = before - player.hp;
                     context.result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(player.displayName) + " 失去 " + BattleTextHelper.DamageText(applied) + "。"
+                        eventId = "lose_hp",
+                        target = player.displayName,
+                        amount = applied
                     });
                     opCount += 1;
                 }
@@ -635,7 +822,9 @@ namespace YoungBob.Prototype.Battle
                     context.actingPlayer.hand.Add(card);
                     context.result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(context.actingPlayer.displayName) + " 从弃牌堆回收了 " + BattleTextHelper.Card(card.cardId) + "。"
+                        eventId = "recycle_from_discard",
+                        target = context.actingPlayer.displayName,
+                        cardId = card.cardId
                     });
                     opCount += 1;
                 }
@@ -700,7 +889,10 @@ namespace YoungBob.Prototype.Battle
 
                 context.result.events.Add(new BattleEvent
                 {
-                    message = BattleTextHelper.Actor(context.actingPlayer.displayName) + " 使用 " + BattleTextHelper.Card(context.definition.name) + " 对 " + BattleTextHelper.Unit(target.Player.displayName) + " 进行掠夺并复制了一张。"
+                    eventId = "copy_and_plunder",
+                    actor = context.actingPlayer.displayName,
+                    cardId = context.definition.name,
+                    target = target.Player.displayName
                 });
                 opCount += 1;
                 return true;
@@ -728,7 +920,9 @@ namespace YoungBob.Prototype.Battle
                     context.actingPlayer.exhaustPile.Add(exhausted);
                     context.result.events.Add(new BattleEvent
                     {
-                        message = BattleTextHelper.Unit(context.actingPlayer.displayName) + " 消耗了 " + BattleTextHelper.Card(exhausted.cardId) + "。"
+                        eventId = "exhaust_card",
+                        target = context.actingPlayer.displayName,
+                        cardId = exhausted.cardId
                     });
                     opCount += 1;
                 }
@@ -776,7 +970,9 @@ namespace YoungBob.Prototype.Battle
                 context.actingPlayer.area = context.command.targetArea;
                 context.result.events.Add(new BattleEvent
                 {
-                    message = BattleTextHelper.Actor(context.actingPlayer.displayName) + " 移动到了 " + BattleTextHelper.AreaText(context.command.targetArea) + "。"
+                    eventId = "move_area",
+                    actor = context.actingPlayer.displayName,
+                    area = context.command.targetArea
                 });
                 opCount += 1;
                 return true;

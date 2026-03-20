@@ -24,9 +24,7 @@ namespace YoungBob.Prototype.Battle
         public static int ApplyDamageToPart(BattleState state, MonsterPartState part, int amount, BattleCommandResult result)
         {
             var incoming = Math.Max(0, amount);
-            var coreBefore = state.monster.coreHp;
-            var appliedToCore = Math.Min(coreBefore, incoming);
-            state.monster.coreHp = coreBefore - appliedToCore;
+            var appliedToCore = ApplyDamageToMonsterCore(state == null ? null : state.monster, incoming);
 
             // Part HP is a break gauge. Once broken, it stays at 0 and no longer blocks further damage.
             if (!part.isBroken && part.hp > 0)
@@ -47,11 +45,26 @@ namespace YoungBob.Prototype.Battle
 
                 result.events.Add(new BattleEvent
                 {
-                    message = "<color=#FFC874>部位破坏：</color> " + BattleTextHelper.Unit(part.displayName)
+                    eventId = "part_broken",
+                    target = part.displayName
                 });
             }
 
             return appliedToCore;
+        }
+
+        public static int ApplyDamageToMonsterCore(MonsterBattleState monster, int amount)
+        {
+            if (monster == null)
+            {
+                return 0;
+            }
+
+            var incoming = Math.Max(0, amount);
+            var coreBefore = monster.coreHp;
+            var applied = Math.Min(coreBefore, incoming);
+            monster.coreHp = Math.Max(0, coreBefore - applied);
+            return applied;
         }
 
         public static int GetEffectiveEnergyCost(BattleCardState card, Data.CardDefinition definition)
@@ -180,7 +193,8 @@ namespace YoungBob.Prototype.Battle
             state.currentPrompt = "胜利";
             result.events.Add(new BattleEvent
             {
-                message = "<color=#7FD67F>怪物已被击败。胜利。</color>"
+                eventId = "stage_cleared",
+                context = "胜利"
             });
         }
     }

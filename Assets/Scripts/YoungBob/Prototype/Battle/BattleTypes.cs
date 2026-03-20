@@ -116,6 +116,12 @@ namespace YoungBob.Prototype.Battle
         public int cardsPlayedThisTurn;
         public int nextAttackBonus;
         public int attackChargeStage;
+        public int threatValue;
+        public int threatTier;
+        public int secretCount;
+        public int secretCounterattackLastTriggerTurn;
+        public int secretGuardLastTriggerTurn;
+        public int secretSidestepLastTriggerTurn;
         public List<BattleStatusState> statuses = new List<BattleStatusState>();
         public List<BattleCardState> drawPile = new List<BattleCardState>();
         public List<BattleCardState> hand = new List<BattleCardState>();
@@ -176,6 +182,7 @@ namespace YoungBob.Prototype.Battle
         public int[] skillCooldowns;
         public MonsterPoseDefinition[] poses;
         public string currentPoseId;
+        public string currentThreatTargetPlayerId;
     }
 
     [Serializable]
@@ -209,7 +216,16 @@ namespace YoungBob.Prototype.Battle
     [Serializable]
     public sealed class BattleEvent
     {
-        public string message;
+        public string eventId;
+        public string actor;
+        public string target;
+        public string cardId;
+        public string statusId;
+        public string context;
+        public int amount;
+        public int amount2;
+        public int turn;
+        public BattleArea area;
     }
 
     [Serializable]

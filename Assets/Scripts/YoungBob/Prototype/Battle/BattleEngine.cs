@@ -73,6 +73,8 @@ namespace YoungBob.Prototype.Battle
                 throw new InvalidOperationException("遭遇没有怪物定义: " + openingEncounterId);
             }
 
+            BattleThreatSystem.ResetThreats(state);
+
             return state;
         }
 
@@ -214,7 +216,8 @@ namespace YoungBob.Prototype.Battle
             player.hasEndedTurn = true;
             result.events.Add(new BattleEvent
             {
-                message = BattleTextHelper.Actor(player.displayName) + " 结束了回合。"
+                eventId = "player_end_turn",
+                actor = player.displayName
             });
 
             if (!BattleTargetResolver.HaveAllAlivePlayersEnded(state.players))
@@ -236,7 +239,7 @@ namespace YoungBob.Prototype.Battle
             {
                 state.phase = BattlePhase.Defeat;
                 state.currentPrompt = "失败";
-                result.events.Add(new BattleEvent { message = "当前没有怪物。" });
+                result.events.Add(new BattleEvent { eventId = "no_monster" });
                 return;
             }
 
@@ -266,7 +269,7 @@ namespace YoungBob.Prototype.Battle
             {
                 state.phase = BattlePhase.Defeat;
                 state.currentPrompt = "失败";
-                result.events.Add(new BattleEvent { message = "队伍被击败了。"});
+                result.events.Add(new BattleEvent { eventId = "team_defeated" });
                 return;
             }
 
@@ -277,6 +280,7 @@ namespace YoungBob.Prototype.Battle
         {
             state.phase = BattlePhase.PlayerTurn;
             state.turnIndex += 1;
+            BattleThreatSystem.ApplyThreatDecay(state.players);
             BattleTargetResolver.ResetTeamTurn(state.players);
             for (var i = 0; i < state.players.Count; i++)
             {
@@ -294,7 +298,8 @@ namespace YoungBob.Prototype.Battle
             state.currentPrompt = BuildTeamTurnPrompt(state);
             result.events.Add(new BattleEvent
             {
-                message = "<color=#E6C36A>第 " + state.turnIndex + " 回合开始。</color>"
+                eventId = "round_start",
+                turn = state.turnIndex
             });
         }
 
@@ -341,7 +346,8 @@ namespace YoungBob.Prototype.Battle
                 state.currentPrompt = "胜利";
                 result.events.Add(new BattleEvent
                 {
-                    message = "<color=#7FD67F>怪物已被击败。胜利。</color>"
+                    eventId = "stage_cleared",
+                    context = "胜利"
                 });
                 return;
             }
@@ -354,11 +360,13 @@ namespace YoungBob.Prototype.Battle
                 state.currentPrompt = "关卡完成";
                 result.events.Add(new BattleEvent
                 {
-                    message = "<color=#7FD67F>遭遇已完成：</color> " + clearedEncounterName
+                    eventId = "encounter_cleared",
+                    context = clearedEncounterName
                 });
                 result.events.Add(new BattleEvent
                 {
-                    message = "<color=#7FD67F>关卡已完成：</color> " + (string.IsNullOrWhiteSpace(state.stageName) ? state.stageId : state.stageName)
+                    eventId = "stage_cleared",
+                    context = string.IsNullOrWhiteSpace(state.stageName) ? state.stageId : state.stageName
                 });
                 return;
             }
@@ -367,6 +375,7 @@ namespace YoungBob.Prototype.Battle
             state.encounterId = encounterIds[state.stageEncounterIndex];
             var nextMonsterDef = _dataRepository.GetEncounterMonster(state.encounterId);
             state.monster = MonsterAI.BuildMonster(nextMonsterDef, state.randomSeed ^ state.turnIndex ^ state.stageEncounterIndex);
+            BattleThreatSystem.ResetThreats(state);
 
             state.phase = BattlePhase.PlayerTurn;
             BattleTargetResolver.ResetTeamTurn(state.players);
@@ -386,11 +395,15 @@ namespace YoungBob.Prototype.Battle
             state.currentPrompt = BuildTeamTurnPrompt(state);
             result.events.Add(new BattleEvent
             {
-                message = "<color=#7FD67F>遭遇已完成：</color> " + clearedEncounterName
+                eventId = "encounter_cleared",
+                context = clearedEncounterName
             });
             result.events.Add(new BattleEvent
             {
-                message = "<color=#7FD67F>下一场遭遇：</color> " + state.encounterId + "（" + (state.stageEncounterIndex + 1) + "/" + encounterIds.Length + "）"
+                eventId = "encounter_next",
+                context = state.encounterId,
+                amount = state.stageEncounterIndex + 1,
+                amount2 = encounterIds.Length
             });
         }
 

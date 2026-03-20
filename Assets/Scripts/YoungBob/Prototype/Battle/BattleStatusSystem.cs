@@ -7,6 +7,9 @@ namespace YoungBob.Prototype.Battle
     {
         public const string PoisonStatusId = "Poison";
         public const string StrengthStatusId = "Strength";
+        public const string SecretCounterattackStatusId = "SecretCounterattack";
+        public const string SecretGuardStatusId = "SecretGuard";
+        public const string SecretSidestepOnHitStatusId = "SecretSidestepOnHit";
 
         public static int GetStacks(List<BattleStatusState> statuses, string statusId)
         {
@@ -65,6 +68,22 @@ namespace YoungBob.Prototype.Battle
             return delta;
         }
 
+        public static int ConsumeStacks(List<BattleStatusState> statuses, string statusId)
+        {
+            var stacks = GetStacks(statuses, statusId);
+            if (stacks > 0)
+            {
+                AddStacks(statuses, statusId, -stacks);
+            }
+
+            return stacks;
+        }
+
+        public static int ConsumeStacks(PlayerBattleState player, string statusId)
+        {
+            return player == null ? 0 : ConsumeStacks(player.statuses, statusId);
+        }
+
         public static void TickPoisonOnMonsterAtTurnStart(BattleState state, BattleCommandResult result)
         {
             if (state == null || state.monster == null)
@@ -78,12 +97,13 @@ namespace YoungBob.Prototype.Battle
                 return;
             }
 
-            var applied = Math.Min(state.monster.coreHp, Math.Max(0, poison));
-            state.monster.coreHp = Math.Max(0, state.monster.coreHp - applied);
+            var applied = BattleMechanics.ApplyDamageToMonsterCore(state.monster, poison);
             AddStacks(state.monster.statuses, PoisonStatusId, -1);
             result.events.Add(new BattleEvent
             {
-                message = BattleTextHelper.Unit(state.monster.displayName) + " 受到" + BattleTextHelper.DamageText(applied) + "，来自中毒。"
+                eventId = "poison_damage",
+                target = state.monster.displayName,
+                amount = applied
             });
         }
 
@@ -112,7 +132,9 @@ namespace YoungBob.Prototype.Battle
                 AddStacks(player.statuses, PoisonStatusId, -1);
                 result.events.Add(new BattleEvent
                 {
-                    message = BattleTextHelper.Unit(player.displayName) + " 受到" + BattleTextHelper.DamageText(applied) + "，来自中毒。"
+                    eventId = "poison_damage",
+                    target = player.displayName,
+                    amount = applied
                 });
             }
         }

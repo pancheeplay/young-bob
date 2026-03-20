@@ -37,6 +37,11 @@ namespace YoungBob.Prototype.Battle
             return "<color=#F7E08A>" + value + "张牌</color>";
         }
 
+        public static string EnergyText(int value)
+        {
+            return "<color=#F7E08A>" + value + "点能量</color>";
+        }
+
         public static string AreaText(BattleArea area)
         {
             switch (area)

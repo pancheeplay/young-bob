@@ -143,21 +143,12 @@ internal sealed class StepExecutor
     private static StepResult Apply(BattleEngine engine, BattleState state, BattleCommand command)
     {
         var result = engine.Apply(state, command);
-        var events = new List<string>(result.events.Count);
-        for (var i = 0; i < result.events.Count; i++)
-        {
-            var message = result.events[i] == null ? string.Empty : result.events[i].message;
-            if (!string.IsNullOrWhiteSpace(message))
-            {
-                events.Add(message);
-            }
-        }
 
         return new StepResult
         {
             success = result.success,
             error = result.error,
-            events = events
+            events = result.events == null ? new List<BattleEvent>() : new List<BattleEvent>(result.events)
         };
     }
 

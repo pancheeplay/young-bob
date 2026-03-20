@@ -26,8 +26,12 @@ internal static class AssertionEngine
                     EvaluateSnapshotHashEquals(report, assertion, i);
                     break;
 
-                case "event_log_contains":
-                    EvaluateEventLogContains(report, assertion, i);
+                case "event_contains":
+                    EvaluateEventContains(report, assertion, i);
+                    break;
+
+                case "event_sequence":
+                    EvaluateEventSequence(report, assertion, i);
                     break;
 
                 case "player_field_equals":
@@ -132,88 +136,158 @@ internal static class AssertionEngine
         }
     }
 
-    private static void EvaluateEventLogContains(ScenarioReport report, ScenarioAssertion assertion, int index)
+    private static void EvaluateEventContains(ScenarioReport report, ScenarioAssertion assertion, int index)
     {
-        if (report.steps == null || report.steps.Count == 0)
+        if (!TryGetStep(report, assertion.actualPath, index, out var step))
         {
-            report.failures.Add($"assertion[{index}] no step logs available for event assertion");
             return;
         }
 
-        StepTrace? step = null;
-        if (string.IsNullOrWhiteSpace(assertion.actualPath))
-        {
-            step = report.steps[report.steps.Count - 1];
-        }
-        else
-        {
-            for (var i = report.steps.Count - 1; i >= 0; i--)
-            {
-                if (string.Equals(report.steps[i].tag, assertion.actualPath, StringComparison.Ordinal))
-                {
-                    step = report.steps[i];
-                    break;
-                }
-            }
-        }
-
-        if (step == null)
-        {
-            report.failures.Add($"assertion[{index}] step tag not found for event log: {assertion.actualPath}");
-            return;
-        }
-
-        var expected = assertion.expected ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(expected))
-        {
-            report.failures.Add($"assertion[{index}] event_log_contains expected is empty");
-            return;
-        }
-
-        var events = step.events ?? new List<string>();
+        var events = step.events ?? new List<BattleEvent>();
         if (events.Count == 0)
         {
             report.failures.Add($"assertion[{index}] step '{step.tag}' has no events");
             return;
         }
 
-        if (expected.Contains(">>", StringComparison.Ordinal))
+        for (var i = 0; i < events.Count; i++)
         {
-            var tokens = expected.Split(new[] { ">>" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var searchIndex = 0;
-            for (var tokenIndex = 0; tokenIndex < tokens.Length; tokenIndex++)
+            var battleEvent = events[i];
+            if (battleEvent == null)
             {
-                var token = tokens[tokenIndex];
-                var found = false;
-                for (var eventIndex = searchIndex; eventIndex < events.Count; eventIndex++)
-                {
-                    if (events[eventIndex].Contains(token, StringComparison.Ordinal))
-                    {
-                        found = true;
-                        searchIndex = eventIndex + 1;
-                        break;
-                    }
-                }
+                continue;
+            }
 
-                if (!found)
+            if (!string.IsNullOrWhiteSpace(assertion.eventId)
+                && !string.Equals(assertion.eventId, battleEvent.eventId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(assertion.actor)
+                && !string.Equals(assertion.actor, battleEvent.actor, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(assertion.target)
+                && !string.Equals(assertion.target, battleEvent.target, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(assertion.cardId)
+                && !string.Equals(assertion.cardId, battleEvent.cardId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(assertion.statusId)
+                && !string.Equals(assertion.statusId, battleEvent.statusId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(assertion.context)
+                && !string.Equals(assertion.context, battleEvent.context, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(assertion.field))
+            {
+                var numberMatches = assertion.field switch
                 {
-                    report.failures.Add($"assertion[{index}] expected event sequence token not found in order: {token}");
-                    return;
+                    "amount" => battleEvent.amount == assertion.expectedInt,
+                    "amount2" => battleEvent.amount2 == assertion.expectedInt,
+                    "turn" => battleEvent.turn == assertion.expectedInt,
+                    "area" => (int)battleEvent.area == assertion.expectedInt,
+                    _ => false
+                };
+                if (!numberMatches)
+                {
+                    continue;
                 }
             }
 
             return;
         }
 
-        for (var i = 0; i < events.Count; i++)
+        report.failures.Add($"assertion[{index}] event not found in step '{step.tag}'");
+    }
+
+    private static void EvaluateEventSequence(ScenarioReport report, ScenarioAssertion assertion, int index)
+    {
+        if (!TryGetStep(report, assertion.actualPath, index, out var step))
         {
-            if (events[i].Contains(expected, StringComparison.Ordinal))
+            return;
+        }
+
+        var expected = (assertion.expected ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(expected))
+        {
+            report.failures.Add($"assertion[{index}] event_sequence expected is empty");
+            return;
+        }
+
+        var tokens = expected.Split(new[] { ">>" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (tokens.Length == 0)
+        {
+            report.failures.Add($"assertion[{index}] event_sequence expected is empty");
+            return;
+        }
+
+        var events = step.events ?? new List<BattleEvent>();
+        var searchIndex = 0;
+        for (var tokenIndex = 0; tokenIndex < tokens.Length; tokenIndex++)
+        {
+            var token = tokens[tokenIndex];
+            var found = false;
+            for (var eventIndex = searchIndex; eventIndex < events.Count; eventIndex++)
             {
+                var battleEvent = events[eventIndex];
+                if (battleEvent != null && string.Equals(token, battleEvent.eventId, StringComparison.Ordinal))
+                {
+                    found = true;
+                    searchIndex = eventIndex + 1;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                report.failures.Add($"assertion[{index}] expected event sequence token not found in order: {token}");
                 return;
             }
         }
+    }
 
-        report.failures.Add($"assertion[{index}] expected event log to contain '{expected}' in step '{step.tag}'");
+    private static bool TryGetStep(ScenarioReport report, string tag, int index, out StepTrace step)
+    {
+        step = null;
+        if (report.steps == null || report.steps.Count == 0)
+        {
+            report.failures.Add($"assertion[{index}] no step logs available for event assertion");
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            step = report.steps[report.steps.Count - 1];
+            return true;
+        }
+
+        for (var i = report.steps.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(report.steps[i].tag, tag, StringComparison.Ordinal))
+            {
+                step = report.steps[i];
+                return true;
+            }
+        }
+
+        report.failures.Add($"assertion[{index}] step tag not found for event log: {tag}");
+        return false;
     }
 
     private static void EvaluatePlayerFieldEquals(ScenarioReport report, ScenarioAssertion assertion, int index)
@@ -237,6 +311,9 @@ internal static class AssertionEngine
             "energy" => player.energy,
             "vulnerableStacks" => player.vulnerableStacks,
             "cardsPlayedThisTurn" => player.cardsPlayedThisTurn,
+            "threatValue" => player.threatValue,
+            "threatTier" => player.threatTier,
+            "area" => (int)player.area,
             _ => int.MinValue
         };
 
