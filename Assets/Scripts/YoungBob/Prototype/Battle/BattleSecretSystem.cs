@@ -33,6 +33,8 @@ namespace YoungBob.Prototype.Battle
                 // Side-step has already been consumed and logged.
             }
 
+            TryTriggerArmorOnHit(target, result, attackName);
+            TryTriggerStrengthOnHit(target, result, attackName);
             TryTriggerCounterattack(state, target, state.turnIndex, result, attackName);
         }
 
@@ -189,6 +191,46 @@ namespace YoungBob.Prototype.Battle
                 actor = state.monster.displayName,
                 statusId = BattleStatusSystem.SecretCounterattackStatusId,
                 amount = applied
+            });
+        }
+
+        private static void TryTriggerStrengthOnHit(PlayerBattleState target, BattleCommandResult result, string attackName)
+        {
+            var stacks = BattleStatusSystem.ConsumeStacks(target, BattleStatusSystem.SecretStrengthOnHitStatusId);
+            if (stacks <= 0)
+            {
+                return;
+            }
+
+            var totalStrength = BattleStatusSystem.AddStacks(target.statuses, BattleStatusSystem.TempStrengthStatusId, stacks);
+            result.events.Add(new BattleEvent
+            {
+                eventId = "secret_gain_strength",
+                target = target.displayName,
+                statusId = BattleStatusSystem.SecretStrengthOnHitStatusId,
+                cardId = attackName,
+                amount = stacks,
+                amount2 = totalStrength
+            });
+        }
+
+        private static void TryTriggerArmorOnHit(PlayerBattleState target, BattleCommandResult result, string attackName)
+        {
+            var stacks = BattleStatusSystem.ConsumeStacks(target, BattleStatusSystem.SecretArmorOnHitStatusId);
+            if (stacks <= 0)
+            {
+                return;
+            }
+
+            target.armor += stacks;
+            result.events.Add(new BattleEvent
+            {
+                eventId = "secret_gain_armor",
+                target = target.displayName,
+                statusId = BattleStatusSystem.SecretArmorOnHitStatusId,
+                cardId = attackName,
+                amount = stacks,
+                amount2 = target.armor
             });
         }
 

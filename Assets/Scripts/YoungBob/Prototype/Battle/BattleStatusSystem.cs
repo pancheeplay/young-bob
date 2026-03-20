@@ -7,9 +7,12 @@ namespace YoungBob.Prototype.Battle
     {
         public const string PoisonStatusId = "Poison";
         public const string StrengthStatusId = "Strength";
+        public const string TempStrengthStatusId = "TempStrength";
         public const string SecretCounterattackStatusId = "SecretCounterattack";
         public const string SecretGuardStatusId = "SecretGuard";
         public const string SecretSidestepOnHitStatusId = "SecretSidestepOnHit";
+        public const string SecretStrengthOnHitStatusId = "SecretStrengthOnHit";
+        public const string SecretArmorOnHitStatusId = "SecretArmorOnHit";
 
         public static int GetStacks(List<BattleStatusState> statuses, string statusId)
         {

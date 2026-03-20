@@ -213,6 +213,19 @@ namespace YoungBob.Prototype.Battle
         private BattleCommandResult EndTurn(BattleState state, PlayerBattleState player)
         {
             var result = new BattleCommandResult();
+            BattleStatusSystem.ConsumeStacks(player, BattleStatusSystem.TempStrengthStatusId);
+            if (player.armor > 0)
+            {
+                var lostArmor = player.armor;
+                player.armor = 0;
+                result.events.Add(new BattleEvent
+                {
+                    eventId = "lose_armor",
+                    target = player.displayName,
+                    amount = lostArmor
+                });
+            }
+
             player.hasEndedTurn = true;
             result.events.Add(new BattleEvent
             {

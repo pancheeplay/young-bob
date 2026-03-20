@@ -442,6 +442,40 @@
       ]
     },
     {
+      "id": "utility_secret_rising_fury",
+      "name": "受击战意",
+      "classTag": "Utility",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "AddSecret",
+          "target": "Self",
+          "statusId": "SecretStrengthOnHit",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "utility_secret_iron_echo",
+      "name": "铁回响",
+      "classTag": "Utility",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "AddSecret",
+          "target": "Self",
+          "statusId": "SecretArmorOnHit",
+          "amount": 5
+        }
+      ]
+    },
+    {
       "id": "assassin_reposition_combo",
       "name": "位移连击",
       "classTag": "Assassin",

@@ -64,6 +64,8 @@ namespace YoungBob.Prototype.Battle
                     return target + " 恢复了 " + amountHeal + "。";
                 case "gain_armor":
                     return target + " 获得了 " + amountArmor + "。";
+                case "lose_armor":
+                    return target + " 失去了 " + amountArmor + "。";
                 case "apply_status":
                     return target + " 获得 " + status + " x" + battleEvent.amount + "（总计 " + battleEvent.amount2 + "）。";
                 case "threat_change":
@@ -104,6 +106,10 @@ namespace YoungBob.Prototype.Battle
                     return target + " 从 " + battleEvent.context + " 移动到 " + area + "。";
                 case "secret_counter":
                     return target + " 触发奥秘 " + status + "，对 " + actor + " 造成 " + amountDamage + "。";
+                case "secret_gain_strength":
+                    return target + " 触发奥秘 " + status + "，获得 " + BattleTextHelper.Card(BattleStatusSystem.StrengthStatusId) + " x" + battleEvent.amount + "（持续1回合）。";
+                case "secret_gain_armor":
+                    return target + " 触发奥秘 " + status + "，获得 " + amountArmor + "（当前护甲 " + battleEvent.amount2 + "）。";
                 case "no_monster":
                     return "当前没有怪物。";
                 case "team_defeated":

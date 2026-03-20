@@ -281,7 +281,8 @@ namespace YoungBob.Prototype.Battle
 
         private static int GetStrengthBonus(PlayerBattleState player)
         {
-            return BattleStatusSystem.GetStacks(player.statuses, BattleStatusSystem.StrengthStatusId);
+            return BattleStatusSystem.GetStacks(player.statuses, BattleStatusSystem.StrengthStatusId)
+                + BattleStatusSystem.GetStacks(player.statuses, BattleStatusSystem.TempStrengthStatusId);
         }
 
         private sealed class EffectExecutionContext
