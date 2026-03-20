@@ -65,7 +65,7 @@ namespace YoungBob.Prototype.UI.Pages
             stageBtnRect.offsetMax = Vector2.zero;
             _stageSelectButton.GetComponent<LayoutElement>().preferredHeight = -1f;
             _stageSelectLabel = _stageSelectButton.GetComponentInChildren<Text>();
-            _stageSelectLabel.fontSize = 18;
+            _stageSelectLabel.fontSize = UiFactory.ScaleFontSize(18);
             _stageSelectLabel.alignment = TextAnchor.MiddleCenter;
             _stageSummaryText = UiFactory.CreateText(stagePanel.transform, "StageSummary", 16, TextAnchor.UpperLeft, new Vector2(0.05f, 0.06f), new Vector2(0.95f, 0.48f), Vector2.zero, Vector2.zero);
             _stageSummaryText.color = new Color(0.8f, 0.84f, 0.9f, 0.95f);
@@ -82,7 +82,7 @@ namespace YoungBob.Prototype.UI.Pages
             deckBtnRect.offsetMax = Vector2.zero;
             _deckSelectButton.GetComponent<LayoutElement>().preferredHeight = -1f;
             _deckSelectLabel = _deckSelectButton.GetComponentInChildren<Text>();
-            _deckSelectLabel.fontSize = 18;
+            _deckSelectLabel.fontSize = UiFactory.ScaleFontSize(18);
             _deckSelectLabel.alignment = TextAnchor.MiddleCenter;
             _deckSummaryText = UiFactory.CreateText(deckPanel.transform, "DeckSummary", 16, TextAnchor.UpperLeft, new Vector2(0.05f, 0.06f), new Vector2(0.95f, 0.48f), Vector2.zero, Vector2.zero);
             _deckSummaryText.color = new Color(0.8f, 0.84f, 0.9f, 0.95f);

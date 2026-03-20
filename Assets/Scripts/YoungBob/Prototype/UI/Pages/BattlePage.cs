@@ -78,7 +78,7 @@ namespace YoungBob.Prototype.UI.Pages
             // --- Top Header (Turn Info & End Turn) ---
             var headerPanel = UiFactory.CreatePanel(Root.transform, "Header", new Color(0.18f, 0.2f, 0.23f), new Vector2(0f, 0.92f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             _summaryText = UiFactory.CreateText(headerPanel.transform, "Summary", 24, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(0.65f, 1f), new Vector2(30f, 0f), new Vector2(-10f, 0f));
-            _summaryText.fontStyle = FontStyle.Bold;
+            _summaryText.fontStyle = FontStyle.Normal;
             _summaryText.supportRichText = true;
 
             _endTurnButton = UiFactory.CreateButton(headerPanel.transform, "EndTurn", "结束", Session.EndTurn);
@@ -88,8 +88,8 @@ namespace YoungBob.Prototype.UI.Pages
             etRect.offsetMin = Vector2.zero;
             etRect.offsetMax = Vector2.zero;
             var etText = _endTurnButton.GetComponentInChildren<Text>();
-            etText.fontSize = 28;
-            etText.fontStyle = FontStyle.Bold;
+            etText.fontSize = UiFactory.ScaleFontSize(28);
+            etText.fontStyle = FontStyle.Normal;
             _endTurnButton.image.color = new Color(0.25f, 0.55f, 0.35f);
 
             _exitBattleButton = UiFactory.CreateButton(Root.transform, "ExitBattle", "退出", Session.EndBattleAndReturnToLobby);
@@ -108,7 +108,7 @@ namespace YoungBob.Prototype.UI.Pages
             chatRect.offsetMax = Vector2.zero;
             _chatButton.image.color = new Color(0.22f, 0.36f, 0.52f, 0.75f);
             _chatButtonLabel = _chatButton.GetComponentInChildren<Text>();
-            _chatButtonLabel.fontSize = 22;
+            _chatButtonLabel.fontSize = UiFactory.ScaleFontSize(22);
 
             _quickChatMask = BuildQuickChatWheel(Root.transform);
             _quickChatMask.transform.SetAsLastSibling();
@@ -128,7 +128,7 @@ namespace YoungBob.Prototype.UI.Pages
             _monsterHpFillRect = hpFillObj.GetComponent<RectTransform>();
             _monsterHpFillRect.pivot = new Vector2(0f, 0.5f);
             _monsterHpText = UiFactory.CreateText(monsterHpBase.transform, "Label", 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            _monsterHpText.fontStyle = FontStyle.Bold;
+            _monsterHpText.fontStyle = FontStyle.Normal;
 
             // Ground Visual (Behind units)
             var ground = UiFactory.CreatePanel(boardPanel.transform, "Ground", new Color(0.15f, 0.17f, 0.2f, 0.8f), new Vector2(0f, 0f), new Vector2(1f, 0.3f), Vector2.zero, Vector2.zero);
@@ -227,7 +227,7 @@ namespace YoungBob.Prototype.UI.Pages
             var handHeaderRect = handHeader.GetComponent<RectTransform>();
 
             _energyLabel = UiFactory.CreateText(handHeader.transform, "EnergyLabel", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(0.56f, 1f), new Vector2(18f, 0f), new Vector2(0f, 0f));
-            _energyLabel.fontStyle = FontStyle.Bold;
+            _energyLabel.fontStyle = FontStyle.Normal;
             _energyLabel.color = new Color(0.4f, 0.7f, 1f);
             _energyLabel.raycastTarget = false;
 
@@ -273,7 +273,7 @@ namespace YoungBob.Prototype.UI.Pages
             drawRect.offsetMin = Vector2.zero;
             drawRect.offsetMax = Vector2.zero;
             _drawPileButton.image.color = new Color(0.2f, 0.28f, 0.45f, 0.95f);
-            _drawPileButton.GetComponentInChildren<Text>().fontSize = 16;
+            _drawPileButton.GetComponentInChildren<Text>().fontSize = UiFactory.ScaleFontSize(16);
 
             _discardPileButton = UiFactory.CreateButton(handHeader.transform, "DiscardPileButton", "弃牌 0", () => OpenPilePopup(PileView.Discard));
             var discardRect = _discardPileButton.GetComponent<RectTransform>();
@@ -282,7 +282,7 @@ namespace YoungBob.Prototype.UI.Pages
             discardRect.offsetMin = Vector2.zero;
             discardRect.offsetMax = Vector2.zero;
             _discardPileButton.image.color = new Color(0.32f, 0.24f, 0.2f, 0.95f);
-            _discardPileButton.GetComponentInChildren<Text>().fontSize = 16;
+            _discardPileButton.GetComponentInChildren<Text>().fontSize = UiFactory.ScaleFontSize(16);
 
             _exhaustPileButton = UiFactory.CreateButton(handHeader.transform, "ExhaustPileButton", "消耗 0", () => OpenPilePopup(PileView.Exhaust));
             var exhaustRect = _exhaustPileButton.GetComponent<RectTransform>();
@@ -291,12 +291,12 @@ namespace YoungBob.Prototype.UI.Pages
             exhaustRect.offsetMin = Vector2.zero;
             exhaustRect.offsetMax = Vector2.zero;
             _exhaustPileButton.image.color = new Color(0.26f, 0.2f, 0.36f, 0.95f);
-            _exhaustPileButton.GetComponentInChildren<Text>().fontSize = 16;
+            _exhaustPileButton.GetComponentInChildren<Text>().fontSize = UiFactory.ScaleFontSize(16);
 
             _pilePopupMask = UiFactory.CreatePanel(Root.transform, "PilePopupMask", new Color(0f, 0f, 0f, 0.78f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             var popupWindow = UiFactory.CreatePanel(_pilePopupMask.transform, "PilePopupWindow", new Color(0.12f, 0.14f, 0.17f, 1f), new Vector2(0.06f, 0.1f), new Vector2(0.94f, 0.9f), Vector2.zero, Vector2.zero);
             _pilePopupTitle = UiFactory.CreateText(popupWindow.transform, "Title", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0.9f), new Vector2(0.8f, 1f), new Vector2(24f, 0f), new Vector2(0f, 0f));
-            _pilePopupTitle.fontStyle = FontStyle.Bold;
+            _pilePopupTitle.fontStyle = FontStyle.Normal;
             var popupClose = UiFactory.CreateButton(popupWindow.transform, "CloseButton", "关闭", ClosePilePopup);
             var popupCloseRect = popupClose.GetComponent<RectTransform>();
             popupCloseRect.anchorMin = new Vector2(0.82f, 0.91f);
@@ -354,7 +354,7 @@ namespace YoungBob.Prototype.UI.Pages
 
             _statusModeButton = UiFactory.CreateButton(settingsBar.transform, "StatusMode", "模式: 详", ToggleStatusMode);
             _statusModeButton.image.color = new Color(0.24f, 0.32f, 0.46f);
-            _statusModeButton.GetComponentInChildren<Text>().fontSize = 16;
+            _statusModeButton.GetComponentInChildren<Text>().fontSize = UiFactory.ScaleFontSize(16);
             var smRect = _statusModeButton.GetComponent<RectTransform>();
             smRect.sizeDelta = new Vector2(170f, 40f);
 
@@ -1260,7 +1260,7 @@ namespace YoungBob.Prototype.UI.Pages
 
             // Name
             var nameLabel = UiFactory.CreateText(infoBase.transform, "Name", 20, TextAnchor.MiddleCenter, new Vector2(0f, 0.78f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-            nameLabel.fontStyle = FontStyle.Bold;
+            nameLabel.fontStyle = FontStyle.Normal;
 
             // Threat bar
             var threatBase = UiFactory.CreatePanel(infoBase.transform, "ThreatBar", new Color(0.08f, 0.1f, 0.12f, 0.92f), new Vector2(0f, 0.62f), new Vector2(1f, 0.72f), Vector2.zero, Vector2.zero);
@@ -1291,13 +1291,13 @@ namespace YoungBob.Prototype.UI.Pages
 
             // Status (Charge/Bonus/General buffs)
             var statusLabel = UiFactory.CreateText(infoBase.transform, "Status", 15, TextAnchor.MiddleCenter, new Vector2(0f, 0.24f), new Vector2(1f, 0.38f), Vector2.zero, Vector2.zero);
-            statusLabel.fontStyle = FontStyle.Bold;
+            statusLabel.fontStyle = FontStyle.Normal;
             statusLabel.color = new Color(1f, 0.8f, 0.2f);
             statusLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
             statusLabel.verticalOverflow = VerticalWrapMode.Truncate;
 
             var secretLabel = UiFactory.CreateText(infoBase.transform, "SecretStatus", 12, TextAnchor.UpperCenter, new Vector2(0f, 0.03f), new Vector2(1f, 0.21f), Vector2.zero, Vector2.zero);
-            secretLabel.fontStyle = FontStyle.Bold;
+            secretLabel.fontStyle = FontStyle.Normal;
             secretLabel.color = new Color(0.75f, 0.87f, 1f, 0.96f);
             secretLabel.horizontalOverflow = HorizontalWrapMode.Wrap;
             secretLabel.verticalOverflow = VerticalWrapMode.Truncate;
@@ -1309,7 +1309,7 @@ namespace YoungBob.Prototype.UI.Pages
             armorRect.sizeDelta = new Vector2(130f, 28f);
             armorLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
             armorLabel.verticalOverflow = VerticalWrapMode.Overflow;
-            armorLabel.fontStyle = FontStyle.Bold;
+            armorLabel.fontStyle = FontStyle.Normal;
             armorLabel.color = new Color(0.6f, 0.8f, 1f);
 
             // Highlight
@@ -1757,7 +1757,7 @@ namespace YoungBob.Prototype.UI.Pages
 
             var title = UiFactory.CreateText(wheel.transform, "Title", 24, TextAnchor.MiddleCenter, new Vector2(0f, 0.72f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             title.text = "选择快捷语";
-            title.fontStyle = FontStyle.Bold;
+            title.fontStyle = FontStyle.Normal;
 
             CreateQuickChatWheelButton(wheel.transform, "Top", "打得不错", new Vector2(0f, 150f), "good_play");
             CreateQuickChatWheelButton(wheel.transform, "Left", "抱歉", new Vector2(-180f, 0f), "sorry");

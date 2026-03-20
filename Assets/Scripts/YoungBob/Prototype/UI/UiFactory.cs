@@ -5,7 +5,13 @@ namespace YoungBob.Prototype.UI
 {
     internal static class UiFactory
     {
+        private const float GlobalFontScale = 1.3f;
         private static Font _defaultFont;
+
+        public static int ScaleFontSize(int fontSize)
+        {
+            return Mathf.Max(1, Mathf.RoundToInt(fontSize * GlobalFontScale));
+        }
 
         public static void SetDefaultFont(Font font)
         {
@@ -47,7 +53,7 @@ namespace YoungBob.Prototype.UI
             textObject.transform.SetParent(parent, false);
             var text = textObject.AddComponent<Text>();
             text.font = GetDefaultFont();
-            text.fontSize = fontSize;
+            text.fontSize = ScaleFontSize(fontSize);
             text.alignment = alignment;
             text.color = new Color(0.92f, 0.93f, 0.95f);
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
