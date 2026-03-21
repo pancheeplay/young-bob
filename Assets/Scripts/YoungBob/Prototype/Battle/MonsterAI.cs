@@ -105,7 +105,7 @@ namespace YoungBob.Prototype.Battle
                 }
 
                 var skillDef = monster.skills[skillIndex];
-                var targetArea = ResolveSkillTargetArea(skillDef, state.players);
+                var targetArea = ResolveSkillTargetArea(state, skillDef, state.players);
                 var (targetHeight, targetsBothHeights) = ResolveSkillTargetHeight(skillDef);
                 var windupTurns = skillDef.windupTurns;
                 if (windupTurns <= 0 && IsChargedSkill(skillDef))
@@ -535,11 +535,21 @@ namespace YoungBob.Prototype.Battle
             }
         }
 
-        public static BattleArea ResolveSkillTargetArea(MonsterSkillDefinition skill, List<PlayerBattleState> players)
+        public static BattleArea ResolveSkillTargetArea(BattleState state, MonsterSkillDefinition skill, List<PlayerBattleState> players)
         {
             if (skill == null)
             {
                 return BattleArea.West;
+            }
+
+            var (targetHeight, targetsBothHeights) = ResolveSkillTargetHeight(skill);
+            var threatTarget = BattleThreatSystem.SelectMonsterTarget(state);
+            if (threatTarget != null && threatTarget.hp > 0)
+            {
+                if (targetsBothHeights || threatTarget.height == targetHeight)
+                {
+                    return threatTarget.area;
+                }
             }
 
             if (!string.IsNullOrEmpty(skill.targetArea) && !string.Equals(skill.targetArea, "Any", StringComparison.OrdinalIgnoreCase))
@@ -547,7 +557,6 @@ namespace YoungBob.Prototype.Battle
                 return ParseArea(skill.targetArea);
             }
 
-            var (targetHeight, targetsBothHeights) = ResolveSkillTargetHeight(skill);
             var westCount = 0;
             var eastCount = 0;
             for (var i = 0; i < players.Count; i++)

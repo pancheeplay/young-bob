@@ -1,0 +1,112 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_threat_overrides_area_slime",
+  "name": "V2 slime follows threat target area",
+  "setup": {
+    "roomId": "v2_threat_area_room",
+    "stageId": "stage_slime_training",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 20260321,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      },
+      {
+        "playerId": "p2",
+        "displayName": "Beta"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p2"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p2",
+      "cardId": "move"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p2",
+      "cardId": "warrior_taunt"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p2",
+      "cardInstanceId": "card:move",
+      "targetFaction": 0,
+      "targetUnitId": "",
+      "targetArea": 2,
+      "snapshotTag": "after_move_east"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p2",
+      "cardInstanceId": "card:warrior_taunt",
+      "targetFaction": 1,
+      "targetUnitId": "p2",
+      "targetArea": 2,
+      "snapshotTag": "after_taunt_east"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p2",
+      "snapshotTag": "after_monster_turn"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_move_east",
+      "playerId": "p2",
+      "field": "area",
+      "expectedInt": 2,
+      "message": "Beta moved to east"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_taunt_east",
+      "playerId": "p2",
+      "field": "threatValue",
+      "expectedInt": 20,
+      "message": "Beta has threat while on east"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_monster_turn",
+      "playerId": "p1",
+      "field": "hp",
+      "expectedInt": 24,
+      "message": "Alpha is not hit despite staying west"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_monster_turn",
+      "playerId": "p2",
+      "field": "hp",
+      "expectedInt": 21,
+      "message": "slime attacks Beta on east because of threat"
+    },
+    {
+      "type": "event_contains",
+      "actualPath": "after_monster_turn",
+      "eventId": "monster_hit",
+      "actor": "Beta",
+      "target": "Green Slime",
+      "field": "amount",
+      "expectedInt": 3,
+      "message": "monster hit is applied to east-side threat target"
+    }
+  ]
+}

@@ -107,11 +107,6 @@ namespace YoungBob.Prototype.Battle
                     continue;
                 }
 
-                if (player.area != intendedTarget.area)
-                {
-                    continue;
-                }
-
                 if (BattleStatusSystem.GetStacks(player.statuses, BattleStatusSystem.SecretGuardStatusId) <= 0)
                 {
                     continue;

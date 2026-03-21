@@ -1,0 +1,143 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_threat_switch_target_slime",
+  "name": "V2 slime switches target area when east threat rises",
+  "setup": {
+    "roomId": "v2_threat_switch_room",
+    "stageId": "stage_slime_training",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 20260321,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      },
+      {
+        "playerId": "p2",
+        "displayName": "Beta"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p2"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p2",
+      "cardId": "move"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p2",
+      "cardInstanceId": "card:move",
+      "targetFaction": 0,
+      "targetUnitId": "",
+      "targetArea": 2,
+      "snapshotTag": "after_move_east"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p2",
+      "snapshotTag": "after_first_monster_turn"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p2",
+      "cardId": "warrior_taunt"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p2",
+      "cardInstanceId": "card:warrior_taunt",
+      "targetFaction": 1,
+      "targetUnitId": "p2",
+      "targetArea": 2,
+      "snapshotTag": "after_taunt"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p2",
+      "snapshotTag": "after_second_monster_turn"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_move_east",
+      "playerId": "p2",
+      "field": "area",
+      "expectedInt": 2,
+      "message": "Beta moves east before the first monster turn"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_first_monster_turn",
+      "playerId": "p1",
+      "field": "hp",
+      "expectedInt": 21,
+      "message": "slime initially attacks the west threat target"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_first_monster_turn",
+      "playerId": "p2",
+      "field": "hp",
+      "expectedInt": 24,
+      "message": "Beta is not hit while east side has no aggro"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_taunt",
+      "playerId": "p2",
+      "field": "threatValue",
+      "expectedInt": 20,
+      "message": "taunt raises Beta threat"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_second_monster_turn",
+      "playerId": "p1",
+      "field": "hp",
+      "expectedInt": 21,
+      "message": "Alpha stops getting hit after the threat switch"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_second_monster_turn",
+      "playerId": "p2",
+      "field": "hp",
+      "expectedInt": 21,
+      "message": "slime switches to the east-side threat target"
+    },
+    {
+      "type": "event_contains",
+      "actualPath": "after_second_monster_turn",
+      "eventId": "monster_hit",
+      "actor": "Beta",
+      "target": "Green Slime",
+      "field": "amount",
+      "expectedInt": 3,
+      "message": "monster hit is applied to Beta"
+    },
+    {
+      "type": "event_sequence",
+      "actualPath": "after_second_monster_turn",
+      "expected": "monster_action >> monster_hit",
+      "message": "monster attack resolves after choosing the action"
+    }
+  ]
+}

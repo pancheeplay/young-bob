@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using YoungBob.Prototype.Battle;
+using System;
 using System.Text;
 using System.Collections.Generic;
 
@@ -245,9 +246,9 @@ namespace YoungBob.Prototype.UI.Battle
         private static string BuildStatusText(int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, bool detailedMode)
         {
             var sb = new StringBuilder();
+            var totalVulnerable = Math.Max(0, vulnerableStacks);
             if (charge > 0) sb.Append(detailedMode ? "蓄力" : "⚡").Append(charge).Append(' ');
             if (bonus > 0) sb.Append(detailedMode ? "增伤+" : "💥+").Append(bonus).Append(' ');
-            if (vulnerableStacks > 0) sb.Append(detailedMode ? "易伤" : "🎯").Append(vulnerableStacks).Append(' ');
 
             if (statuses != null)
             {
@@ -267,6 +268,10 @@ namespace YoungBob.Prototype.UI.Battle
                     {
                         sb.Append(detailedMode ? "力量" : "💪").Append(status.stacks).Append(' ');
                     }
+                    else if (string.Equals(status.id, "Vulnerable", System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        totalVulnerable += status.stacks;
+                    }
                     else if (IsSecretStatusId(status.id))
                     {
                         continue;
@@ -276,6 +281,11 @@ namespace YoungBob.Prototype.UI.Battle
                         sb.Append(status.id).Append(':').Append(status.stacks).Append(' ');
                     }
                 }
+            }
+
+            if (totalVulnerable > 0)
+            {
+                sb.Append(detailedMode ? "易伤" : "🎯").Append(totalVulnerable).Append(' ');
             }
 
             return sb.ToString().TrimEnd();

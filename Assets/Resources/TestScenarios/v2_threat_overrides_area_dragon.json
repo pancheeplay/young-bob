@@ -1,0 +1,124 @@
+{
+  "scenarioVersion": 2,
+  "id": "v2_threat_overrides_area_dragon",
+  "name": "V2 dragon skill follows threat target area",
+  "setup": {
+    "roomId": "v2_threat_dragon_room",
+    "stageId": "stage_boss_debug",
+    "starterDeckId": "co_op_starter",
+    "randomSeed": 20260321,
+    "players": [
+      {
+        "playerId": "p1",
+        "displayName": "Alpha"
+      },
+      {
+        "playerId": "p2",
+        "displayName": "Beta"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "debug_clear_hand",
+      "actorPlayerId": "p2"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p2",
+      "cardId": "move"
+    },
+    {
+      "action": "debug_add_card_to_hand",
+      "actorPlayerId": "p2",
+      "cardId": "warrior_taunt"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p2",
+      "cardInstanceId": "card:move",
+      "targetFaction": 0,
+      "targetUnitId": "",
+      "targetArea": 2,
+      "snapshotTag": "after_move_east"
+    },
+    {
+      "action": "play_card",
+      "actorPlayerId": "p2",
+      "cardInstanceId": "card:warrior_taunt",
+      "targetFaction": 1,
+      "targetUnitId": "p2",
+      "targetArea": 2,
+      "snapshotTag": "after_taunt_east"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p1"
+    },
+    {
+      "action": "end_turn",
+      "actorPlayerId": "p2",
+      "snapshotTag": "after_monster_turn"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_move_east",
+      "playerId": "p2",
+      "field": "area",
+      "expectedInt": 2,
+      "message": "Beta moves east before the dragon acts"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_taunt_east",
+      "playerId": "p2",
+      "field": "threatValue",
+      "expectedInt": 20,
+      "message": "Beta becomes the higher-threat target on east"
+    },
+    {
+      "type": "player_hand_has_card",
+      "actualPath": "after_monster_turn",
+      "playerId": "p2",
+      "cardId": "curse_betrayal",
+      "message": "dragon skill hits the east-side threat target"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_monster_turn",
+      "playerId": "p2",
+      "field": "vulnerableStacks",
+      "expectedInt": 1,
+      "message": "dragon skill applies vulnerable to the east-side threat target"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_monster_turn",
+      "playerId": "p1",
+      "field": "vulnerableStacks",
+      "expectedInt": 0,
+      "message": "west-side player is outside the threatened area"
+    },
+    {
+      "type": "event_contains",
+      "actualPath": "after_monster_turn",
+      "eventId": "monster_gain_card",
+      "target": "Beta",
+      "cardId": "诅咒祈祷",
+      "statusId": "curse_betrayal",
+      "message": "dragon skill card gain is applied to Beta"
+    },
+    {
+      "type": "event_sequence",
+      "actualPath": "after_monster_turn",
+      "expected": "monster_action >> monster_gain_card >> apply_vulnerable",
+      "message": "dragon skill resolves in the expected order on the threatened area"
+    }
+  ]
+}
