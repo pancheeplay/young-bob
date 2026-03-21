@@ -166,6 +166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00f6e18619f474cde888da12565bc092, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _defaultUiFont: {fileID: 0}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -516,7 +517,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uiManager: {fileID: 17140430}
   transportMode: 1
-  debugRelayUrl: ws://127.0.0.1:8787
+  debugRelayUrl: wss://young-bob.onrender.com
   localPlayerDisplayName: "\u4E0A\u6D77"
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

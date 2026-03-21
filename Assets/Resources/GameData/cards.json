@@ -2,7 +2,7 @@
   "cards": [
     {
       "id": "move",
-      "name": "移动",
+      "name": "移动一下",
       "classTag": "Utility",
       "targetType": "Area",
       "rangeHeights": "Both",
@@ -17,7 +17,7 @@
     },
     {
       "id": "priest_heal",
-      "name": "治疗",
+      "name": "治疗一下",
       "classTag": "Priest",
       "targetType": "SingleAlly",
       "rangeHeights": "Both",
@@ -54,7 +54,7 @@
     },
     {
       "id": "assassin_chain_step",
-      "name": "连步",
+      "name": "连击",
       "classTag": "Assassin",
       "targetType": "Self",
       "rangeHeights": "Both",
@@ -82,7 +82,7 @@
           "target": "CardTarget",
           "amount": 2,
           "scaleBy": "CardsPlayedThisTurn",
-          "ratio": 1.0
+          "ratio": 1
         }
       ]
     },
@@ -150,7 +150,7 @@
           "target": "CardTarget",
           "amount": 0,
           "scaleBy": "TargetPoison",
-          "ratio": 1.0
+          "ratio": 1
         }
       ]
     },
@@ -219,7 +219,7 @@
         {
           "op": "DamageByArmor",
           "target": "CardTarget",
-          "ratio": 1.0
+          "ratio": 1
         }
       ]
     },

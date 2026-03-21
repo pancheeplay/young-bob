@@ -1,0 +1,312 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "cards.schema.json",
+  "title": "Young Bob Card Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cards"
+  ],
+  "properties": {
+    "cards": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/card"
+      }
+    }
+  },
+  "definitions": {
+    "card": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "classTag",
+        "targetType",
+        "rangeHeights",
+        "rangeDistance",
+        "energyCost",
+        "effects"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "classTag": {
+          "type": "string",
+          "enum": [
+            "Utility",
+            "Priest",
+            "Assassin",
+            "Warrior",
+            "Curse"
+          ]
+        },
+        "targetType": {
+          "type": "string",
+          "enum": [
+            "Self",
+            "SingleAlly",
+            "AllAllies",
+            "OtherAlly",
+            "MonsterPart",
+            "AllMonsterParts",
+            "SingleUnit",
+            "Area"
+          ]
+        },
+        "rangeHeights": {
+          "type": "string",
+          "enum": [
+            "Both",
+            "Ground",
+            "Air"
+          ]
+        },
+        "rangeDistance": {
+          "type": "string",
+          "enum": [
+            "Both",
+            "Near",
+            "Far"
+          ]
+        },
+        "rangeZones": {
+          "type": "string",
+          "enum": [
+            "Both",
+            "Front",
+            "Back"
+          ]
+        },
+        "energyCost": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "effects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/effect"
+          }
+        }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target"
+      ],
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": [
+            "Damage",
+            "Heal",
+            "Draw",
+            "GainArmor",
+            "ApplyStatus",
+            "ApplyVulnerable",
+            "DamageByArmor",
+            "ModifyEnergy",
+            "LoseHp",
+            "CopyAndPlunder",
+            "RecycleDiscardToHand",
+            "ExhaustFromHand",
+            "MoveArea",
+            "ModifyThreat",
+            "AddSecret",
+            "DamageAndMoveOnKill"
+          ]
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "None",
+            "Self",
+            "CardTarget",
+            "AllAllies",
+            "AllEnemies"
+          ]
+        },
+        "statusId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scaleBy": {
+          "type": "string",
+          "enum": [
+            "SelfArmor",
+            "CardsPlayedThisTurn",
+            "TargetPoison"
+          ]
+        },
+        "pileFrom": {
+          "type": "string",
+          "minLength": 1
+        },
+        "amount": {
+          "type": "integer"
+        },
+        "amount2": {
+          "type": "integer"
+        },
+        "ratio": {
+          "type": "number"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "enum": [
+                  "Damage",
+                  "Heal",
+                  "Draw",
+                  "GainArmor",
+                  "ApplyStatus",
+                  "ApplyVulnerable",
+                  "ModifyEnergy",
+                  "LoseHp",
+                  "RecycleDiscardToHand",
+                  "ExhaustFromHand",
+                  "ModifyThreat",
+                  "AddSecret",
+                  "DamageAndMoveOnKill"
+                ]
+              }
+            },
+            "required": [
+              "op"
+            ]
+          },
+          "then": {
+            "required": [
+              "amount"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "enum": [
+                  "ApplyStatus",
+                  "AddSecret"
+                ]
+              }
+            },
+            "required": [
+              "op"
+            ]
+          },
+          "then": {
+            "required": [
+              "statusId"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "DamageByArmor"
+              }
+            },
+            "required": [
+              "op"
+            ]
+          },
+          "then": {
+            "required": [
+              "ratio"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "MoveArea"
+              }
+            },
+            "required": [
+              "op"
+            ]
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "const": "None"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "enum": [
+                  "ModifyEnergy",
+                  "RecycleDiscardToHand",
+                  "ExhaustFromHand"
+                ]
+              }
+            },
+            "required": [
+              "op"
+            ]
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "const": "None"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "CopyAndPlunder"
+              }
+            },
+            "required": [
+              "op"
+            ]
+          },
+          "then": {
+            "properties": {
+              "target": {
+                "enum": [
+                  "Self",
+                  "CardTarget",
+                  "AllAllies"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

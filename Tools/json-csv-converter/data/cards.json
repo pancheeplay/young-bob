@@ -1,0 +1,616 @@
+{
+  "cards": [
+    {
+      "id": "move",
+      "name": "移动",
+      "classTag": "Utility",
+      "targetType": "Area",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "MoveArea",
+          "target": "None"
+        }
+      ]
+    },
+    {
+      "id": "priest_heal",
+      "name": "治疗",
+      "classTag": "Priest",
+      "targetType": "SingleAlly",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "Heal",
+          "target": "CardTarget",
+          "amount": 5
+        }
+      ]
+    },
+    {
+      "id": "assassin_quick_jab",
+      "name": "快刀",
+      "classTag": "Assassin",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Ground",
+      "rangeDistance": "Near",
+      "energyCost": 0,
+      "effects": [
+        {
+          "op": "Damage",
+          "target": "CardTarget",
+          "amount": 1
+        },
+        {
+          "op": "Draw",
+          "target": "Self",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "assassin_chain_step",
+      "name": "连击",
+      "classTag": "Assassin",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 0,
+      "effects": [
+        {
+          "op": "Draw",
+          "target": "Self",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "assassin_combo_finisher",
+      "name": "连击终结",
+      "classTag": "Assassin",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "Damage",
+          "target": "CardTarget",
+          "amount": 2,
+          "scaleBy": "CardsPlayedThisTurn",
+          "ratio": 1
+        }
+      ]
+    },
+    {
+      "id": "assassin_fan_blade",
+      "name": "扇刃",
+      "classTag": "Assassin",
+      "targetType": "AllMonsterParts",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "Damage",
+          "target": "CardTarget",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "assassin_poison_dart",
+      "name": "毒镖",
+      "classTag": "Assassin",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "ApplyStatus",
+          "target": "CardTarget",
+          "statusId": "Poison",
+          "amount": 5
+        }
+      ]
+    },
+    {
+      "id": "assassin_toxic_cloud",
+      "name": "毒云",
+      "classTag": "Assassin",
+      "targetType": "AllMonsterParts",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "ApplyStatus",
+          "target": "CardTarget",
+          "statusId": "Poison",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "assassin_catalyst_strike",
+      "name": "催化刺",
+      "classTag": "Assassin",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "Damage",
+          "target": "CardTarget",
+          "amount": 0,
+          "scaleBy": "TargetPoison",
+          "ratio": 1
+        }
+      ]
+    },
+    {
+      "id": "assassin_smoke_guard",
+      "name": "烟幕",
+      "classTag": "Assassin",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "GainArmor",
+          "target": "Self",
+          "amount": 6
+        },
+        {
+          "op": "Draw",
+          "target": "Self",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "warrior_iron_wall",
+      "name": "铁壁",
+      "classTag": "Warrior",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "GainArmor",
+          "target": "Self",
+          "amount": 8
+        }
+      ]
+    },
+    {
+      "id": "warrior_fortress",
+      "name": "固守",
+      "classTag": "Warrior",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 2,
+      "effects": [
+        {
+          "op": "GainArmor",
+          "target": "Self",
+          "amount": 14
+        }
+      ]
+    },
+    {
+      "id": "warrior_shield_slam",
+      "name": "盾击",
+      "classTag": "Warrior",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeDistance": "Near",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "DamageByArmor",
+          "target": "CardTarget",
+          "ratio": 1
+        }
+      ]
+    },
+    {
+      "id": "warrior_shield_crash",
+      "name": "盾震",
+      "classTag": "Warrior",
+      "targetType": "AllMonsterParts",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 2,
+      "effects": [
+        {
+          "op": "DamageByArmor",
+          "target": "CardTarget",
+          "ratio": 0.5
+        }
+      ]
+    },
+    {
+      "id": "warrior_battle_cry",
+      "name": "战吼",
+      "classTag": "Warrior",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "ApplyStatus",
+          "target": "Self",
+          "statusId": "Strength",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "warrior_limit_push",
+      "name": "极限推进",
+      "classTag": "Warrior",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "ApplyStatus",
+          "target": "Self",
+          "statusId": "Strength",
+          "amount": 1
+        },
+        {
+          "op": "Draw",
+          "target": "Self",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "warrior_multi_strike",
+      "name": "裂甲连斩",
+      "classTag": "Warrior",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeDistance": "Near",
+      "energyCost": 2,
+      "effects": [
+        {
+          "op": "Damage",
+          "target": "CardTarget",
+          "amount": 2
+        },
+        {
+          "op": "Damage",
+          "target": "CardTarget",
+          "amount": 2
+        },
+        {
+          "op": "Damage",
+          "target": "CardTarget",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "utility_recycle",
+      "name": "回收协议",
+      "classTag": "Utility",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "RecycleDiscardToHand",
+          "target": "None",
+          "amount": 1,
+          "amount2": -1
+        }
+      ]
+    },
+    {
+      "id": "utility_overclock",
+      "name": "过载转化",
+      "classTag": "Utility",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 0,
+      "effects": [
+        {
+          "op": "LoseHp",
+          "target": "Self",
+          "amount": 2
+        },
+        {
+          "op": "ModifyEnergy",
+          "target": "None",
+          "amount": 1
+        },
+        {
+          "op": "Draw",
+          "target": "Self",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "utility_tactical_forge",
+      "name": "战术熔炉",
+      "classTag": "Utility",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "ExhaustFromHand",
+          "target": "None",
+          "amount": 1
+        },
+        {
+          "op": "Draw",
+          "target": "Self",
+          "amount": 2
+        },
+        {
+          "op": "ModifyEnergy",
+          "target": "None",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "assassin_borrow_pass",
+      "name": "借过一下",
+      "classTag": "Assassin",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeDistance": "Near",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "DamageAndMoveOnKill",
+          "target": "CardTarget",
+          "amount": 4,
+          "amount2": 1
+        }
+      ]
+    },
+    {
+      "id": "utility_opening_ambush",
+      "name": "先手埋伏",
+      "classTag": "Utility",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "AddSecret",
+          "target": "Self",
+          "statusId": "SecretSidestepOnHit",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "utility_secret_guard",
+      "name": "护卫",
+      "classTag": "Utility",
+      "targetType": "SingleAlly",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "AddSecret",
+          "target": "CardTarget",
+          "statusId": "SecretGuard",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "utility_secret_counter",
+      "name": "反制",
+      "classTag": "Utility",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "AddSecret",
+          "target": "Self",
+          "statusId": "SecretCounterattack",
+          "amount": 4
+        }
+      ]
+    },
+    {
+      "id": "utility_secret_rising_fury",
+      "name": "受击战意",
+      "classTag": "Utility",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "AddSecret",
+          "target": "Self",
+          "statusId": "SecretStrengthOnHit",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "utility_secret_iron_echo",
+      "name": "铁回响",
+      "classTag": "Utility",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "AddSecret",
+          "target": "Self",
+          "statusId": "SecretArmorOnHit",
+          "amount": 5
+        }
+      ]
+    },
+    {
+      "id": "assassin_reposition_combo",
+      "name": "位移连击",
+      "classTag": "Assassin",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Both",
+      "rangeDistance": "Near",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "DamageAndMoveOnKill",
+          "target": "CardTarget",
+          "amount": 2
+        },
+        {
+          "op": "Draw",
+          "target": "Self",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "warrior_taunt",
+      "name": "挑衅",
+      "classTag": "Warrior",
+      "targetType": "SingleAlly",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "ModifyThreat",
+          "target": "CardTarget",
+          "amount": 20
+        }
+      ]
+    },
+    {
+      "id": "assassin_smoke_escape",
+      "name": "烟遁",
+      "classTag": "Assassin",
+      "targetType": "Self",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "ModifyThreat",
+          "target": "Self",
+          "amount": -10
+        },
+        {
+          "op": "Draw",
+          "target": "Self",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "utility_borrow_card",
+      "name": "借牌",
+      "classTag": "Utility",
+      "targetType": "SingleAlly",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "CopyAndPlunder",
+          "target": "CardTarget"
+        }
+      ]
+    },
+    {
+      "id": "warrior_horizontal_sweep",
+      "name": "横斩",
+      "classTag": "Warrior",
+      "targetType": "AllMonsterParts",
+      "rangeHeights": "Ground",
+      "rangeDistance": "Both",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "Damage",
+          "target": "CardTarget",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "assassin_air_sting",
+      "name": "凌空刺",
+      "classTag": "Assassin",
+      "targetType": "MonsterPart",
+      "rangeHeights": "Air",
+      "rangeDistance": "Near",
+      "energyCost": 1,
+      "effects": [
+        {
+          "op": "Damage",
+          "target": "CardTarget",
+          "amount": 4
+        }
+      ]
+    },
+    {
+      "id": "curse_basic",
+      "name": "诅咒",
+      "classTag": "Curse",
+      "targetType": "SingleAlly",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 0,
+      "effects": [
+        {
+          "op": "ApplyVulnerable",
+          "target": "CardTarget",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "id": "curse_betrayal",
+      "name": "背叛诅咒",
+      "classTag": "Curse",
+      "targetType": "SingleAlly",
+      "rangeHeights": "Both",
+      "rangeDistance": "Both",
+      "energyCost": 0,
+      "effects": [
+        {
+          "op": "ApplyVulnerable",
+          "target": "CardTarget",
+          "amount": 1
+        }
+      ]
+    }
+  ]
+}
