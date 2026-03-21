@@ -676,9 +676,10 @@ namespace YoungBob.Prototype.App
             CurrentBattleState = state;
             if (payload.events != null)
             {
-                for (var i = 0; i < payload.events.Length; i++)
+                var logLines = BattleEventFormatter.FormatAll(payload.events, richText: true);
+                for (var i = 0; i < logLines.Length; i++)
                 {
-                    var logText = BattleEventFormatter.Format(payload.events[i], richText: true);
+                    var logText = logLines[i];
                     if (!string.IsNullOrWhiteSpace(logText))
                     {
                         LogAdded?.Invoke(logText);

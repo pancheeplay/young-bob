@@ -517,7 +517,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   uiManager: {fileID: 17140430}
   transportMode: 1
-  debugRelayUrl: wss://young-bob.onrender.com
+  debugRelayUrl: ws://127.0.0.1:8787
   localPlayerDisplayName: "\u4E0A\u6D77"
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

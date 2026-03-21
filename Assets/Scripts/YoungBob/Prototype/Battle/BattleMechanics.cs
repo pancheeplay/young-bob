@@ -8,10 +8,10 @@ namespace YoungBob.Prototype.Battle
         public static int ApplyDamage(PlayerBattleState target, int amount)
         {
             var incoming = Math.Max(0, amount);
-            if (target.vulnerableStacks > 0)
+            if (BattleStatusSystem.GetVulnerableStacks(target) > 0)
             {
                 incoming += (incoming + 1) / 2;
-                target.vulnerableStacks = Math.Max(0, target.vulnerableStacks - 1);
+                BattleStatusSystem.AddStacks(target.statuses, BattleStatusSystem.VulnerableStatusId, -1);
             }
 
             var mitigatedByArmor = Math.Min(target.armor, incoming);

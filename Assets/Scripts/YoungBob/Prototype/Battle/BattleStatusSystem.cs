@@ -6,6 +6,7 @@ namespace YoungBob.Prototype.Battle
     internal static class BattleStatusSystem
     {
         public const string PoisonStatusId = "Poison";
+        public const string VulnerableStatusId = "Vulnerable";
         public const string StrengthStatusId = "Strength";
         public const string TempStrengthStatusId = "TempStrength";
         public const string SecretCounterattackStatusId = "SecretCounterattack";
@@ -85,6 +86,11 @@ namespace YoungBob.Prototype.Battle
         public static int ConsumeStacks(PlayerBattleState player, string statusId)
         {
             return player == null ? 0 : ConsumeStacks(player.statuses, statusId);
+        }
+
+        public static int GetVulnerableStacks(PlayerBattleState player)
+        {
+            return player == null ? 0 : GetStacks(player.statuses, VulnerableStatusId);
         }
 
         public static void TickPoisonOnMonsterAtTurnStart(BattleState state, BattleCommandResult result)

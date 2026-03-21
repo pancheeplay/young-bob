@@ -11,6 +11,7 @@ namespace YoungBob.Prototype.Data
     {
         public string op;
         public string target;
+        public string destinationId;
         public string statusId;
         public string scaleBy;
         public string pileFrom;
@@ -31,7 +32,8 @@ namespace YoungBob.Prototype.Data
         public string rangeZones;
         public int energyCost;
         public string[] tags;
-        public CardEffectDefinition[] effects;
+        public string effectsSExpr;
+        [NonSerialized] public SExpressionNode parsedEffects;
     }
 
     [Serializable]
@@ -126,6 +128,7 @@ namespace YoungBob.Prototype.Data
                 CardsResourcePath,
                 catalog => catalog.cards,
                 item => item.id);
+            InitializeCards(cards);
             var encounters = LoadCatalog<EncounterCatalog, EncounterDefinition>(
                 EncountersResourcePath,
                 catalog => catalog.encounters,
@@ -239,6 +242,26 @@ namespace YoungBob.Prototype.Data
             }
 
             return result;
+        }
+
+        private static void InitializeCards(Dictionary<string, CardDefinition> cards)
+        {
+            foreach (var pair in cards)
+            {
+                var card = pair.Value;
+                if (card == null)
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(card.effectsSExpr))
+                {
+                    throw new InvalidOperationException("Card missing effectsSExpr: " + pair.Key);
+                }
+
+                card.parsedEffects = CardEffectCompiler.Compile(card.effectsSExpr);
+                CardEffectDslValidator.Validate(card.parsedEffects);
+            }
         }
 
         private static List<TItem> LoadArrayCatalog<TCatalog, TItem>(

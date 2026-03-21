@@ -16,8 +16,6 @@ namespace YoungBob.Prototype.Battle
                 { "Draw", new DrawEffectHandler() },
                 { "GainArmor", new GainArmorEffectHandler() },
                 { "ApplyStatus", new ApplyStatusEffectHandler() },
-                { "ApplyVulnerable", new ApplyVulnerableEffectHandler() },
-                { "DamageByArmor", new DamageByArmorEffectHandler() },
                 { "ModifyEnergy", new ModifyEnergyEffectHandler() },
                 { "LoseHp", new LoseHpEffectHandler() },
                 { "CopyAndPlunder", new CopyAndPlunderEffectHandler() },
@@ -25,8 +23,7 @@ namespace YoungBob.Prototype.Battle
                 { "ExhaustFromHand", new ExhaustFromHandEffectHandler() },
                 { "MoveArea", new MoveAreaEffectHandler() },
                 { "ModifyThreat", new ModifyThreatEffectHandler() },
-                { "AddSecret", new AddSecretEffectHandler() },
-                { "DamageAndMoveOnKill", new DamageAndMoveOnKillEffectHandler() }
+                { "AddSecret", new AddSecretEffectHandler() }
             };
 
         public static void ResolveCardEffects(
@@ -44,13 +41,13 @@ namespace YoungBob.Prototype.Battle
                 return;
             }
 
-            if (definition.effects == null || definition.effects.Length == 0)
+            if (definition.parsedEffects == null)
             {
                 result.error = "卡牌没有效果：" + definition.id;
                 return;
             }
 
-            var context = new EffectExecutionContext
+            var context = new CardEffectExecutionContext
             {
                 state = state,
                 actingPlayer = actingPlayer,
@@ -61,65 +58,188 @@ namespace YoungBob.Prototype.Battle
                 result = result
             };
 
-            var plan = new List<PlannedEffect>(definition.effects.Length);
-            for (var i = 0; i < definition.effects.Length; i++)
-            {
-                var effect = definition.effects[i];
-                if (effect == null || string.IsNullOrWhiteSpace(effect.op))
-                {
-                    result.error = "卡牌 " + definition.id + " 的第 " + i + " 个效果无效。";
-                    return;
-                }
-
-                if (!Handlers.TryGetValue(effect.op, out var handler))
-                {
-                    result.error = "未知效果操作：" + effect.op;
-                    return;
-                }
-
-                var targets = ResolveTargets(context, effect, out var targetError);
-                if (!string.IsNullOrEmpty(targetError))
-                {
-                    result.error = targetError;
-                    return;
-                }
-
-                if (handler.RequiresTarget && targets.Count == 0)
-                {
-                    result.error = "效果需要目标：" + effect.op;
-                    return;
-                }
-
-                plan.Add(new PlannedEffect
-                {
-                    effect = effect,
-                    handler = handler,
-                    targets = targets
-                });
-            }
-
             var opCount = 0;
-            for (var i = 0; i < plan.Count; i++)
+            try
             {
-                var planned = plan[i];
-                if (!planned.handler.Execute(context, planned.effect, planned.targets, ref opCount, out var error))
+                if (!ExecuteDslNode(context, definition.parsedEffects, ref opCount, out var error))
                 {
                     result.error = error;
                     return;
                 }
+            }
+            catch (InvalidOperationException exception)
+            {
+                result.error = exception.Message;
+                return;
+            }
 
-                if (opCount > MaxEffectOperationsPerCard)
-                {
-                    result.error = "效果操作次数超出上限。";
-                    return;
-                }
+            if (opCount > MaxEffectOperationsPerCard)
+            {
+                result.error = "效果操作次数超出上限。";
             }
         }
 
-        private static List<EffectTargetRef> ResolveTargets(EffectExecutionContext context, CardEffectDefinition effect, out string error)
+        private static bool ExecuteDslNode(CardEffectExecutionContext context, SExpressionNode node, ref int opCount, out string error)
         {
             error = null;
-            var targets = new List<EffectTargetRef>();
+            if (!(node is SExpressionListNode list))
+            {
+                error = "效果 DSL 需要列表节点。";
+                return false;
+            }
+
+            if (string.Equals(list.Head, "do", StringComparison.Ordinal))
+            {
+                for (var i = 0; i < list.Arguments.Length; i++)
+                {
+                    if (!ExecuteDslNode(context, list.Arguments[i], ref opCount, out error))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            if (string.Equals(list.Head, "if", StringComparison.Ordinal))
+            {
+                if (list.Arguments.Length != 2)
+                {
+                    error = "if 需要 2 个参数。";
+                    return false;
+                }
+
+                if (CardEffectEvaluator.EvaluateBoolean(context, list.Arguments[0], null))
+                {
+                    return ExecuteDslNode(context, list.Arguments[1], ref opCount, out error);
+                }
+
+                return true;
+            }
+
+            if (string.Equals(list.Head, "repeat", StringComparison.Ordinal))
+            {
+                if (list.Arguments.Length != 2)
+                {
+                    error = "repeat 需要 2 个参数。";
+                    return false;
+                }
+
+                var times = Math.Max(0, (int)Math.Round(CardEffectEvaluator.EvaluateNumber(context, list.Arguments[0], null)));
+                for (var i = 0; i < times; i++)
+                {
+                    if (!ExecuteDslNode(context, list.Arguments[1], ref opCount, out error))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return ExecuteActionNode(context, list, ref opCount, out error);
+        }
+
+        private static bool ExecuteActionNode(CardEffectExecutionContext context, SExpressionListNode action, ref int opCount, out string error)
+        {
+            error = null;
+            if (!CardEffectActionCompiler.TryBuildActionPrototype(action, out var effect, out error))
+            {
+                return false;
+            }
+
+            if (!Handlers.TryGetValue(effect.op, out var handler))
+            {
+                error = "未知效果操作：" + effect.op;
+                return false;
+            }
+
+            var targets = ResolveTargets(context, effect, out error);
+            if (!string.IsNullOrEmpty(error))
+            {
+                return false;
+            }
+
+            if (handler.RequiresTarget && targets.Count == 0)
+            {
+                error = "效果需要目标：" + effect.op;
+                return false;
+            }
+
+            context.lastResult.Reset();
+
+            if (targets.Count == 0)
+            {
+                return ExecuteHandler(context, handler, effect, targets, ref opCount, out error);
+            }
+
+            var totalDamageDealt = 0;
+            var killed = false;
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var singleTarget = new List<CardEffectTargetRef>(1) { targets[i] };
+                var materialized = CardEffectActionCompiler.MaterializeEffectForTarget(context, action, effect, targets[i]);
+
+                if (!ExecuteHandler(context, handler, materialized, singleTarget, ref opCount, out error))
+                {
+                    return false;
+                }
+
+                totalDamageDealt += context.lastResult.damageDealt;
+                killed |= context.lastResult.killedTarget;
+            }
+
+            context.lastResult.Set(totalDamageDealt, killed);
+            return true;
+        }
+
+        private static bool ExecuteHandler(
+            CardEffectExecutionContext context,
+            ICardEffectHandler handler,
+            CardEffectDefinition effect,
+            List<CardEffectTargetRef> targets,
+            ref int opCount,
+            out string error)
+        {
+            var beforePlayerHp = targets.Count > 0 && targets[0].IsPlayer ? targets[0].Player.hp : 0;
+            var beforeMonsterCoreHp = context.state.monster == null ? 0 : context.state.monster.coreHp;
+
+            if (!handler.Execute(context, effect, targets, ref opCount, out error))
+            {
+                return false;
+            }
+
+            if (opCount > MaxEffectOperationsPerCard)
+            {
+                error = "效果操作次数超出上限。";
+                return false;
+            }
+
+            context.lastResult.Reset();
+            if (string.Equals(effect.op, "Damage", StringComparison.OrdinalIgnoreCase))
+            {
+                if (targets.Count > 0 && targets[0].IsPlayer)
+                {
+                    context.lastResult.Set(
+                        Math.Max(0, beforePlayerHp - targets[0].Player.hp),
+                        beforePlayerHp > 0 && targets[0].Player.hp <= 0);
+                }
+                else
+                {
+                    var currentMonsterCoreHp = context.state.monster == null ? 0 : context.state.monster.coreHp;
+                    context.lastResult.Set(
+                        Math.Max(0, beforeMonsterCoreHp - currentMonsterCoreHp),
+                        beforeMonsterCoreHp > 0 && currentMonsterCoreHp <= 0);
+                }
+            }
+
+            return true;
+        }
+
+        private static List<CardEffectTargetRef> ResolveTargets(CardEffectExecutionContext context, CardEffectDefinition effect, out string error)
+        {
+            error = null;
+            var targets = new List<CardEffectTargetRef>();
             var targetMode = string.IsNullOrWhiteSpace(effect.target) ? "CardTarget" : effect.target;
 
             if (string.Equals(targetMode, "None", StringComparison.OrdinalIgnoreCase))
@@ -129,7 +249,7 @@ namespace YoungBob.Prototype.Battle
 
             if (string.Equals(targetMode, "Self", StringComparison.OrdinalIgnoreCase))
             {
-                targets.Add(EffectTargetRef.ForPlayer(context.actingPlayer));
+                targets.Add(CardEffectTargetRef.ForPlayer(context.actingPlayer));
                 return targets;
             }
 
@@ -141,7 +261,7 @@ namespace YoungBob.Prototype.Battle
                     if (player != null && player.hp > 0
                         && BattleTargetingRules.CanTargetPlayer(context.state, context.actingPlayer, context.definition, BattleTargetType.AllAllies, player))
                     {
-                        targets.Add(EffectTargetRef.ForPlayer(player));
+                        targets.Add(CardEffectTargetRef.ForPlayer(player));
                     }
                 }
 
@@ -157,7 +277,7 @@ namespace YoungBob.Prototype.Battle
                         var part = context.state.monster.parts[i];
                         if (part != null)
                         {
-                            targets.Add(EffectTargetRef.ForPart(part));
+                            targets.Add(CardEffectTargetRef.ForPart(part));
                         }
                     }
                 }
@@ -168,7 +288,7 @@ namespace YoungBob.Prototype.Battle
             switch (context.cardTargetType)
             {
                 case BattleTargetType.Self:
-                    targets.Add(EffectTargetRef.ForPlayer(context.actingPlayer));
+                    targets.Add(CardEffectTargetRef.ForPlayer(context.actingPlayer));
                     return targets;
 
                 case BattleTargetType.SingleAlly:
@@ -182,7 +302,7 @@ namespace YoungBob.Prototype.Battle
                         return targets;
                     }
 
-                    targets.Add(EffectTargetRef.ForPlayer(playerTarget));
+                    targets.Add(CardEffectTargetRef.ForPlayer(playerTarget));
                     return targets;
                 }
 
@@ -191,7 +311,7 @@ namespace YoungBob.Prototype.Battle
                     var playerTarget = BattleTargetResolver.ResolvePlayerTarget(context.state, context.command, false);
                     if (playerTarget != null && BattleTargetingRules.CanTargetPlayer(context.state, context.actingPlayer, context.definition, context.cardTargetType, playerTarget))
                     {
-                        targets.Add(EffectTargetRef.ForPlayer(playerTarget));
+                        targets.Add(CardEffectTargetRef.ForPlayer(playerTarget));
                         return targets;
                     }
 
@@ -202,7 +322,7 @@ namespace YoungBob.Prototype.Battle
                         return targets;
                     }
 
-                    targets.Add(EffectTargetRef.ForPart(partTarget));
+                    targets.Add(CardEffectTargetRef.ForPart(partTarget));
                     return targets;
                 }
 
@@ -215,7 +335,7 @@ namespace YoungBob.Prototype.Battle
                         return targets;
                     }
 
-                    targets.Add(EffectTargetRef.ForPart(partTarget));
+                    targets.Add(CardEffectTargetRef.ForPart(partTarget));
                     return targets;
                 }
 
@@ -236,7 +356,7 @@ namespace YoungBob.Prototype.Battle
 
                         if (BattleTargetingRules.CanTargetPart(context.state, context.actingPlayer, context.definition, context.cardTargetType, part))
                         {
-                            targets.Add(EffectTargetRef.ForPart(part));
+                            targets.Add(CardEffectTargetRef.ForPart(part));
                         }
                     }
 
@@ -251,74 +371,10 @@ namespace YoungBob.Prototype.Battle
             }
         }
 
-        private static int CalculateScaledAmount(EffectExecutionContext context, CardEffectDefinition effect, EffectTargetRef target)
-        {
-            var scaleBy = effect.scaleBy;
-            if (string.IsNullOrWhiteSpace(scaleBy))
-            {
-                return 0;
-            }
-
-            if (string.Equals(scaleBy, "SelfArmor", StringComparison.OrdinalIgnoreCase))
-            {
-                return (int)Math.Round(context.actingPlayer.armor * effect.ratio);
-            }
-
-            if (string.Equals(scaleBy, "CardsPlayedThisTurn", StringComparison.OrdinalIgnoreCase))
-            {
-                return (int)Math.Round(context.actingPlayer.cardsPlayedThisTurn * effect.ratio);
-            }
-
-            if (string.Equals(scaleBy, "TargetPoison", StringComparison.OrdinalIgnoreCase))
-            {
-                var poison = target.IsPlayer
-                    ? BattleStatusSystem.GetStacks(target.Player.statuses, BattleStatusSystem.PoisonStatusId)
-                    : BattleStatusSystem.GetStacks(context.state.monster == null ? null : context.state.monster.statuses, BattleStatusSystem.PoisonStatusId);
-                return (int)Math.Round(poison * effect.ratio);
-            }
-
-            return 0;
-        }
-
         private static int GetStrengthBonus(PlayerBattleState player)
         {
             return BattleStatusSystem.GetStacks(player.statuses, BattleStatusSystem.StrengthStatusId)
                 + BattleStatusSystem.GetStacks(player.statuses, BattleStatusSystem.TempStrengthStatusId);
-        }
-
-        private sealed class EffectExecutionContext
-        {
-            public BattleState state;
-            public PlayerBattleState actingPlayer;
-            public BattleCommand command;
-            public BattleCardState playedCard;
-            public CardDefinition definition;
-            public BattleTargetType cardTargetType;
-            public BattleCommandResult result;
-        }
-
-        private sealed class PlannedEffect
-        {
-            public CardEffectDefinition effect;
-            public ICardEffectHandler handler;
-            public List<EffectTargetRef> targets;
-        }
-
-        private sealed class EffectTargetRef
-        {
-            public PlayerBattleState Player;
-            public MonsterPartState Part;
-            public bool IsPlayer => Player != null;
-
-            public static EffectTargetRef ForPlayer(PlayerBattleState player)
-            {
-                return new EffectTargetRef { Player = player };
-            }
-
-            public static EffectTargetRef ForPart(MonsterPartState part)
-            {
-                return new EffectTargetRef { Part = part };
-            }
         }
 
         private interface ICardEffectHandler
@@ -326,9 +382,9 @@ namespace YoungBob.Prototype.Battle
             bool RequiresTarget { get; }
 
             bool Execute(
-                EffectExecutionContext context,
+                CardEffectExecutionContext context,
                 CardEffectDefinition effect,
-                List<EffectTargetRef> targets,
+                List<CardEffectTargetRef> targets,
                 ref int opCount,
                 out string error);
         }
@@ -337,15 +393,14 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => true;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 var strength = GetStrengthBonus(context.actingPlayer);
                 for (var i = 0; i < targets.Count; i++)
                 {
                     var target = targets[i];
-                    var scaled = CalculateScaledAmount(context, effect, target);
-                    var amount = Math.Max(0, effect.amount + scaled + strength);
+                    var amount = Math.Max(0, effect.amount + strength);
                     if (target.IsPlayer)
                     {
                         var applied = BattleMechanics.ApplyDamage(target.Player, amount);
@@ -383,7 +438,7 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => true;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 for (var i = 0; i < targets.Count; i++)
@@ -411,7 +466,7 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => true;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 for (var i = 0; i < targets.Count; i++)
@@ -439,7 +494,7 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => true;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 for (var i = 0; i < targets.Count; i++)
@@ -468,7 +523,7 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => true;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 if (string.IsNullOrWhiteSpace(effect.statusId))
@@ -478,6 +533,28 @@ namespace YoungBob.Prototype.Battle
                 }
 
                 var amount = Math.Max(1, effect.amount);
+                if (string.Equals(effect.statusId, BattleStatusSystem.VulnerableStatusId, StringComparison.OrdinalIgnoreCase))
+                {
+                    for (var i = 0; i < targets.Count; i++)
+                    {
+                        if (!targets[i].IsPlayer)
+                        {
+                            continue;
+                        }
+
+                        BattleStatusSystem.AddStacks(targets[i].Player.statuses, BattleStatusSystem.VulnerableStatusId, amount);
+                        context.result.events.Add(new BattleEvent
+                        {
+                            eventId = "apply_vulnerable",
+                            target = targets[i].Player.displayName,
+                            amount = amount
+                        });
+                        opCount += 1;
+                    }
+
+                    return true;
+                }
+
                 for (var i = 0; i < targets.Count; i++)
                 {
                     var target = targets[i];
@@ -517,7 +594,7 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => true;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 for (var i = 0; i < targets.Count; i++)
@@ -549,7 +626,7 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => true;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 if (string.IsNullOrWhiteSpace(effect.statusId))
@@ -584,171 +661,11 @@ namespace YoungBob.Prototype.Battle
             }
         }
 
-        private sealed class DamageAndMoveOnKillEffectHandler : ICardEffectHandler
-        {
-            public bool RequiresTarget => true;
-
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
-            {
-                error = null;
-                if (context.state.monster == null)
-                {
-                    error = "没有敌方怪物。";
-                    return false;
-                }
-
-                var beforeCoreHp = context.state.monster.coreHp;
-                for (var i = 0; i < targets.Count; i++)
-                {
-                    var target = targets[i];
-                    if (target.IsPlayer || target.Part == null)
-                    {
-                        error = "借过一下只能选择怪物部位。";
-                        return false;
-                    }
-
-                    var damage = Math.Max(0, effect.amount);
-                    var applied = BattleMechanics.ApplyDamageToPart(context.state, target.Part, damage, context.result);
-                    BattleThreatSystem.ApplyThreatFromDamage(context.state, context.actingPlayer, applied);
-                    context.result.events.Add(new BattleEvent
-                    {
-                        eventId = "card_damage",
-                        actor = context.actingPlayer.displayName,
-                        cardId = context.definition.name,
-                        target = target.Part.displayName,
-                        amount = applied
-                    });
-                    opCount += 1;
-                }
-
-                var previousArea = context.actingPlayer.area;
-                var targetArea = ResolveOppositeArea(previousArea);
-                context.actingPlayer.area = targetArea;
-                context.result.events.Add(new BattleEvent
-                {
-                    eventId = "move_area",
-                    actor = context.actingPlayer.displayName,
-                    area = targetArea
-                });
-
-                if (beforeCoreHp > 0 && context.state.monster.coreHp <= 0)
-                {
-                    var refund = Math.Max(0, effect.amount2);
-                    if (refund > 0)
-                    {
-                        context.actingPlayer.energy += refund;
-                        context.result.events.Add(new BattleEvent
-                        {
-                            eventId = "refund_energy",
-                            target = context.actingPlayer.displayName,
-                            amount = refund
-                        });
-                    }
-                }
-
-                return true;
-            }
-
-            private static BattleArea ResolveOppositeArea(BattleArea area)
-            {
-                switch (area)
-                {
-                    case BattleArea.West:
-                        return BattleArea.East;
-                    case BattleArea.East:
-                        return BattleArea.West;
-                    default:
-                        return area;
-                }
-            }
-        }
-
-        private sealed class DamageByArmorEffectHandler : ICardEffectHandler
-        {
-            public bool RequiresTarget => true;
-
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
-            {
-                error = null;
-                var scaled = (int)Math.Round(context.actingPlayer.armor * effect.ratio);
-                var amount = Math.Max(0, effect.amount + scaled);
-                if (amount <= 0)
-                {
-                    return true;
-                }
-
-                if (effect.amount2 > 0)
-                {
-                    var consumed = Math.Min(context.actingPlayer.armor, scaled);
-                    context.actingPlayer.armor -= consumed;
-                }
-
-                for (var i = 0; i < targets.Count; i++)
-                {
-                    var target = targets[i];
-                    if (target.IsPlayer)
-                    {
-                        var applied = BattleMechanics.ApplyDamage(target.Player, amount);
-                        context.result.events.Add(new BattleEvent
-                        {
-                            eventId = "damage_by_armor",
-                            target = target.Player.displayName,
-                            amount = applied
-                        });
-                    }
-                    else
-                    {
-                        var applied = BattleMechanics.ApplyDamageToPart(context.state, target.Part, amount, context.result);
-                        BattleThreatSystem.ApplyThreatFromDamage(context.state, context.actingPlayer, applied);
-                        context.result.events.Add(new BattleEvent
-                        {
-                            eventId = "damage_by_armor",
-                            target = target.Part.displayName,
-                            amount = applied
-                        });
-                    }
-
-                    opCount += 1;
-                }
-
-                return true;
-            }
-        }
-
-        private sealed class ApplyVulnerableEffectHandler : ICardEffectHandler
-        {
-            public bool RequiresTarget => true;
-
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
-            {
-                error = null;
-                var stacks = Math.Max(1, effect.amount);
-                for (var i = 0; i < targets.Count; i++)
-                {
-                    if (!targets[i].IsPlayer)
-                    {
-                        continue;
-                    }
-
-                    targets[i].Player.vulnerableStacks += stacks;
-                    context.result.events.Add(new BattleEvent
-                    {
-                        eventId = "apply_vulnerable",
-                        target = targets[i].Player.displayName,
-                        amount = stacks
-                    });
-                    opCount += 1;
-                }
-
-                return true;
-            }
-        }
-
         private sealed class ModifyEnergyEffectHandler : ICardEffectHandler
         {
             public bool RequiresTarget => false;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 context.actingPlayer.energy = Math.Max(0, context.actingPlayer.energy + effect.amount);
@@ -767,7 +684,7 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => true;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 for (var i = 0; i < targets.Count; i++)
@@ -799,7 +716,7 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => false;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 var count = Math.Max(0, effect.amount);
@@ -839,7 +756,7 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => true;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 if (targets == null || targets.Count == 0)
@@ -905,7 +822,7 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => false;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
                 var count = Math.Max(0, effect.amount);
@@ -960,24 +877,61 @@ namespace YoungBob.Prototype.Battle
         {
             public bool RequiresTarget => false;
 
-            public bool Execute(EffectExecutionContext context, CardEffectDefinition effect, List<EffectTargetRef> targets, ref int opCount, out string error)
+            public bool Execute(CardEffectExecutionContext context, CardEffectDefinition effect, List<CardEffectTargetRef> targets, ref int opCount, out string error)
             {
                 error = null;
-                if (!BattleTargetingRules.CanTargetArea(context.state, context.actingPlayer, context.definition, context.command.targetArea))
+                var destination = ResolveDestination(effect.destinationId, context);
+                if (!IsValidDestination(context.actingPlayer, destination))
                 {
                     error = "目标区域无效。";
                     return false;
                 }
 
-                context.actingPlayer.area = context.command.targetArea;
+                context.actingPlayer.area = destination;
                 context.result.events.Add(new BattleEvent
                 {
                     eventId = "move_area",
                     actor = context.actingPlayer.displayName,
-                    area = context.command.targetArea
+                    area = destination
                 });
                 opCount += 1;
                 return true;
+            }
+
+            private static BattleArea ResolveDestination(string destinationId, CardEffectExecutionContext context)
+            {
+                if (string.Equals(destinationId, "selected-area", StringComparison.OrdinalIgnoreCase))
+                {
+                    return context.command.targetArea;
+                }
+
+                if (string.Equals(destinationId, "another-side-area", StringComparison.OrdinalIgnoreCase))
+                {
+                    switch (context.actingPlayer.area)
+                    {
+                        case BattleArea.West:
+                            return BattleArea.East;
+                        case BattleArea.East:
+                            return BattleArea.West;
+                    }
+                }
+
+                return BattleArea.Middle;
+            }
+
+            private static bool IsValidDestination(PlayerBattleState actingPlayer, BattleArea destination)
+            {
+                if (actingPlayer == null)
+                {
+                    return false;
+                }
+
+                if (destination != BattleArea.West && destination != BattleArea.East)
+                {
+                    return false;
+                }
+
+                return actingPlayer.area != destination;
             }
         }
     }

@@ -8,12 +8,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "MoveArea",
-          "target": "None"
-        }
-      ]
+      "effectsSExpr": "(move-area selected-area)"
     },
     {
       "id": "priest_heal",
@@ -23,13 +18,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "Heal",
-          "target": "CardTarget",
-          "amount": 5
-        }
-      ]
+      "effectsSExpr": "(heal target 5)"
     },
     {
       "id": "assassin_quick_jab",
@@ -39,18 +28,7 @@
       "rangeHeights": "Ground",
       "rangeDistance": "Near",
       "energyCost": 0,
-      "effects": [
-        {
-          "op": "Damage",
-          "target": "CardTarget",
-          "amount": 1
-        },
-        {
-          "op": "Draw",
-          "target": "Self",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(do (damage target 1) (draw self 1))"
     },
     {
       "id": "assassin_chain_step",
@@ -60,13 +38,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 0,
-      "effects": [
-        {
-          "op": "Draw",
-          "target": "Self",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(draw self 1)"
     },
     {
       "id": "assassin_combo_finisher",
@@ -76,15 +48,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "Damage",
-          "target": "CardTarget",
-          "amount": 2,
-          "scaleBy": "CardsPlayedThisTurn",
-          "ratio": 1
-        }
-      ]
+      "effectsSExpr": "(damage target (+ 2 cards-played-this-turn))"
     },
     {
       "id": "assassin_fan_blade",
@@ -94,13 +58,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "Damage",
-          "target": "CardTarget",
-          "amount": 2
-        }
-      ]
+      "effectsSExpr": "(damage target 2)"
     },
     {
       "id": "assassin_poison_dart",
@@ -110,14 +68,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "ApplyStatus",
-          "target": "CardTarget",
-          "statusId": "Poison",
-          "amount": 5
-        }
-      ]
+      "effectsSExpr": "(apply-status target Poison 5)"
     },
     {
       "id": "assassin_toxic_cloud",
@@ -127,14 +78,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "ApplyStatus",
-          "target": "CardTarget",
-          "statusId": "Poison",
-          "amount": 2
-        }
-      ]
+      "effectsSExpr": "(apply-status target Poison 2)"
     },
     {
       "id": "assassin_catalyst_strike",
@@ -144,15 +88,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "Damage",
-          "target": "CardTarget",
-          "amount": 0,
-          "scaleBy": "TargetPoison",
-          "ratio": 1
-        }
-      ]
+      "effectsSExpr": "(damage target target-poison)"
     },
     {
       "id": "assassin_smoke_guard",
@@ -162,18 +98,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "GainArmor",
-          "target": "Self",
-          "amount": 6
-        },
-        {
-          "op": "Draw",
-          "target": "Self",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(do (gain-armor self 6) (draw self 1))"
     },
     {
       "id": "warrior_iron_wall",
@@ -183,13 +108,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "GainArmor",
-          "target": "Self",
-          "amount": 8
-        }
-      ]
+      "effectsSExpr": "(gain-armor self 8)"
     },
     {
       "id": "warrior_fortress",
@@ -199,13 +118,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 2,
-      "effects": [
-        {
-          "op": "GainArmor",
-          "target": "Self",
-          "amount": 14
-        }
-      ]
+      "effectsSExpr": "(gain-armor self 14)"
     },
     {
       "id": "warrior_shield_slam",
@@ -215,13 +128,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Near",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "DamageByArmor",
-          "target": "CardTarget",
-          "ratio": 1
-        }
-      ]
+      "effectsSExpr": "(damage-by-armor target 1)"
     },
     {
       "id": "warrior_shield_crash",
@@ -231,13 +138,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 2,
-      "effects": [
-        {
-          "op": "DamageByArmor",
-          "target": "CardTarget",
-          "ratio": 0.5
-        }
-      ]
+      "effectsSExpr": "(damage-by-armor target 0.5)"
     },
     {
       "id": "warrior_battle_cry",
@@ -247,14 +148,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "ApplyStatus",
-          "target": "Self",
-          "statusId": "Strength",
-          "amount": 2
-        }
-      ]
+      "effectsSExpr": "(apply-status self Strength 2)"
     },
     {
       "id": "warrior_limit_push",
@@ -264,19 +158,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "ApplyStatus",
-          "target": "Self",
-          "statusId": "Strength",
-          "amount": 1
-        },
-        {
-          "op": "Draw",
-          "target": "Self",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(do (apply-status self Strength 1) (draw self 1))"
     },
     {
       "id": "warrior_multi_strike",
@@ -286,23 +168,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Near",
       "energyCost": 2,
-      "effects": [
-        {
-          "op": "Damage",
-          "target": "CardTarget",
-          "amount": 2
-        },
-        {
-          "op": "Damage",
-          "target": "CardTarget",
-          "amount": 2
-        },
-        {
-          "op": "Damage",
-          "target": "CardTarget",
-          "amount": 2
-        }
-      ]
+      "effectsSExpr": "(do (damage target 2) (damage target 2) (damage target 2))"
     },
     {
       "id": "utility_recycle",
@@ -312,14 +178,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "RecycleDiscardToHand",
-          "target": "None",
-          "amount": 1,
-          "amount2": -1
-        }
-      ]
+      "effectsSExpr": "(recycle-discard-to-hand self 1 -1)"
     },
     {
       "id": "utility_overclock",
@@ -329,23 +188,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 0,
-      "effects": [
-        {
-          "op": "LoseHp",
-          "target": "Self",
-          "amount": 2
-        },
-        {
-          "op": "ModifyEnergy",
-          "target": "None",
-          "amount": 1
-        },
-        {
-          "op": "Draw",
-          "target": "Self",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(do (lose-hp self 2) (modify-energy self 1) (draw self 1))"
     },
     {
       "id": "utility_tactical_forge",
@@ -355,23 +198,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "ExhaustFromHand",
-          "target": "None",
-          "amount": 1
-        },
-        {
-          "op": "Draw",
-          "target": "Self",
-          "amount": 2
-        },
-        {
-          "op": "ModifyEnergy",
-          "target": "None",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(do (exhaust-from-hand self 1) (draw self 2) (modify-energy self 1))"
     },
     {
       "id": "assassin_borrow_pass",
@@ -381,14 +208,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Near",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "DamageAndMoveOnKill",
-          "target": "CardTarget",
-          "amount": 4,
-          "amount2": 1
-        }
-      ]
+      "effectsSExpr": "(do (damage target 4) (move-area another-side-area) (if last-killed-target? (modify-energy self 1)))"
     },
     {
       "id": "utility_opening_ambush",
@@ -398,14 +218,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "AddSecret",
-          "target": "Self",
-          "statusId": "SecretSidestepOnHit",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(add-secret self SecretSidestepOnHit 1)"
     },
     {
       "id": "utility_secret_guard",
@@ -415,14 +228,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "AddSecret",
-          "target": "CardTarget",
-          "statusId": "SecretGuard",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(add-secret target SecretGuard 1)"
     },
     {
       "id": "utility_secret_counter",
@@ -432,14 +238,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "AddSecret",
-          "target": "Self",
-          "statusId": "SecretCounterattack",
-          "amount": 4
-        }
-      ]
+      "effectsSExpr": "(add-secret self SecretCounterattack 4)"
     },
     {
       "id": "utility_secret_rising_fury",
@@ -449,14 +248,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "AddSecret",
-          "target": "Self",
-          "statusId": "SecretStrengthOnHit",
-          "amount": 2
-        }
-      ]
+      "effectsSExpr": "(add-secret self SecretStrengthOnHit 2)"
     },
     {
       "id": "utility_secret_iron_echo",
@@ -466,14 +258,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "AddSecret",
-          "target": "Self",
-          "statusId": "SecretArmorOnHit",
-          "amount": 5
-        }
-      ]
+      "effectsSExpr": "(add-secret self SecretArmorOnHit 5)"
     },
     {
       "id": "assassin_reposition_combo",
@@ -483,18 +268,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Near",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "DamageAndMoveOnKill",
-          "target": "CardTarget",
-          "amount": 2
-        },
-        {
-          "op": "Draw",
-          "target": "Self",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(do (damage target 2) (move-area another-side-area) (draw self 1))"
     },
     {
       "id": "warrior_taunt",
@@ -504,13 +278,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "ModifyThreat",
-          "target": "CardTarget",
-          "amount": 20
-        }
-      ]
+      "effectsSExpr": "(modify-threat target 20)"
     },
     {
       "id": "assassin_smoke_escape",
@@ -520,18 +288,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "ModifyThreat",
-          "target": "Self",
-          "amount": -10
-        },
-        {
-          "op": "Draw",
-          "target": "Self",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(do (modify-threat self -10) (draw self 1))"
     },
     {
       "id": "utility_borrow_card",
@@ -541,12 +298,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "CopyAndPlunder",
-          "target": "CardTarget"
-        }
-      ]
+      "effectsSExpr": "(copy-and-plunder target)"
     },
     {
       "id": "warrior_horizontal_sweep",
@@ -556,13 +308,7 @@
       "rangeHeights": "Ground",
       "rangeDistance": "Both",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "Damage",
-          "target": "CardTarget",
-          "amount": 2
-        }
-      ]
+      "effectsSExpr": "(damage target 2)"
     },
     {
       "id": "assassin_air_sting",
@@ -572,13 +318,7 @@
       "rangeHeights": "Air",
       "rangeDistance": "Near",
       "energyCost": 1,
-      "effects": [
-        {
-          "op": "Damage",
-          "target": "CardTarget",
-          "amount": 4
-        }
-      ]
+      "effectsSExpr": "(damage target 4)"
     },
     {
       "id": "curse_basic",
@@ -588,13 +328,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 0,
-      "effects": [
-        {
-          "op": "ApplyVulnerable",
-          "target": "CardTarget",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(apply-vulnerable target 1)"
     },
     {
       "id": "curse_betrayal",
@@ -604,13 +338,7 @@
       "rangeHeights": "Both",
       "rangeDistance": "Both",
       "energyCost": 0,
-      "effects": [
-        {
-          "op": "ApplyVulnerable",
-          "target": "CardTarget",
-          "amount": 1
-        }
-      ]
+      "effectsSExpr": "(apply-vulnerable target 1)"
     }
   ]
 }

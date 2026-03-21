@@ -107,20 +107,14 @@ namespace YoungBob.Prototype.Battle
 
         private static bool RequiresTargetWithCards(CardDefinition card)
         {
-            if (card == null || card.effects == null || card.effects.Length == 0)
+            if (card == null || card.parsedEffects == null)
             {
                 return false;
             }
 
-            for (var i = 0; i < card.effects.Length; i++)
+            foreach (var action in CardEffectCompiler.EnumerateActions(card.parsedEffects))
             {
-                var effect = card.effects[i];
-                if (effect == null || string.IsNullOrWhiteSpace(effect.op))
-                {
-                    continue;
-                }
-
-                if (string.Equals(effect.op, "CopyAndPlunder", StringComparison.OrdinalIgnoreCase))
+                if (action != null && string.Equals(action.Head, "copy-and-plunder", StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }

@@ -42,7 +42,6 @@ namespace YoungBob.Prototype.Battle
                     maxHp = 24,
                     hp = 24,
                     armor = 0,
-                    vulnerableStacks = 0,
                     energy = BaseEnergyPerTurn,
                     area = BattleArea.West,
                     height = BattleHeight.Ground,
@@ -200,6 +199,13 @@ namespace YoungBob.Prototype.Battle
                 }
                 return result;
             }
+
+            result.events.Insert(0, new BattleEvent
+            {
+                eventId = "card_played",
+                actor = actingPlayer.displayName,
+                cardId = definition.name
+            });
 
             actingPlayer.energy -= effectiveCost;
             card.costDelta = 0;

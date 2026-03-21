@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using YoungBob.Prototype.App;
 using YoungBob.Prototype.Battle;
 using YoungBob.Prototype.Data;
+using YoungBob.Prototype.UI;
 using YoungBob.Prototype.UI.Battle;
 
 namespace YoungBob.Prototype.UI.Pages
@@ -522,7 +523,7 @@ namespace YoungBob.Prototype.UI.Pages
                 var player = state.players[i];
                 var container = player.area == BattleArea.East ? _eastPlayerContainer : _westPlayerContainer;
                 var secretSummary = BuildPlayerSecretSummary(player, _isDetailedStatusMode);
-                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, player.threatValue, player.threatTier, secretSummary, new Color(0.2f, 0.36f, 0.31f), _isDetailedStatusMode, string.Equals(currentThreatTargetId, player.playerId, StringComparison.Ordinal), SlotHighlightMode.None);
+                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, 0, player.statuses, player.threatValue, player.threatTier, secretSummary, new Color(0.2f, 0.36f, 0.31f), _isDetailedStatusMode, string.Equals(currentThreatTargetId, player.playerId, StringComparison.Ordinal), SlotHighlightMode.None);
                 _playerSlots.Add(slot);
             }
 
@@ -895,7 +896,7 @@ namespace YoungBob.Prototype.UI.Pages
                 var player = _lastState.GetPlayer(slot.UnitId);
                 var secretSummary = BuildPlayerSecretSummary(player, _isDetailedStatusMode);
                 var isThreatTarget = _lastState.monster != null && string.Equals(_lastState.monster.currentThreatTargetPlayerId, slot.UnitId, StringComparison.Ordinal);
-                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, player.threatValue, player.threatTier, secretSummary, _isDetailedStatusMode, isThreatTarget, GetHighlightModeForPlayer(cardDef, targetType, slot, hoveredPlayer));
+                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, 0, player.statuses, player.threatValue, player.threatTier, secretSummary, _isDetailedStatusMode, isThreatTarget, GetHighlightModeForPlayer(cardDef, targetType, slot, hoveredPlayer));
             }
 
             for (var i = 0; i < _monsterPartSlots.Count; i++)
@@ -1457,13 +1458,18 @@ namespace YoungBob.Prototype.UI.Pages
                     continue;
                 }
 
-                if (string.Equals(status.id, "Poison", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(status.id, BattleStatusSystem.PoisonStatusId, StringComparison.OrdinalIgnoreCase))
                 {
                     parts.Add((detailedMode ? "中毒" : "☠") + status.stacks);
                 }
-                else if (string.Equals(status.id, "Strength", StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(status.id, BattleStatusSystem.StrengthStatusId, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(status.id, BattleStatusSystem.TempStrengthStatusId, StringComparison.OrdinalIgnoreCase))
                 {
                     parts.Add((detailedMode ? "力量" : "💪") + status.stacks);
+                }
+                else if (string.Equals(status.id, BattleStatusSystem.VulnerableStatusId, StringComparison.OrdinalIgnoreCase))
+                {
+                    parts.Add((detailedMode ? "易伤" : "🎯") + status.stacks);
                 }
                 else
                 {
@@ -1553,62 +1559,7 @@ namespace YoungBob.Prototype.UI.Pages
 
         private static string BuildEffectsTargetHint(CardDefinition cardDef)
         {
-            if (cardDef == null || cardDef.effects == null || cardDef.effects.Length == 0)
-            {
-                return string.Empty;
-            }
-
-            bool hasCardTarget = false;
-            bool hasSelf = false;
-            bool hasAllEnemies = false;
-            bool hasAllAllies = false;
-            bool hasNone = false;
-            bool hasOther = false;
-
-            for (var i = 0; i < cardDef.effects.Length; i++)
-            {
-                var effect = cardDef.effects[i];
-                if (effect == null)
-                {
-                    continue;
-                }
-
-                var target = string.IsNullOrWhiteSpace(effect.target) ? "CardTarget" : effect.target;
-                if (string.Equals(target, "CardTarget", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasCardTarget = true;
-                }
-                else if (string.Equals(target, "Self", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasSelf = true;
-                }
-                else if (string.Equals(target, "AllEnemies", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasAllEnemies = true;
-                }
-                else if (string.Equals(target, "AllAllies", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasAllAllies = true;
-                }
-                else if (string.Equals(target, "None", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasNone = true;
-                }
-                else
-                {
-                    hasOther = true;
-                }
-            }
-
-            var parts = new List<string>();
-            if (hasCardTarget) parts.Add("需指向卡牌目标");
-            if (hasSelf) parts.Add("包含自身效果");
-            if (hasAllEnemies) parts.Add("包含全敌方效果");
-            if (hasAllAllies) parts.Add("包含全友方效果");
-            if (hasNone) parts.Add("包含无目标效果");
-            if (hasOther) parts.Add("包含特殊目标效果");
-
-            return parts.Count == 0 ? string.Empty : "目标提示：" + string.Join("，", parts);
+            return CardEffectTextFormatter.BuildEffectsTargetHint(cardDef);
         }
 
         private static Sprite GetPartSprite(string shape)
@@ -1624,36 +1575,7 @@ namespace YoungBob.Prototype.UI.Pages
             var range = string.IsNullOrEmpty(cardDef.rangeHeights) && string.IsNullOrEmpty(distance)
                 ? ""
                 : "\nRange: " + (string.IsNullOrEmpty(distance) ? "" : distance + " ") + (string.IsNullOrEmpty(cardDef.rangeHeights) ? "" : cardDef.rangeHeights);
-            var effectText = "None";
-            if (cardDef.effects != null && cardDef.effects.Length > 0)
-            {
-                var effectLines = new System.Text.StringBuilder();
-                for (var i = 0; i < cardDef.effects.Length; i++)
-                {
-                    var effect = cardDef.effects[i];
-                    if (effect == null || string.IsNullOrWhiteSpace(effect.op))
-                    {
-                        continue;
-                    }
-
-                    if (effectLines.Length > 0)
-                    {
-                        effectLines.Append(", ");
-                    }
-
-                    effectLines.Append(effect.op);
-                    if (effect.amount != 0)
-                    {
-                        effectLines.Append(" ");
-                        effectLines.Append(effect.amount);
-                    }
-                }
-
-                if (effectLines.Length > 0)
-                {
-                    effectText = effectLines.ToString();
-                }
-            }
+            var effectText = CardEffectTextFormatter.BuildDebugSummary(cardDef);
 
             return "Cost: " + cardDef.energyCost + "\nEffects: " + effectText + "\nTarget: " + cardDef.targetType + range;
         }

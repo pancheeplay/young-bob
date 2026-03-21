@@ -1,36 +1,36 @@
-id,name,classTag,targetType,rangeHeights,rangeDistance,energyCost,effects
-string,string,Utility | Priest | Assassin | Warrior | Curse,Self | SingleAlly | AllAllies | OtherAlly | MonsterPart | AllMonsterParts | SingleUnit | Area,Both | Ground | Air,Both | Near | Far,integer,array<object>
-move,移动一下,Utility,Area,Both,Both,1,"[{""op"":""MoveArea"",""target"":""None""}]"
-priest_heal,治疗一下,Priest,SingleAlly,Both,Both,1,"[{""op"":""Heal"",""target"":""CardTarget"",""amount"":5}]"
-assassin_quick_jab,快刀,Assassin,MonsterPart,Ground,Near,0,"[{""op"":""Damage"",""target"":""CardTarget"",""amount"":1},{""op"":""Draw"",""target"":""Self"",""amount"":1}]"
-assassin_chain_step,连击,Assassin,Self,Both,Both,0,"[{""op"":""Draw"",""target"":""Self"",""amount"":1}]"
-assassin_combo_finisher,连击终结,Assassin,MonsterPart,Both,Both,1,"[{""op"":""Damage"",""target"":""CardTarget"",""amount"":2,""scaleBy"":""CardsPlayedThisTurn"",""ratio"":1}]"
-assassin_fan_blade,扇刃,Assassin,AllMonsterParts,Both,Both,1,"[{""op"":""Damage"",""target"":""CardTarget"",""amount"":2}]"
-assassin_poison_dart,毒镖,Assassin,MonsterPart,Both,Both,1,"[{""op"":""ApplyStatus"",""target"":""CardTarget"",""statusId"":""Poison"",""amount"":5}]"
-assassin_toxic_cloud,毒云,Assassin,AllMonsterParts,Both,Both,1,"[{""op"":""ApplyStatus"",""target"":""CardTarget"",""statusId"":""Poison"",""amount"":2}]"
-assassin_catalyst_strike,催化刺,Assassin,MonsterPart,Both,Both,1,"[{""op"":""Damage"",""target"":""CardTarget"",""amount"":0,""scaleBy"":""TargetPoison"",""ratio"":1}]"
-assassin_smoke_guard,烟幕,Assassin,Self,Both,Both,1,"[{""op"":""GainArmor"",""target"":""Self"",""amount"":6},{""op"":""Draw"",""target"":""Self"",""amount"":1}]"
-warrior_iron_wall,铁壁,Warrior,Self,Both,Both,1,"[{""op"":""GainArmor"",""target"":""Self"",""amount"":8}]"
-warrior_fortress,固守,Warrior,Self,Both,Both,2,"[{""op"":""GainArmor"",""target"":""Self"",""amount"":14}]"
-warrior_shield_slam,盾击,Warrior,MonsterPart,Both,Near,1,"[{""op"":""DamageByArmor"",""target"":""CardTarget"",""ratio"":1}]"
-warrior_shield_crash,盾震,Warrior,AllMonsterParts,Both,Both,2,"[{""op"":""DamageByArmor"",""target"":""CardTarget"",""ratio"":0.5}]"
-warrior_battle_cry,战吼,Warrior,Self,Both,Both,1,"[{""op"":""ApplyStatus"",""target"":""Self"",""statusId"":""Strength"",""amount"":2}]"
-warrior_limit_push,极限推进,Warrior,Self,Both,Both,1,"[{""op"":""ApplyStatus"",""target"":""Self"",""statusId"":""Strength"",""amount"":1},{""op"":""Draw"",""target"":""Self"",""amount"":1}]"
-warrior_multi_strike,裂甲连斩,Warrior,MonsterPart,Both,Near,2,"[{""op"":""Damage"",""target"":""CardTarget"",""amount"":2},{""op"":""Damage"",""target"":""CardTarget"",""amount"":2},{""op"":""Damage"",""target"":""CardTarget"",""amount"":2}]"
-utility_recycle,回收协议,Utility,Self,Both,Both,1,"[{""op"":""RecycleDiscardToHand"",""target"":""None"",""amount"":1,""amount2"":-1}]"
-utility_overclock,过载转化,Utility,Self,Both,Both,0,"[{""op"":""LoseHp"",""target"":""Self"",""amount"":2},{""op"":""ModifyEnergy"",""target"":""None"",""amount"":1},{""op"":""Draw"",""target"":""Self"",""amount"":1}]"
-utility_tactical_forge,战术熔炉,Utility,Self,Both,Both,1,"[{""op"":""ExhaustFromHand"",""target"":""None"",""amount"":1},{""op"":""Draw"",""target"":""Self"",""amount"":2},{""op"":""ModifyEnergy"",""target"":""None"",""amount"":1}]"
-assassin_borrow_pass,借过一下,Assassin,MonsterPart,Both,Near,1,"[{""op"":""DamageAndMoveOnKill"",""target"":""CardTarget"",""amount"":4,""amount2"":1}]"
-utility_opening_ambush,先手埋伏,Utility,Self,Both,Both,1,"[{""op"":""AddSecret"",""target"":""Self"",""statusId"":""SecretSidestepOnHit"",""amount"":1}]"
-utility_secret_guard,护卫,Utility,SingleAlly,Both,Both,1,"[{""op"":""AddSecret"",""target"":""CardTarget"",""statusId"":""SecretGuard"",""amount"":1}]"
-utility_secret_counter,反制,Utility,Self,Both,Both,1,"[{""op"":""AddSecret"",""target"":""Self"",""statusId"":""SecretCounterattack"",""amount"":4}]"
-utility_secret_rising_fury,受击战意,Utility,Self,Both,Both,1,"[{""op"":""AddSecret"",""target"":""Self"",""statusId"":""SecretStrengthOnHit"",""amount"":2}]"
-utility_secret_iron_echo,铁回响,Utility,Self,Both,Both,1,"[{""op"":""AddSecret"",""target"":""Self"",""statusId"":""SecretArmorOnHit"",""amount"":5}]"
-assassin_reposition_combo,位移连击,Assassin,MonsterPart,Both,Near,1,"[{""op"":""DamageAndMoveOnKill"",""target"":""CardTarget"",""amount"":2},{""op"":""Draw"",""target"":""Self"",""amount"":1}]"
-warrior_taunt,挑衅,Warrior,SingleAlly,Both,Both,1,"[{""op"":""ModifyThreat"",""target"":""CardTarget"",""amount"":20}]"
-assassin_smoke_escape,烟遁,Assassin,Self,Both,Both,1,"[{""op"":""ModifyThreat"",""target"":""Self"",""amount"":-10},{""op"":""Draw"",""target"":""Self"",""amount"":1}]"
-utility_borrow_card,借牌,Utility,SingleAlly,Both,Both,1,"[{""op"":""CopyAndPlunder"",""target"":""CardTarget""}]"
-warrior_horizontal_sweep,横斩,Warrior,AllMonsterParts,Ground,Both,1,"[{""op"":""Damage"",""target"":""CardTarget"",""amount"":2}]"
-assassin_air_sting,凌空刺,Assassin,MonsterPart,Air,Near,1,"[{""op"":""Damage"",""target"":""CardTarget"",""amount"":4}]"
-curse_basic,诅咒,Curse,SingleAlly,Both,Both,0,"[{""op"":""ApplyVulnerable"",""target"":""CardTarget"",""amount"":1}]"
-curse_betrayal,背叛诅咒,Curse,SingleAlly,Both,Both,0,"[{""op"":""ApplyVulnerable"",""target"":""CardTarget"",""amount"":1}]"
+id,name,classTag,targetType,rangeHeights,rangeDistance,energyCost,effectsSExpr
+string,string,Utility | Priest | Assassin | Warrior | Curse,Self | SingleAlly | AllAllies | OtherAlly | MonsterPart | AllMonsterParts | SingleUnit | Area,Both | Ground | Air,Both | Near | Far,integer,string
+move,移动一下,Utility,Area,Both,Both,1,(move-area selected-area)
+priest_heal,治疗一下,Priest,SingleAlly,Both,Both,1,(heal target 5)
+assassin_quick_jab,快刀,Assassin,MonsterPart,Ground,Near,0,(do (damage target 1) (draw self 1))
+assassin_chain_step,连击,Assassin,Self,Both,Both,0,(draw self 1)
+assassin_combo_finisher,连击终结,Assassin,MonsterPart,Both,Both,1,(damage target (+ 2 cards-played-this-turn))
+assassin_fan_blade,扇刃,Assassin,AllMonsterParts,Both,Both,1,(damage target 2)
+assassin_poison_dart,毒镖,Assassin,MonsterPart,Both,Both,1,(apply-status target Poison 5)
+assassin_toxic_cloud,毒云,Assassin,AllMonsterParts,Both,Both,1,(apply-status target Poison 2)
+assassin_catalyst_strike,催化刺,Assassin,MonsterPart,Both,Both,1,(damage target target-poison)
+assassin_smoke_guard,烟幕,Assassin,Self,Both,Both,1,(do (gain-armor self 6) (draw self 1))
+warrior_iron_wall,铁壁,Warrior,Self,Both,Both,1,(gain-armor self 8)
+warrior_fortress,固守,Warrior,Self,Both,Both,2,(gain-armor self 14)
+warrior_shield_slam,盾击,Warrior,MonsterPart,Both,Near,1,(damage-by-armor target 1)
+warrior_shield_crash,盾震,Warrior,AllMonsterParts,Both,Both,2,(damage-by-armor target 0.5)
+warrior_battle_cry,战吼,Warrior,Self,Both,Both,1,(apply-status self Strength 2)
+warrior_limit_push,极限推进,Warrior,Self,Both,Both,1,(do (apply-status self Strength 1) (draw self 1))
+warrior_multi_strike,裂甲连斩,Warrior,MonsterPart,Both,Near,2,(do (damage target 2) (damage target 2) (damage target 2))
+utility_recycle,回收协议,Utility,Self,Both,Both,1,(recycle-discard-to-hand self 1 -1)
+utility_overclock,过载转化,Utility,Self,Both,Both,0,(do (lose-hp self 2) (modify-energy self 1) (draw self 1))
+utility_tactical_forge,战术熔炉,Utility,Self,Both,Both,1,(do (exhaust-from-hand self 1) (draw self 2) (modify-energy self 1))
+assassin_borrow_pass,借过一下,Assassin,MonsterPart,Both,Near,1,(do (damage target 4) (move-area another-side-area) (if last-killed-target? (modify-energy self 1)))
+utility_opening_ambush,先手埋伏,Utility,Self,Both,Both,1,(add-secret self SecretSidestepOnHit 1)
+utility_secret_guard,护卫,Utility,SingleAlly,Both,Both,1,(add-secret target SecretGuard 1)
+utility_secret_counter,反制,Utility,Self,Both,Both,1,(add-secret self SecretCounterattack 4)
+utility_secret_rising_fury,受击战意,Utility,Self,Both,Both,1,(add-secret self SecretStrengthOnHit 2)
+utility_secret_iron_echo,铁回响,Utility,Self,Both,Both,1,(add-secret self SecretArmorOnHit 5)
+assassin_reposition_combo,位移连击,Assassin,MonsterPart,Both,Near,1,(do (damage target 2) (move-area another-side-area) (draw self 1))
+warrior_taunt,挑衅,Warrior,SingleAlly,Both,Both,1,(modify-threat target 20)
+assassin_smoke_escape,烟遁,Assassin,Self,Both,Both,1,(do (modify-threat self -10) (draw self 1))
+utility_borrow_card,借牌,Utility,SingleAlly,Both,Both,1,(copy-and-plunder target)
+warrior_horizontal_sweep,横斩,Warrior,AllMonsterParts,Ground,Both,1,(damage target 2)
+assassin_air_sting,凌空刺,Assassin,MonsterPart,Air,Near,1,(damage target 4)
+curse_basic,诅咒,Curse,SingleAlly,Both,Both,0,(apply-vulnerable target 1)
+curse_betrayal,背叛诅咒,Curse,SingleAlly,Both,Both,0,(apply-vulnerable target 1)

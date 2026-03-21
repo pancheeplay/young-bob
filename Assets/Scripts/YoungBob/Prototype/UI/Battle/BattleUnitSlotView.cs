@@ -260,15 +260,16 @@ namespace YoungBob.Prototype.UI.Battle
                         continue;
                     }
 
-                    if (string.Equals(status.id, "Poison", System.StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(status.id, BattleStatusSystem.PoisonStatusId, System.StringComparison.OrdinalIgnoreCase))
                     {
                         sb.Append(detailedMode ? "中毒" : "☠").Append(status.stacks).Append(' ');
                     }
-                    else if (string.Equals(status.id, "Strength", System.StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(status.id, BattleStatusSystem.StrengthStatusId, System.StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(status.id, BattleStatusSystem.TempStrengthStatusId, System.StringComparison.OrdinalIgnoreCase))
                     {
                         sb.Append(detailedMode ? "力量" : "💪").Append(status.stacks).Append(' ');
                     }
-                    else if (string.Equals(status.id, "Vulnerable", System.StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(status.id, BattleStatusSystem.VulnerableStatusId, System.StringComparison.OrdinalIgnoreCase))
                     {
                         totalVulnerable += status.stacks;
                     }
@@ -278,7 +279,7 @@ namespace YoungBob.Prototype.UI.Battle
                     }
                     else
                     {
-                        sb.Append(status.id).Append(':').Append(status.stacks).Append(' ');
+                        sb.Append(ResolveStatusDisplayName(status.id, detailedMode)).Append(status.stacks).Append(' ');
                     }
                 }
             }
@@ -345,7 +346,43 @@ namespace YoungBob.Prototype.UI.Battle
                 return detailedMode ? "切边" : "切";
             }
 
+            if (string.Equals(statusId, BattleStatusSystem.SecretStrengthOnHitStatusId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "受击加力" : "力";
+            }
+
+            if (string.Equals(statusId, BattleStatusSystem.SecretArmorOnHitStatusId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "受击加甲" : "甲";
+            }
+
             return statusId;
+        }
+
+        private static string ResolveStatusDisplayName(string statusId, bool detailedMode)
+        {
+            if (string.IsNullOrWhiteSpace(statusId))
+            {
+                return detailedMode ? "状态" : "状";
+            }
+
+            if (string.Equals(statusId, BattleStatusSystem.PoisonStatusId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "中毒" : "☠";
+            }
+
+            if (string.Equals(statusId, BattleStatusSystem.StrengthStatusId, System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(statusId, BattleStatusSystem.TempStrengthStatusId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "力量" : "💪";
+            }
+
+            if (string.Equals(statusId, BattleStatusSystem.VulnerableStatusId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return detailedMode ? "易伤" : "🎯";
+            }
+
+            return statusId + ":";
         }
     }
 }

@@ -510,7 +510,7 @@ namespace YoungBob.Prototype.Battle
 
                 if (skill.onHitApplyVulnerable > 0)
                 {
-                    actualTarget.vulnerableStacks += skill.onHitApplyVulnerable;
+                    BattleStatusSystem.AddStacks(actualTarget.statuses, BattleStatusSystem.VulnerableStatusId, skill.onHitApplyVulnerable);
                     result.events.Add(new BattleEvent
                     {
                         eventId = "apply_vulnerable",

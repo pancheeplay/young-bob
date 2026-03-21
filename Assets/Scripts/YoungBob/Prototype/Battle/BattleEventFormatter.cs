@@ -1,9 +1,36 @@
 using System;
+using System.Collections.Generic;
 
 namespace YoungBob.Prototype.Battle
 {
     internal static class BattleEventFormatter
     {
+        public static string[] FormatAll(IReadOnlyList<BattleEvent> battleEvents, bool richText)
+        {
+            if (battleEvents == null || battleEvents.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var combined = TryFormatCombinedCardPlay(battleEvents, richText);
+            if (!string.IsNullOrWhiteSpace(combined))
+            {
+                return new[] { combined };
+            }
+
+            var lines = new List<string>(battleEvents.Count);
+            for (var i = 0; i < battleEvents.Count; i++)
+            {
+                var line = Format(battleEvents[i], richText);
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    lines.Add(line);
+                }
+            }
+
+            return lines.ToArray();
+        }
+
         public static string Format(BattleEvent battleEvent, bool richText)
         {
             if (battleEvent == null || string.IsNullOrWhiteSpace(battleEvent.eventId))
@@ -24,6 +51,8 @@ namespace YoungBob.Prototype.Battle
 
             switch (battleEvent.eventId)
             {
+                case "card_played":
+                    return actor + " 使用了 " + card + "。";
                 case "player_end_turn":
                     return actor + " 结束了回合。";
                 case "round_start":
@@ -131,6 +160,95 @@ namespace YoungBob.Prototype.Battle
                     return "中间";
                 default:
                     return "未知";
+            }
+        }
+
+        private static string TryFormatCombinedCardPlay(IReadOnlyList<BattleEvent> battleEvents, bool richText)
+        {
+            if (battleEvents.Count == 0)
+            {
+                return null;
+            }
+
+            var first = battleEvents[0];
+            if (first == null || !string.Equals(first.eventId, "card_played", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            var actor = richText ? BattleTextHelper.Actor(first.actor) : first.actor;
+            var card = richText ? BattleTextHelper.Card(first.cardId) : first.cardId;
+            var fragments = new List<string>();
+
+            for (var i = 1; i < battleEvents.Count; i++)
+            {
+                var fragment = FormatCardEffectFragment(battleEvents[i], richText);
+                if (!string.IsNullOrWhiteSpace(fragment))
+                {
+                    fragments.Add(fragment);
+                }
+            }
+
+            if (fragments.Count == 0)
+            {
+                return actor + " 使用了 " + card + "。";
+            }
+
+            return actor + " 使用了 " + card + "，" + string.Join("，", fragments.ToArray()) + "。";
+        }
+
+        private static string FormatCardEffectFragment(BattleEvent battleEvent, bool richText)
+        {
+            if (battleEvent == null || string.IsNullOrWhiteSpace(battleEvent.eventId))
+            {
+                return null;
+            }
+
+            var target = richText ? BattleTextHelper.Unit(battleEvent.target) : battleEvent.target;
+            var card = richText ? BattleTextHelper.Card(battleEvent.cardId) : battleEvent.cardId;
+            var status = richText ? BattleTextHelper.Card(battleEvent.statusId) : battleEvent.statusId;
+            var damage = richText ? BattleTextHelper.DamageText(battleEvent.amount) : (battleEvent.amount + "点伤害");
+            var heal = richText ? BattleTextHelper.HealText(battleEvent.amount) : (battleEvent.amount + "点治疗");
+            var armor = richText ? BattleTextHelper.ArmorText(battleEvent.amount) : (battleEvent.amount + "点护甲");
+            var draw = richText ? BattleTextHelper.DrawText(battleEvent.amount) : (battleEvent.amount + "张牌");
+            var area = richText ? BattleTextHelper.AreaText(battleEvent.area) : AreaTextPlain(battleEvent.area);
+
+            switch (battleEvent.eventId)
+            {
+                case "card_damage":
+                    return target + "受到" + damage;
+                case "draw_cards":
+                    return target + "抽牌" + draw;
+                case "heal":
+                    return target + "恢复" + heal;
+                case "gain_armor":
+                    return target + "获得" + armor;
+                case "apply_status":
+                    return target + "获得" + status + " x" + battleEvent.amount;
+                case "apply_vulnerable":
+                    return target + "获得易伤 x" + battleEvent.amount;
+                case "modify_energy":
+                    return target + "能量变化" + battleEvent.amount;
+                case "lose_hp":
+                    return target + "失去" + damage;
+                case "move_area":
+                    return target + "移动到" + area;
+                case "refund_energy":
+                    return target + "返还" + (richText ? BattleTextHelper.EnergyText(battleEvent.amount) : (battleEvent.amount + "点能量"));
+                case "recycle_from_discard":
+                    return target + "从弃牌堆回收了" + card;
+                case "copy_and_plunder":
+                    return "对" + target + "进行掠夺并复制一张牌";
+                case "exhaust_card":
+                    return target + "消耗了" + card;
+                case "gain_secret":
+                    return target + "获得奥秘 " + status + " x" + battleEvent.amount;
+                case "threat_change":
+                    return target + "仇恨变化" + (battleEvent.amount >= 0 ? "+" : string.Empty) + battleEvent.amount;
+                case "part_broken":
+                    return target + "被破坏";
+                default:
+                    return null;
             }
         }
     }

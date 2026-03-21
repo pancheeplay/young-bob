@@ -108,7 +108,6 @@ namespace YoungBob.Prototype.Battle
         public int maxHp;
         public int hp;
         public int armor;
-        public int vulnerableStacks;
         public int energy;
         public BattleArea area;
         public BattleHeight height;
