@@ -114,41 +114,107 @@ namespace YoungBob.Prototype.Battle
                 return result;
             }
 
-            if (state.phase != BattlePhase.PlayerTurn)
+            if (command == null || string.IsNullOrWhiteSpace(command.action))
             {
-                result.error = "当前不是玩家行动阶段。";
-                return result;
-            }
-
-            var actingPlayer = state.GetPlayer(command.actorPlayerId);
-            if (actingPlayer == null)
-            {
-                result.error = "未知玩家。";
-                return result;
-            }
-
-            if (actingPlayer.hp <= 0)
-            {
-                result.error = "该玩家已倒下。";
-                return result;
-            }
-
-            if (actingPlayer.hasEndedTurn)
-            {
-                result.error = "该玩家已经结束回合。";
+                result.error = "未知操作。";
                 return result;
             }
 
             switch (command.action)
             {
                 case "play_card":
-                    return PlayCard(state, actingPlayer, command);
                 case "end_turn":
+                {
+                    if (state.phase != BattlePhase.PlayerTurn)
+                    {
+                        result.error = "当前不是玩家行动阶段。";
+                        return result;
+                    }
+
+                    var actingPlayer = state.GetPlayer(command.actorPlayerId);
+                    if (actingPlayer == null)
+                    {
+                        result.error = "未知玩家。";
+                        return result;
+                    }
+
+                    if (actingPlayer.hp <= 0)
+                    {
+                        result.error = "该玩家已倒下。";
+                        return result;
+                    }
+
+                    if (actingPlayer.hasEndedTurn)
+                    {
+                        result.error = "该玩家已经结束回合。";
+                        return result;
+                    }
+
+                    if (command.action == "play_card")
+                    {
+                        return PlayCard(state, actingPlayer, command);
+                    }
+
                     return EndTurn(state, actingPlayer);
+                }
+                case "begin_monster_turn":
+                    return BeginMonsterTurn(state);
+                case "resolve_monster_turn":
+                    return ResolveMonsterTurn(state);
+                case "begin_player_turn":
+                    return BeginPlayerTurn(state);
                 default:
                     result.error = "未知操作：" + command.action;
                     return result;
             }
+        }
+
+        private BattleCommandResult BeginMonsterTurn(BattleState state)
+        {
+            var result = new BattleCommandResult();
+            if (state.phase != BattlePhase.MonsterTurnStart)
+            {
+                result.error = "当前不是怪物回合开始阶段。";
+                return result;
+            }
+
+            state.phase = BattlePhase.MonsterTurnResolve;
+            state.currentPrompt = BuildMonsterTurnResolvePrompt(state);
+            result.events.Add(new BattleEvent
+            {
+                eventId = "monster_turn_start",
+                turn = state.turnIndex
+            });
+            result.success = true;
+            return result;
+        }
+
+        private BattleCommandResult ResolveMonsterTurn(BattleState state)
+        {
+            var result = new BattleCommandResult();
+            if (state.phase != BattlePhase.MonsterTurnResolve)
+            {
+                result.error = "当前不是怪物行动阶段。";
+                return result;
+            }
+
+            RunMonsterTurn(state, result);
+            result.success = true;
+            return result;
+        }
+
+        private BattleCommandResult BeginPlayerTurn(BattleState state)
+        {
+            var result = new BattleCommandResult();
+            if (state.phase != BattlePhase.PlayerTurnStart)
+            {
+                result.error = "当前不是队伍回合开始阶段。";
+                return result;
+            }
+
+            StartPlayerRound(state, result);
+            result.success = true;
+            return result;
         }
 
         private BattleCommandResult PlayCard(BattleState state, PlayerBattleState actingPlayer, BattleCommand command)
@@ -234,14 +300,21 @@ namespace YoungBob.Prototype.Battle
                 return result;
             }
 
-            state.phase = BattlePhase.MonsterTurn;
-            RunMonsterTurn(state, result);
+            state.phase = BattlePhase.MonsterTurnStart;
+            state.currentPrompt = BuildMonsterTurnPrompt(state);
+            result.events.Add(new BattleEvent
+            {
+                eventId = "monster_turn_pending",
+                turn = state.turnIndex
+            });
             result.success = true;
             return result;
         }
 
         private void RunMonsterTurn(BattleState state, BattleCommandResult result)
         {
+            state.currentPrompt = BuildMonsterTurnResolvePrompt(state);
+
             if (state.monster == null)
             {
                 state.phase = BattlePhase.Defeat;
@@ -280,10 +353,16 @@ namespace YoungBob.Prototype.Battle
                 return;
             }
 
-            BeginPlayerRound(state, result);
+            state.phase = BattlePhase.PlayerTurnStart;
+            state.currentPrompt = BuildPlayerTurnStartPrompt(state);
+            result.events.Add(new BattleEvent
+            {
+                eventId = "player_turn_pending",
+                turn = state.turnIndex + 1
+            });
         }
 
-        private void BeginPlayerRound(BattleState state, BattleCommandResult result)
+        private void StartPlayerRound(BattleState state, BattleCommandResult result)
         {
             state.phase = BattlePhase.PlayerTurn;
             state.turnIndex += 1;
@@ -397,22 +476,17 @@ namespace YoungBob.Prototype.Battle
             state.monster = MonsterAI.BuildMonster(nextMonsterDef, state.randomSeed ^ state.turnIndex ^ state.stageEncounterIndex);
             BattleThreatSystem.ResetThreats(state);
 
-            state.phase = BattlePhase.PlayerTurn;
-            BattleTargetResolver.ResetTeamTurn(state.players);
             for (var i = 0; i < state.players.Count; i++)
             {
                 var player = state.players[i];
                 player.cardsPlayedThisTurn = 0;
                 player.attackChargeStage = 0;
                 player.nextAttackBonus = 0;
-                if (player.hp > 0)
-                {
-                    player.energy = BaseEnergyPerTurn;
-                    BattleMechanics.DrawCards(state, player, CardsDrawnPerTurn);
-                }
+                player.hasEndedTurn = player.hp <= 0;
             }
 
-            state.currentPrompt = BuildTeamTurnPrompt(state);
+            state.phase = BattlePhase.PlayerTurnStart;
+            state.currentPrompt = BuildPlayerTurnStartPrompt(state);
             result.events.Add(new BattleEvent
             {
                 eventId = "encounter_cleared",
@@ -436,6 +510,21 @@ namespace YoungBob.Prototype.Battle
             }
 
             return "队伍回合 - 遭遇 " + (state.stageEncounterIndex + 1) + "/" + encounterTotal;
+        }
+
+        private string BuildMonsterTurnPrompt(BattleState state)
+        {
+            return "敌方回合";
+        }
+
+        private string BuildMonsterTurnResolvePrompt(BattleState state)
+        {
+            return "敌人正在行动";
+        }
+
+        private string BuildPlayerTurnStartPrompt(BattleState state)
+        {
+            return "我方回合开始";
         }
 
         private void ResolveInitialStageAndEncounter(

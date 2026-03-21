@@ -47,6 +47,9 @@ namespace YoungBob.Prototype.UI.Pages
         private readonly Button _chatButton;
         private readonly Text _chatButtonLabel;
         private readonly GameObject _quickChatMask;
+        private readonly GameObject _phaseBannerMask;
+        private readonly Text _phaseBannerTitle;
+        private readonly Text _phaseBannerDetail;
         private readonly Button _endTurnButton;
         private readonly Button _exitBattleButton;
         private readonly List<BattleUnitSlotView> _playerSlots = new List<BattleUnitSlotView>();
@@ -397,6 +400,16 @@ namespace YoungBob.Prototype.UI.Pages
             arrowObj.SetActive(false);
             _cardDragGuideRoot.gameObject.SetActive(false);
 
+            _phaseBannerMask = UiFactory.CreatePanel(Root.transform, "PhaseBannerMask", new Color(0.03f, 0.04f, 0.06f, 0.78f), new Vector2(0f, 0.45f), new Vector2(1f, 0.91f), Vector2.zero, Vector2.zero);
+            _phaseBannerMask.transform.SetAsLastSibling();
+            var phaseBannerPanel = UiFactory.CreatePanel(_phaseBannerMask.transform, "PhaseBannerPanel", new Color(0.11f, 0.14f, 0.18f, 0.96f), new Vector2(0.16f, 0.28f), new Vector2(0.84f, 0.72f), Vector2.zero, Vector2.zero);
+            _phaseBannerTitle = UiFactory.CreateText(phaseBannerPanel.transform, "Title", 40, TextAnchor.MiddleCenter, new Vector2(0f, 0.45f), new Vector2(1f, 0.82f), new Vector2(20f, 0f), new Vector2(-20f, 0f));
+            _phaseBannerTitle.fontStyle = FontStyle.Bold;
+            _phaseBannerTitle.supportRichText = true;
+            _phaseBannerDetail = UiFactory.CreateText(phaseBannerPanel.transform, "Detail", 24, TextAnchor.MiddleCenter, new Vector2(0.08f, 0.14f), new Vector2(0.92f, 0.44f), Vector2.zero, Vector2.zero);
+            _phaseBannerDetail.supportRichText = true;
+            _phaseBannerMask.SetActive(false);
+
             Hide();
         }
 
@@ -407,6 +420,7 @@ namespace YoungBob.Prototype.UI.Pages
             RenderSummary(state);
             RenderBoard(state);
             RenderHand(state);
+            RenderPhaseBanner(state);
         }
 
         private void RenderSummary(BattleState state)
@@ -425,8 +439,8 @@ namespace YoungBob.Prototype.UI.Pages
                 return;
             }
 
-            var turnType = state.phase == BattlePhase.PlayerTurn ? "我方回合" : "怪物回合";
-            var color = state.phase == BattlePhase.PlayerTurn ? "#40FF80" : "#FF6060";
+            var turnType = ResolvePhaseTitle(state.phase);
+            var color = ResolvePhaseColor(state.phase);
             var encounterTotal = state.stageEncounterIds == null ? 0 : state.stageEncounterIds.Length;
             var encounterText = encounterTotal > 0
                 ? $"<size=20>关卡 {state.stageId}  遭遇 {state.stageEncounterIndex + 1}/{encounterTotal}</size>\n"
@@ -436,6 +450,71 @@ namespace YoungBob.Prototype.UI.Pages
             _endTurnButton.interactable = Session.CanLocalPlayerAct();
             _exitBattleButton.interactable = true;
             _chatButton.interactable = true;
+        }
+
+        private void RenderPhaseBanner(BattleState state)
+        {
+            if (state == null)
+            {
+                _phaseBannerMask.SetActive(false);
+                return;
+            }
+
+            var showBanner = state.phase == BattlePhase.MonsterTurnStart
+                || state.phase == BattlePhase.MonsterTurnResolve
+                || state.phase == BattlePhase.PlayerTurnStart
+                || state.phase == BattlePhase.Victory
+                || state.phase == BattlePhase.Defeat;
+
+            if (!showBanner)
+            {
+                _phaseBannerMask.SetActive(false);
+                return;
+            }
+
+            _phaseBannerMask.SetActive(true);
+            _phaseBannerTitle.text = $"<color={ResolvePhaseColor(state.phase)}>{ResolvePhaseTitle(state.phase)}</color>";
+            _phaseBannerDetail.text = state.currentPrompt;
+            _phaseBannerMask.transform.SetAsLastSibling();
+        }
+
+        private static string ResolvePhaseTitle(BattlePhase phase)
+        {
+            switch (phase)
+            {
+                case BattlePhase.PlayerTurn:
+                    return "我方回合";
+                case BattlePhase.MonsterTurnStart:
+                    return "敌方回合";
+                case BattlePhase.MonsterTurnResolve:
+                    return "敌人行动";
+                case BattlePhase.PlayerTurnStart:
+                    return "我方回合开始";
+                case BattlePhase.Victory:
+                    return "胜利";
+                case BattlePhase.Defeat:
+                    return "失败";
+                default:
+                    return "战斗中";
+            }
+        }
+
+        private static string ResolvePhaseColor(BattlePhase phase)
+        {
+            switch (phase)
+            {
+                case BattlePhase.PlayerTurn:
+                case BattlePhase.PlayerTurnStart:
+                    return "#40FF80";
+                case BattlePhase.MonsterTurnStart:
+                case BattlePhase.MonsterTurnResolve:
+                case BattlePhase.Defeat:
+                    return "#FF6060";
+                case BattlePhase.Victory:
+                    return "#FFD166";
+                default:
+                    return "#D7DCE2";
+            }
         }
 
         public void AppendBattleLog(string message)

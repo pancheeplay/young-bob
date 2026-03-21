@@ -80,9 +80,11 @@ namespace YoungBob.Prototype.Battle
     {
         WaitingForPlayers = 0,
         PlayerTurn = 1,
-        MonsterTurn = 2,
-        Victory = 3,
-        Defeat = 4
+        MonsterTurnStart = 2,
+        MonsterTurnResolve = 3,
+        PlayerTurnStart = 4,
+        Victory = 5,
+        Defeat = 6
     }
 
     [Serializable]

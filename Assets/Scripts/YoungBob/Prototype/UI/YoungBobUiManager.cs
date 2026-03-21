@@ -21,6 +21,7 @@ namespace YoungBob.Prototype.Scene
         private Canvas _canvas;
         private Text _statusText;
         private Coroutine _autoRefreshCoroutine;
+        private Coroutine _battlePhaseAdvanceCoroutine;
         private RuntimeConsolePanel _consolePanel;
 
         private LobbyPage _lobbyPage;
@@ -66,6 +67,7 @@ namespace YoungBob.Prototype.Scene
 
         private void OnDestroy()
         {
+            StopBattlePhaseAdvance();
             if (_session != null)
             {
                 _session.StatusChanged -= HandleStatusChanged;
@@ -135,6 +137,7 @@ namespace YoungBob.Prototype.Scene
             _battlePage.Render(battleState);
             if (battleState == null)
             {
+                StopBattlePhaseAdvance();
                 if (_session.CurrentRoom == null)
                 {
                     ShowLobby();
@@ -147,6 +150,7 @@ namespace YoungBob.Prototype.Scene
             else
             {
                 ShowBattle();
+                ScheduleBattlePhaseAdvance(battleState);
             }
         }
 
@@ -187,6 +191,61 @@ namespace YoungBob.Prototype.Scene
             {
                 StopCoroutine(_autoRefreshCoroutine);
                 _autoRefreshCoroutine = null;
+            }
+        }
+
+        private void ScheduleBattlePhaseAdvance(BattleState battleState)
+        {
+            StopBattlePhaseAdvance();
+            if (battleState == null || !_session.CanAutoAdvanceBattlePhase())
+            {
+                return;
+            }
+
+            var delay = ResolveBattlePhaseAdvanceDelay(battleState.phase);
+            _battlePhaseAdvanceCoroutine = StartCoroutine(AdvanceBattlePhaseAfterDelay(delay, battleState.phase, battleState.turnIndex));
+        }
+
+        private void StopBattlePhaseAdvance()
+        {
+            if (_battlePhaseAdvanceCoroutine != null)
+            {
+                StopCoroutine(_battlePhaseAdvanceCoroutine);
+                _battlePhaseAdvanceCoroutine = null;
+            }
+        }
+
+        private IEnumerator AdvanceBattlePhaseAfterDelay(float delaySeconds, BattlePhase expectedPhase, int expectedTurnIndex)
+        {
+            yield return new WaitForSeconds(delaySeconds);
+
+            var state = _session.CurrentBattleState;
+            _battlePhaseAdvanceCoroutine = null;
+            if (state == null)
+            {
+                yield break;
+            }
+
+            if (state.phase != expectedPhase || state.turnIndex != expectedTurnIndex)
+            {
+                yield break;
+            }
+
+            _session.AdvanceBattlePhase();
+        }
+
+        private static float ResolveBattlePhaseAdvanceDelay(BattlePhase phase)
+        {
+            switch (phase)
+            {
+                case BattlePhase.MonsterTurnStart:
+                    return 0.7f;
+                case BattlePhase.MonsterTurnResolve:
+                    return 0.95f;
+                case BattlePhase.PlayerTurnStart:
+                    return 0.6f;
+                default:
+                    return 0f;
             }
         }
 

@@ -128,6 +128,7 @@ namespace YoungBob.Prototype.Testing
                 action = "end_turn"
             });
 
+            PumpAutomaticPhases(actorPlayerId, result);
             return FromCommandResult(result, "end_turn");
         }
 
@@ -223,6 +224,66 @@ namespace YoungBob.Prototype.Testing
                 success = false,
                 error = error
             };
+        }
+
+        private void PumpAutomaticPhases(string actorPlayerId, BattleCommandResult aggregateResult)
+        {
+            if (_state == null || aggregateResult == null || !aggregateResult.success)
+            {
+                return;
+            }
+
+            while (_state.phase == BattlePhase.MonsterTurnStart
+                || _state.phase == BattlePhase.MonsterTurnResolve
+                || _state.phase == BattlePhase.PlayerTurnStart)
+            {
+                var action = ResolveAutoAdvanceAction(_state.phase);
+                if (string.IsNullOrWhiteSpace(action))
+                {
+                    return;
+                }
+
+                var phaseResult = _battleEngine.Apply(_state, new BattleCommand
+                {
+                    commandId = Guid.NewGuid().ToString("N"),
+                    actorPlayerId = actorPlayerId,
+                    action = action
+                });
+
+                if (phaseResult == null)
+                {
+                    aggregateResult.success = false;
+                    aggregateResult.error = "Auto phase command returned null.";
+                    return;
+                }
+
+                if (phaseResult.events != null)
+                {
+                    aggregateResult.events.AddRange(phaseResult.events);
+                }
+
+                if (!phaseResult.success)
+                {
+                    aggregateResult.success = false;
+                    aggregateResult.error = phaseResult.error;
+                    return;
+                }
+            }
+        }
+
+        private static string ResolveAutoAdvanceAction(BattlePhase phase)
+        {
+            switch (phase)
+            {
+                case BattlePhase.MonsterTurnStart:
+                    return "begin_monster_turn";
+                case BattlePhase.MonsterTurnResolve:
+                    return "resolve_monster_turn";
+                case BattlePhase.PlayerTurnStart:
+                    return "begin_player_turn";
+                default:
+                    return null;
+            }
         }
 
         private DriverSnapshot BuildSnapshot(string tag, BattleCommandResult commandResult)

@@ -408,6 +408,47 @@ namespace YoungBob.Prototype.App
             Broadcast("battle.command", JsonUtility.ToJson(payload));
         }
 
+        public bool CanAutoAdvanceBattlePhase()
+        {
+            return CurrentBattleState != null
+                && IsLocalHost
+                && (CurrentBattleState.phase == BattlePhase.MonsterTurnStart
+                    || CurrentBattleState.phase == BattlePhase.MonsterTurnResolve
+                    || CurrentBattleState.phase == BattlePhase.PlayerTurnStart);
+        }
+
+        public void AdvanceBattlePhase()
+        {
+            if (!CanAutoAdvanceBattlePhase())
+            {
+                return;
+            }
+
+            string action;
+            switch (CurrentBattleState.phase)
+            {
+                case BattlePhase.MonsterTurnStart:
+                    action = "begin_monster_turn";
+                    break;
+                case BattlePhase.MonsterTurnResolve:
+                    action = "resolve_monster_turn";
+                    break;
+                case BattlePhase.PlayerTurnStart:
+                    action = "begin_player_turn";
+                    break;
+                default:
+                    return;
+            }
+
+            var payload = new BattleCommandPayload
+            {
+                commandId = Guid.NewGuid().ToString("N"),
+                actorPlayerId = LocalPlayerId,
+                action = action
+            };
+            Broadcast("battle.command", JsonUtility.ToJson(payload));
+        }
+
         public CardDefinition GetCardDefinition(string cardId)
         {
             return _dataRepository.GetCard(cardId);
