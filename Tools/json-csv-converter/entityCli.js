@@ -120,20 +120,26 @@ function buildEntityPaths(rawInput) {
 function commandJsonToCsv(rawInput) {
   const paths = buildEntityPaths(rawInput);
   ensureFileExists(paths.jsonPath, 'JSON file');
-  ensureFileExists(paths.schemaPath, 'Schema file');
 
-  runNodeScript('jsonToSheet.js', [
+  const args = [
     paths.jsonPath,
     paths.csvPath,
-    paths.arrayPath,
-    paths.schemaPath
-  ]);
+    paths.arrayPath
+  ];
+
+  if (fs.existsSync(paths.schemaPath)) {
+    args.push(paths.schemaPath);
+  } else {
+    console.log(`Schema file not found, exporting without schema hints: ${path.relative(PROJECT_ROOT, paths.schemaPath)}`);
+  }
+
+  runNodeScript('jsonToSheet.js', args);
 }
 
 function commandCsvToJson(rawInput) {
   const paths = buildEntityPaths(rawInput);
   ensureFileExists(paths.csvPath, 'CSV file');
-  ensureFileExists(paths.schemaPath, 'Schema file');
+  const hasSchema = fs.existsSync(paths.schemaPath);
 
   const tempJsonPath = path.join(
     os.tmpdir(),
@@ -150,14 +156,17 @@ function commandCsvToJson(rawInput) {
     runNodeScript('sheetToJson.js', [
       paths.csvPath,
       tempJsonPath,
-      paths.arrayPath,
-      paths.schemaPath
+      paths.arrayPath
     ]);
 
-    runNodeScript('validateCheckJson.js', [
-      tempJsonPath,
-      paths.schemaPath
-    ]);
+    if (hasSchema) {
+      runNodeScript('validateCheckJson.js', [
+        tempJsonPath,
+        paths.schemaPath
+      ]);
+    } else {
+      console.log(`Schema file not found, skipping validation: ${path.relative(PROJECT_ROOT, paths.schemaPath)}`);
+    }
 
     const nextJsonText = fs.readFileSync(tempJsonPath, 'utf8');
     const nextJson = JSON.parse(nextJsonText);
@@ -171,7 +180,7 @@ function commandCsvToJson(rawInput) {
     }
 
     fs.writeFileSync(paths.jsonPath, nextJsonText, 'utf8');
-    console.log(`Updated ${path.relative(PROJECT_ROOT, paths.jsonPath)} after validation.`);
+    console.log(`Updated ${path.relative(PROJECT_ROOT, paths.jsonPath)}.${hasSchema ? ' Validated with schema.' : ''}`);
   } finally {
     if (fs.existsSync(tempJsonPath)) {
       fs.unlinkSync(tempJsonPath);

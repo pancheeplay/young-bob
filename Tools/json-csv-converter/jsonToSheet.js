@@ -4,9 +4,9 @@ const { stringifyCsv } = require('./csvUtils');
 const { resolveRef } = require('./schemaUtils');
 
 function usage() {
-  console.log('Usage: node jsonToSheet.js <input.json> <output.csv> <arrayPath|-> <schema.json>');
+  console.log('Usage: node jsonToSheet.js <input.json> <output.csv> <arrayPath|-> [schema.json]');
   console.log('Example: node jsonToSheet.js data.json data.csv monsters schema.json');
-  console.log('Example: node jsonToSheet.js list.json list.csv - schema.json');
+  console.log('Example: node jsonToSheet.js list.json list.csv -');
 }
 
 function getByPath(target, dottedPath) {
@@ -102,18 +102,48 @@ function pickArrayItemSchema(schemaRoot, arrayPath) {
   return node.items;
 }
 
+function inferScalarType(value) {
+  if (Number.isInteger(value)) return 'integer';
+  if (typeof value === 'number') return 'number';
+  if (typeof value === 'boolean') return 'boolean';
+  if (Array.isArray(value)) {
+    const itemTypes = [...new Set(value.map((item) => inferScalarType(item)))];
+    return `array<${itemTypes.length === 1 ? itemTypes[0] : 'object'}>`;
+  }
+  if (value && typeof value === 'object') return 'object';
+  return 'string';
+}
+
+function inferTypeMap(records) {
+  const typeMap = {};
+
+  for (const record of records) {
+    const flat = flattenObject(record);
+    for (const [key, value] of Object.entries(flat)) {
+      const nextType = inferScalarType(value);
+      if (!typeMap[key]) {
+        typeMap[key] = nextType;
+        continue;
+      }
+
+      if (typeMap[key] !== nextType) {
+        typeMap[key] = 'string';
+      }
+    }
+  }
+
+  return typeMap;
+}
+
 function main() {
   const [, , inputJson, outputCsv, arrayPath, schemaFile] = process.argv;
 
-  if (!inputJson || !outputCsv || !arrayPath || !schemaFile) {
+  if (!inputJson || !outputCsv || !arrayPath) {
     usage();
     process.exit(1);
   }
 
   const dataRoot = JSON.parse(fs.readFileSync(inputJson, 'utf8'));
-  const schemaPath = path.resolve(schemaFile);
-  const schemaRoot = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
-
   const records = arrayPath === '-' ? dataRoot : getByPath(dataRoot, arrayPath);
   if (!Array.isArray(records)) {
     throw new Error(`Target at arrayPath "${arrayPath}" is not an array`);
@@ -126,8 +156,15 @@ function main() {
   }
 
   const headers = [...headerSet];
-  const itemSchema = pickArrayItemSchema(schemaRoot, arrayPath);
-  const typeMap = buildTypeMap(schemaRoot, itemSchema);
+  let typeMap;
+  if (schemaFile) {
+    const schemaPath = path.resolve(schemaFile);
+    const schemaRoot = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+    const itemSchema = pickArrayItemSchema(schemaRoot, arrayPath);
+    typeMap = buildTypeMap(schemaRoot, itemSchema);
+  } else {
+    typeMap = inferTypeMap(records);
+  }
   const typeRow = headers.map((h) => typeMap[h] || 'string');
 
   const csvRows = [

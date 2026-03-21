@@ -2,9 +2,9 @@ const fs = require('fs');
 const { parseCsv } = require('./csvUtils');
 
 function usage() {
-  console.log('Usage: node sheetToJson.js <input.csv> <output.json> <arrayPath|-> <schemaPathToWrite>');
-  console.log('Example: node sheetToJson.js data.csv data.json monsters ./schema.json');
-  console.log('Example: node sheetToJson.js list.csv list.json - ./schema.json');
+  console.log('Usage: node sheetToJson.js <input.csv> <output.json> <arrayPath|->');
+  console.log('Example: node sheetToJson.js data.csv data.json monsters');
+  console.log('Example: node sheetToJson.js list.csv list.json -');
 }
 
 function parsePrimitive(value, typeHint, rowIndex, column) {
@@ -82,9 +82,9 @@ function setByPath(target, dottedPath, value) {
 }
 
 function main() {
-  const [, , inputCsv, outputJson, arrayPath, schemaPathToWrite] = process.argv;
+  const [, , inputCsv, outputJson, arrayPath] = process.argv;
 
-  if (!inputCsv || !outputJson || !arrayPath || !schemaPathToWrite) {
+  if (!inputCsv || !outputJson || !arrayPath) {
     usage();
     process.exit(1);
   }
