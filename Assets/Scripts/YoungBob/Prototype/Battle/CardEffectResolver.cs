@@ -361,7 +361,7 @@ namespace YoungBob.Prototype.Battle
                     else
                     {
                         var applied = BattleMechanics.ApplyDamageToPart(context.state, target.Part, amount, context.result);
-                        BattleThreatSystem.ApplyThreatFromDamage(context.actingPlayer, applied);
+                        BattleThreatSystem.ApplyThreatFromDamage(context.state, context.actingPlayer, applied);
                         context.result.events.Add(new BattleEvent
                         {
                             eventId = "card_damage",
@@ -529,7 +529,7 @@ namespace YoungBob.Prototype.Battle
                         return false;
                     }
 
-                    var total = BattleThreatSystem.ApplyThreatGain(target.Player, effect.amount);
+                    var total = BattleThreatSystem.ApplyThreatGain(context.state, target.Player, effect.amount);
                     context.result.events.Add(new BattleEvent
                     {
                         eventId = "threat_change",
@@ -609,7 +609,7 @@ namespace YoungBob.Prototype.Battle
 
                     var damage = Math.Max(0, effect.amount);
                     var applied = BattleMechanics.ApplyDamageToPart(context.state, target.Part, damage, context.result);
-                    BattleThreatSystem.ApplyThreatFromDamage(context.actingPlayer, applied);
+                    BattleThreatSystem.ApplyThreatFromDamage(context.state, context.actingPlayer, applied);
                     context.result.events.Add(new BattleEvent
                     {
                         eventId = "card_damage",
@@ -699,7 +699,7 @@ namespace YoungBob.Prototype.Battle
                     else
                     {
                         var applied = BattleMechanics.ApplyDamageToPart(context.state, target.Part, amount, context.result);
-                        BattleThreatSystem.ApplyThreatFromDamage(context.actingPlayer, applied);
+                        BattleThreatSystem.ApplyThreatFromDamage(context.state, context.actingPlayer, applied);
                         context.result.events.Add(new BattleEvent
                         {
                             eventId = "damage_by_armor",

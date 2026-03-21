@@ -1285,12 +1285,17 @@ namespace YoungBob.Prototype.UI.Pages
 
             var threatArrow = UiFactory.CreateText(slotObject.transform, "ThreatArrow", 18, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
             var threatArrowRect = threatArrow.GetComponent<RectTransform>();
-            threatArrowRect.sizeDelta = new Vector2(26f, 26f);
-            threatArrowRect.anchoredPosition = new Vector2(0f, 10f);
+            threatArrowRect.sizeDelta = new Vector2(30f, 30f);
+            threatArrowRect.anchoredPosition = new Vector2(0f, 14f);
             threatArrow.text = "▼";
             threatArrow.fontStyle = FontStyle.Bold;
+            threatArrow.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            threatArrow.fontSize = 26;
             threatArrow.color = new Color(0.95f, 0.2f, 0.2f, 1f);
             threatArrow.raycastTarget = false;
+            var threatArrowShadow = threatArrow.gameObject.AddComponent<Shadow>();
+            threatArrowShadow.effectColor = new Color(0f, 0f, 0f, 0.75f);
+            threatArrowShadow.effectDistance = new Vector2(1f, -1f);
 
             // HP Bar
             var barColor = faction == BattleTargetFaction.Allies ? new Color(0.2f, 0.8f, 0.3f) : new Color(0.8f, 0.2f, 0.2f);

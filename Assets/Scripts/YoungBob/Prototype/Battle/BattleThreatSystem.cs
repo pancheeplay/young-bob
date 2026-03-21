@@ -17,10 +17,7 @@ namespace YoungBob.Prototype.Battle
             }
 
             ResetThreats(state.players);
-            if (state.monster != null)
-            {
-                state.monster.currentThreatTargetPlayerId = null;
-            }
+            RefreshCurrentTarget(state);
         }
 
         public static void ResetThreats(List<PlayerBattleState> players)
@@ -55,9 +52,23 @@ namespace YoungBob.Prototype.Battle
             return player.threatValue;
         }
 
+        public static int ApplyThreatGain(BattleState state, PlayerBattleState player, int delta)
+        {
+            var total = ApplyThreatGain(player, delta);
+            RefreshCurrentTarget(state);
+            return total;
+        }
+
         public static int ApplyThreatFromDamage(PlayerBattleState player, int finalDamage)
         {
             return ApplyThreatGain(player, Math.Max(0, finalDamage));
+        }
+
+        public static int ApplyThreatFromDamage(BattleState state, PlayerBattleState player, int finalDamage)
+        {
+            var total = ApplyThreatFromDamage(player, finalDamage);
+            RefreshCurrentTarget(state);
+            return total;
         }
 
         public static void ApplyThreatDecay(List<PlayerBattleState> players)
@@ -91,10 +102,39 @@ namespace YoungBob.Prototype.Battle
             }
         }
 
+        public static void ApplyThreatDecay(BattleState state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            ApplyThreatDecay(state.players);
+            RefreshCurrentTarget(state);
+        }
+
+        public static void RefreshCurrentTarget(BattleState state)
+        {
+            if (state == null || state.monster == null)
+            {
+                return;
+            }
+
+            var target = SelectMonsterTarget(state);
+            if (target == null)
+            {
+                state.monster.currentThreatTargetPlayerId = null;
+            }
+        }
+
         public static PlayerBattleState SelectMonsterTarget(BattleState state)
         {
             if (state == null || state.players == null || state.players.Count == 0)
             {
+                if (state != null && state.monster != null)
+                {
+                    state.monster.currentThreatTargetPlayerId = null;
+                }
                 return null;
             }
 

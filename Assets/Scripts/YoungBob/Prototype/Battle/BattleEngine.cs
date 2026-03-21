@@ -281,7 +281,7 @@ namespace YoungBob.Prototype.Battle
         {
             state.phase = BattlePhase.PlayerTurn;
             state.turnIndex += 1;
-            BattleThreatSystem.ApplyThreatDecay(state.players);
+            BattleThreatSystem.ApplyThreatDecay(state);
             BattleTargetResolver.ResetTeamTurn(state.players);
             for (var i = 0; i < state.players.Count; i++)
             {
