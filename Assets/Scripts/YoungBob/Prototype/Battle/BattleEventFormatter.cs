@@ -55,6 +55,8 @@ namespace YoungBob.Prototype.Battle
                     return actor + " 使用了 " + card + "。";
                 case "player_end_turn":
                     return actor + " 结束了回合。";
+                case "player_cancel_end_turn":
+                    return actor + " 取消了结束回合。";
                 case "monster_turn_pending":
                     return richText
                         ? "<color=#FF8B8B>敌方回合开始。</color>"

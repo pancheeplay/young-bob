@@ -124,6 +124,7 @@ namespace YoungBob.Prototype.Battle
             {
                 case "play_card":
                 case "end_turn":
+                case "cancel_end_turn":
                 {
                     if (state.phase != BattlePhase.PlayerTurn)
                     {
@@ -142,6 +143,11 @@ namespace YoungBob.Prototype.Battle
                     {
                         result.error = "该玩家已倒下。";
                         return result;
+                    }
+
+                    if (command.action == "cancel_end_turn")
+                    {
+                        return CancelEndTurn(state, actingPlayer);
                     }
 
                     if (actingPlayer.hasEndedTurn)
@@ -306,6 +312,26 @@ namespace YoungBob.Prototype.Battle
             {
                 eventId = "monster_turn_pending",
                 turn = state.turnIndex
+            });
+            result.success = true;
+            return result;
+        }
+
+        private BattleCommandResult CancelEndTurn(BattleState state, PlayerBattleState player)
+        {
+            var result = new BattleCommandResult();
+            if (!player.hasEndedTurn)
+            {
+                result.error = "当前玩家尚未结束回合。";
+                return result;
+            }
+
+            player.hasEndedTurn = false;
+            state.currentPrompt = BuildTeamTurnPrompt(state);
+            result.events.Add(new BattleEvent
+            {
+                eventId = "player_cancel_end_turn",
+                actor = player.displayName
             });
             result.success = true;
             return result;

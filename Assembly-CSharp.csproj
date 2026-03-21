@@ -65,6 +65,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets/Scripts/YoungBob/Prototype/App/LobbySelectionState.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleHandPanelView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Data/CardEffectCompiler.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleHandCardDragView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/CardEffectActionCompiler.cs" />
@@ -74,9 +75,12 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Data/SExpression.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/TapTapMultiplayerService.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/NetworkLatencyStats.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattlePhaseMapper.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTextHelper.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/GameConfig.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattlePageSections.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/UIManager.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleLogPanelView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTargetingRules.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/PlayerComponent.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/RoomPage.cs" />
@@ -105,6 +109,7 @@
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/TapSDKService.cs" />
     <Compile Include="Assets/TutorialInfo/Scripts/Readme.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleSecretSystem.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleStageFxController.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioModels.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/BattleInteraction.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Pages/BattlePage.cs" />
@@ -123,6 +128,7 @@
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/MoveData.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/App/SessionPayloadParser.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/FrameRateStats.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/QuickChatTrayView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleEventFormatter.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/GameManager.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/YoungBobUiManager.cs" />
@@ -132,9 +138,12 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/RuntimeConsolePanel.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/DebugRelayWebGlBridge.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Scene/YoungBobGameManager.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleTopBarView.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Data/CardEffectDslValidator.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/RoomItemUI.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Multiplayer/MultiplayerContracts.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleStageSurfaceView.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleTargetingController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets/TJ-WASM-SDK-V2/Runtime/Plugins/link.xml" />

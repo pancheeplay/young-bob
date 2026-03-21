@@ -14,6 +14,8 @@ namespace YoungBob.Prototype.UI.Battle
         private RectTransform _rectTransform;
         private Vector2 _targetAnchoredPosition;
         private bool _hasTargetPosition;
+        private Color _baseAliveColor = new Color(0.55f, 0.25f, 0.25f, 0.95f);
+        private float _damagePulseUntilTime;
 
         public string PartId { get; private set; }
         public string InstanceId { get; private set; }
@@ -56,7 +58,7 @@ namespace YoungBob.Prototype.UI.Battle
 
             if (_shapeImage != null)
             {
-                _shapeImage.color = IsAlive ? new Color(0.55f, 0.25f, 0.25f, 0.95f) : new Color(0.2f, 0.2f, 0.2f, 0.8f);
+                _shapeImage.color = IsAlive ? _baseAliveColor : new Color(0.2f, 0.2f, 0.2f, 0.8f);
             }
 
             if (_highlightBorder != null)
@@ -70,6 +72,11 @@ namespace YoungBob.Prototype.UI.Battle
             }
         }
 
+        public void PlayDamagePulse()
+        {
+            _damagePulseUntilTime = Time.unscaledTime + 0.26f;
+        }
+
         private void Update()
         {
             if (!_hasTargetPosition || _rectTransform == null)
@@ -81,6 +88,13 @@ namespace YoungBob.Prototype.UI.Battle
                 _rectTransform.anchoredPosition,
                 _targetAnchoredPosition,
                 1f - Mathf.Exp(-MoveLerpSpeed * Time.unscaledDeltaTime));
+
+            if (_shapeImage != null && IsAlive && _damagePulseUntilTime > Time.unscaledTime)
+            {
+                var progress = 1f - Mathf.Clamp01((_damagePulseUntilTime - Time.unscaledTime) / 0.26f);
+                var intensity = 1f - Mathf.Abs(progress * 2f - 1f);
+                _shapeImage.color = Color.Lerp(_baseAliveColor, new Color(0.95f, 0.28f, 0.3f, 0.98f), intensity * 0.9f);
+            }
         }
     }
 }

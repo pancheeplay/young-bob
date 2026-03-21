@@ -29,7 +29,11 @@ namespace YoungBob.Prototype.UI.Battle
         private Text _hpLabel;
         private Text _armorLabel;
         private Text _secretLabel;
+        private Image _localLine;
         private Color _baseColor;
+        private Color _localLineBaseColor;
+        private bool _isLocalPlayer;
+        private float _damagePulseUntilTime;
 
         private Text _statusLabel;
 
@@ -37,7 +41,7 @@ namespace YoungBob.Prototype.UI.Battle
         public BattleTargetFaction Faction { get; private set; }
         public bool IsAlive { get; private set; }
 
-        public void Initialize(Image background, Text nameLabel, Text hpLabel, RectTransform hpFillRect, Text armorLabel, Text statusLabel, Text secretLabel, RectTransform threatFillRoot, Image[] threatSegmentFills, Text[] threatSegmentLabels, Text threatLabel, Text threatArrowLabel, Color baseColor, Image highlightBorder)
+        public void Initialize(Image background, Text nameLabel, Text hpLabel, RectTransform hpFillRect, Text armorLabel, Text statusLabel, Text secretLabel, RectTransform threatFillRoot, Image[] threatSegmentFills, Text[] threatSegmentLabels, Text threatLabel, Text threatArrowLabel, Color baseColor, Image highlightBorder, Image localLine, bool isLocalPlayer)
         {
             _background = background;
             _nameLabel = nameLabel;
@@ -57,6 +61,9 @@ namespace YoungBob.Prototype.UI.Battle
             }
             _baseColor = baseColor;
             _highlightBorder = highlightBorder;
+            _localLine = localLine;
+            _isLocalPlayer = isLocalPlayer;
+            _localLineBaseColor = _localLine != null ? _localLine.color : Color.clear;
             if (_highlightBorder != null) _highlightBorder.gameObject.SetActive(false);
             if (_threatArrowLabel != null) _threatArrowLabel.gameObject.SetActive(false);
         }
@@ -118,6 +125,11 @@ namespace YoungBob.Prototype.UI.Battle
                     _armorLabel.color = new Color(0.6f, 0.8f, 1f);
                     _armorLabel.gameObject.SetActive(armor > 0);
                 }
+                if (_localLine != null)
+                {
+                    _localLine.gameObject.SetActive(_isLocalPlayer);
+                    _localLine.color = _localLineBaseColor;
+                }
                 if (_hpFillRect != null && _hpFillRect.parent != null) _hpFillRect.parent.gameObject.SetActive(true);
                 
                 var cg = GetComponent<CanvasGroup>();
@@ -145,6 +157,7 @@ namespace YoungBob.Prototype.UI.Battle
                 if (_armorLabel != null) _armorLabel.gameObject.SetActive(false);
                 if (_statusLabel != null) _statusLabel.gameObject.SetActive(false);
                 if (_secretLabel != null) _secretLabel.gameObject.SetActive(false);
+                if (_localLine != null) _localLine.gameObject.SetActive(false);
                 if (_hpFillRect != null && _hpFillRect.parent != null) _hpFillRect.parent.gameObject.SetActive(false);
                 
                 var cg = GetComponent<CanvasGroup>();
@@ -161,6 +174,31 @@ namespace YoungBob.Prototype.UI.Battle
                     _highlightBorder.color = highlightMode == SlotHighlightMode.Selected ? new Color(1f, 0.85f, 0f, 1f) : new Color(1f, 1f, 1f, 0.4f);
                 }
             }
+        }
+
+        public void PlayDamagePulse()
+        {
+            _damagePulseUntilTime = Time.unscaledTime + 0.26f;
+        }
+
+        private void Update()
+        {
+            if (_localLine != null && _isLocalPlayer && IsAlive)
+            {
+                var pulse = 0.72f + 0.28f * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.6f));
+                var color = _localLineBaseColor;
+                color.a = _localLineBaseColor.a * pulse;
+                _localLine.color = color;
+            }
+
+            if (_background == null || _damagePulseUntilTime <= Time.unscaledTime)
+            {
+                return;
+            }
+
+            var progress = 1f - Mathf.Clamp01((_damagePulseUntilTime - Time.unscaledTime) / 0.26f);
+            var intensity = 1f - Mathf.Abs(progress * 2f - 1f);
+            _background.color = Color.Lerp(_baseColor, new Color(0.85f, 0.22f, 0.24f, _baseColor.a), intensity * 0.85f);
         }
 
         private void UpdateThreatVisuals(int threatValue, int threatTier)

@@ -104,6 +104,7 @@ namespace YoungBob.Prototype.App
         public event Action<RoomJoinedEvent> RoomChanged;
         public event Action<IReadOnlyList<RoomListItem>> RoomListChanged;
         public event Action<BattleState> BattleStateChanged;
+        public event Action<IReadOnlyList<BattleEvent>> BattleEventsCommitted;
         public event Action<string> LogAdded;
         public event Action<string> RoomChatAdded;
         public event Action StageSelectionChanged;
@@ -404,6 +405,28 @@ namespace YoungBob.Prototype.App
                 commandId = Guid.NewGuid().ToString("N"),
                 actorPlayerId = LocalPlayerId,
                 action = "end_turn"
+            };
+            Broadcast("battle.command", JsonUtility.ToJson(payload));
+        }
+
+        public void ToggleTurnReady()
+        {
+            if (CurrentBattleState == null)
+            {
+                return;
+            }
+
+            var player = GetLocalBattlePlayer();
+            if (player == null || CurrentBattleState.phase != BattlePhase.PlayerTurn)
+            {
+                return;
+            }
+
+            var payload = new BattleCommandPayload
+            {
+                commandId = Guid.NewGuid().ToString("N"),
+                actorPlayerId = LocalPlayerId,
+                action = player.hasEndedTurn ? "cancel_end_turn" : "end_turn"
             };
             Broadcast("battle.command", JsonUtility.ToJson(payload));
         }
@@ -729,6 +752,10 @@ namespace YoungBob.Prototype.App
             }
 
             BattleStateChanged?.Invoke(CurrentBattleState);
+            if (payload.events != null && payload.events.Length > 0)
+            {
+                BattleEventsCommitted?.Invoke(payload.events);
+            }
         }
 
         private void HandleBattleFinish(MultiplayerMessage message)

@@ -45,6 +45,7 @@ namespace YoungBob.Prototype.Scene
             _session.RoomChanged += HandleRoomChanged;
             _session.RoomListChanged += HandleRoomListChanged;
             _session.BattleStateChanged += HandleBattleStateChanged;
+            _session.BattleEventsCommitted += HandleBattleEventsCommitted;
             _session.StageSelectionChanged += HandleStageSelectionChanged;
             Application.logMessageReceived += HandleUnityLog;
 
@@ -76,6 +77,7 @@ namespace YoungBob.Prototype.Scene
                 _session.RoomChanged -= HandleRoomChanged;
                 _session.RoomListChanged -= HandleRoomListChanged;
                 _session.BattleStateChanged -= HandleBattleStateChanged;
+                _session.BattleEventsCommitted -= HandleBattleEventsCommitted;
                 _session.StageSelectionChanged -= HandleStageSelectionChanged;
             }
 
@@ -151,6 +153,14 @@ namespace YoungBob.Prototype.Scene
             {
                 ShowBattle();
                 ScheduleBattlePhaseAdvance(battleState);
+            }
+        }
+
+        private void HandleBattleEventsCommitted(IReadOnlyList<BattleEvent> battleEvents)
+        {
+            if (_battlePage != null && battleEvents != null && battleEvents.Count > 0)
+            {
+                _battlePage.PlayBattleEvents(battleEvents);
             }
         }
 
