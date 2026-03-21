@@ -516,12 +516,13 @@ namespace YoungBob.Prototype.UI.Pages
             }
 
             // Render Players in their respective areas
+            var currentThreatTargetId = state.monster == null ? null : state.monster.currentThreatTargetPlayerId;
             for (var i = 0; i < state.players.Count; i++)
             {
                 var player = state.players[i];
                 var container = player.area == BattleArea.East ? _eastPlayerContainer : _westPlayerContainer;
                 var secretSummary = BuildPlayerSecretSummary(player, _isDetailedStatusMode);
-                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, player.threatValue, player.threatTier, secretSummary, new Color(0.2f, 0.36f, 0.31f), _isDetailedStatusMode, SlotHighlightMode.None);
+                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, player.threatValue, player.threatTier, secretSummary, new Color(0.2f, 0.36f, 0.31f), _isDetailedStatusMode, string.Equals(currentThreatTargetId, player.playerId, StringComparison.Ordinal), SlotHighlightMode.None);
                 _playerSlots.Add(slot);
             }
 
@@ -893,7 +894,8 @@ namespace YoungBob.Prototype.UI.Pages
                 var slot = _playerSlots[i];
                 var player = _lastState.GetPlayer(slot.UnitId);
                 var secretSummary = BuildPlayerSecretSummary(player, _isDetailedStatusMode);
-                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, player.threatValue, player.threatTier, secretSummary, _isDetailedStatusMode, GetHighlightModeForPlayer(cardDef, targetType, slot, hoveredPlayer));
+                var isThreatTarget = _lastState.monster != null && string.Equals(_lastState.monster.currentThreatTargetPlayerId, slot.UnitId, StringComparison.Ordinal);
+                slot.SetData(BattleTargetFaction.Allies, slot.UnitId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, player.vulnerableStacks, player.statuses, player.threatValue, player.threatTier, secretSummary, _isDetailedStatusMode, isThreatTarget, GetHighlightModeForPlayer(cardDef, targetType, slot, hoveredPlayer));
             }
 
             for (var i = 0; i < _monsterPartSlots.Count; i++)
@@ -1233,7 +1235,7 @@ namespace YoungBob.Prototype.UI.Pages
             return null;
         }
 
-        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, int threatValue, int threatTier, string secretSummary, Color color, bool detailedMode, SlotHighlightMode highlightMode)
+        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, int threatValue, int threatTier, string secretSummary, Color color, bool detailedMode, bool isThreatTarget, SlotHighlightMode highlightMode)
         {
             var slotObject = new GameObject("UnitSlot_" + unitId);
             slotObject.transform.SetParent(parent, false);
@@ -1281,6 +1283,15 @@ namespace YoungBob.Prototype.UI.Pages
             var threatTick40 = UiFactory.CreatePanel(threatBase.transform, "Tick40", new Color(0.92f, 0.95f, 1f, 0.55f), new Vector2(2f / 3f, 0f), new Vector2(2f / 3f, 1f), new Vector2(-1f, 0f), new Vector2(1f, 0f));
             threatTick40.GetComponent<Image>().raycastTarget = false;
 
+            var threatArrow = UiFactory.CreateText(slotObject.transform, "ThreatArrow", 18, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
+            var threatArrowRect = threatArrow.GetComponent<RectTransform>();
+            threatArrowRect.sizeDelta = new Vector2(26f, 26f);
+            threatArrowRect.anchoredPosition = new Vector2(0f, 10f);
+            threatArrow.text = "▼";
+            threatArrow.fontStyle = FontStyle.Bold;
+            threatArrow.color = new Color(0.95f, 0.2f, 0.2f, 1f);
+            threatArrow.raycastTarget = false;
+
             // HP Bar
             var barColor = faction == BattleTargetFaction.Allies ? new Color(0.2f, 0.8f, 0.3f) : new Color(0.8f, 0.2f, 0.2f);
             var (hpBarBg, hpFill) = UiFactory.CreateProgressBar(infoBase.transform, "HPBar", barColor, new Vector2(110f, 14f));
@@ -1318,8 +1329,8 @@ namespace YoungBob.Prototype.UI.Pages
             var highlightImage = borderObj.GetComponent<Image>();
 
             var slotView = slotObject.AddComponent<BattleUnitSlotView>();
-            slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, secretLabel, threatBase.GetComponent<RectTransform>(), threatSegmentFills, threatSegmentLabels, null, color, highlightImage);
-            slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, vulnerableStacks, statuses, threatValue, threatTier, secretSummary, detailedMode, highlightMode);
+            slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, secretLabel, threatBase.GetComponent<RectTransform>(), threatSegmentFills, threatSegmentLabels, null, threatArrow, color, highlightImage);
+            slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, vulnerableStacks, statuses, threatValue, threatTier, secretSummary, detailedMode, isThreatTarget, highlightMode);
             return slotView;
         }
 

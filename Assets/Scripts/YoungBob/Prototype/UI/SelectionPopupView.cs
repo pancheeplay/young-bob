@@ -20,8 +20,11 @@ namespace YoungBob.Prototype.UI
         private readonly GameObject _mask;
         private readonly Text _titleText;
         private readonly Text _detailText;
+        private readonly RectTransform _windowRect;
+        private readonly RectTransform _listPanelRect;
         private readonly Transform _listContent;
         private readonly RectTransform _listContentRect;
+        private readonly ScrollRect _listScroll;
 
         public event Action Closed;
 
@@ -34,6 +37,7 @@ namespace YoungBob.Prototype.UI
         {
             _mask = UiFactory.CreatePanel(parent, namePrefix + "_Mask", new Color(0f, 0f, 0f, 0.75f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             var popupWindow = UiFactory.CreatePanel(_mask.transform, namePrefix + "_Window", new Color(0.12f, 0.16f, 0.22f, 1f), new Vector2(0.08f, 0.16f), new Vector2(0.92f, 0.84f), Vector2.zero, Vector2.zero);
+            _windowRect = popupWindow.GetComponent<RectTransform>();
 
             _titleText = UiFactory.CreateText(popupWindow.transform, "Title", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0.86f), new Vector2(0.75f, 1f), new Vector2(24f, 0f), Vector2.zero);
             _titleText.fontStyle = FontStyle.Bold;
@@ -49,7 +53,7 @@ namespace YoungBob.Prototype.UI
             closeRect.offsetMax = Vector2.zero;
             closeButton.GetComponent<Image>().color = new Color(0.3f, 0.22f, 0.2f, 0.95f);
 
-            _listContentRect = CreateListContent(popupWindow.transform, namePrefix + "_List");
+            _listScroll = CreateListContent(popupWindow.transform, namePrefix + "_List", out _listPanelRect, out _listContentRect);
             _listContent = _listContentRect.transform;
             _mask.SetActive(false);
         }
@@ -65,19 +69,25 @@ namespace YoungBob.Prototype.UI
             {
                 var empty = UiFactory.CreateText(_listContent, "Empty", 20, TextAnchor.MiddleCenter);
                 empty.text = string.IsNullOrWhiteSpace(emptyMessage) ? "没有可选项" : emptyMessage;
+                var layout = empty.gameObject.AddComponent<LayoutElement>();
+                layout.preferredHeight = 120f;
                 _listContentRect.sizeDelta = new Vector2(0f, 120f);
+                SetWindowHeightByContent(120f);
             }
             else
             {
-                var y = 8f;
+                var totalHeight = 8f;
                 for (var i = 0; i < items.Count; i++)
                 {
-                    y += BuildItemRow(items[i], i, y) + 8f;
+                    totalHeight += BuildItemRow(items[i], i) + 8f;
                 }
 
-                _listContentRect.sizeDelta = new Vector2(0f, y);
+                _listContentRect.sizeDelta = new Vector2(0f, totalHeight);
+                SetWindowHeightByContent(totalHeight);
             }
 
+            Canvas.ForceUpdateCanvases();
+            _listScroll.verticalNormalizedPosition = 1f;
             _mask.SetActive(true);
         }
 
@@ -88,7 +98,27 @@ namespace YoungBob.Prototype.UI
             Closed?.Invoke();
         }
 
-        private float BuildItemRow(Item item, int index, float yTop)
+        private void SetWindowHeightByContent(float contentHeight)
+        {
+            if (_windowRect == null || _listPanelRect == null)
+            {
+                return;
+            }
+
+            // Title + detail + paddings + content
+            const float baseHeight = 180f;
+            var desired = baseHeight + Mathf.Max(120f, contentHeight);
+            var clamped = Mathf.Clamp(desired, 360f, 1120f);
+            _windowRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, clamped);
+
+            // Keep list panel filling remaining lower area.
+            _listPanelRect.anchorMin = new Vector2(0f, 0f);
+            _listPanelRect.anchorMax = new Vector2(1f, 0.74f);
+            _listPanelRect.offsetMin = new Vector2(20f, 20f);
+            _listPanelRect.offsetMax = new Vector2(-20f, -12f);
+        }
+
+        private float BuildItemRow(Item item, int index)
         {
             if (item == null)
             {
@@ -98,18 +128,19 @@ namespace YoungBob.Prototype.UI
             var root = new GameObject("Item_" + index);
             root.transform.SetParent(_listContent, false);
             var rootRect = root.AddComponent<RectTransform>();
+            var rowHeight = string.IsNullOrWhiteSpace(item.detail) ? 70f : 108f;
             rootRect.anchorMin = new Vector2(0f, 1f);
             rootRect.anchorMax = new Vector2(1f, 1f);
             rootRect.pivot = new Vector2(0.5f, 1f);
-            var rowHeight = string.IsNullOrWhiteSpace(item.detail) ? 70f : 108f;
-            rootRect.offsetMin = new Vector2(8f, -yTop - rowHeight);
-            rootRect.offsetMax = new Vector2(-8f, -yTop);
+            rootRect.offsetMin = new Vector2(8f, 0f);
+            rootRect.offsetMax = new Vector2(-8f, 0f);
 
             var bg = root.AddComponent<Image>();
             bg.color = item.isSelected ? new Color(0.18f, 0.45f, 0.34f, 0.95f) : new Color(0.2f, 0.28f, 0.42f, 0.95f);
 
             var layout = root.AddComponent<LayoutElement>();
             layout.preferredHeight = rowHeight;
+            layout.minHeight = rowHeight;
             layout.flexibleWidth = 1f;
 
             var button = root.AddComponent<Button>();
@@ -146,12 +177,53 @@ namespace YoungBob.Prototype.UI
             return rowHeight;
         }
 
-        private RectTransform CreateListContent(Transform parent, string name)
+        private ScrollRect CreateListContent(Transform parent, string name, out RectTransform panelRect, out RectTransform contentRect)
         {
             var list = UiFactory.CreatePanel(parent, name + "_Panel", new Color(0.08f, 0.1f, 0.13f, 0.85f), new Vector2(0f, 0f), new Vector2(1f, 0.74f), new Vector2(20f, 20f), new Vector2(-20f, -12f));
-            var rect = list.GetComponent<RectTransform>();
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            return rect;
+            panelRect = list.GetComponent<RectTransform>();
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+
+            var scroll = list.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            scroll.vertical = true;
+
+            var viewport = new GameObject(name + "_Viewport");
+            viewport.transform.SetParent(list.transform, false);
+            var viewportRect = viewport.AddComponent<RectTransform>();
+            viewportRect.anchorMin = Vector2.zero;
+            viewportRect.anchorMax = Vector2.one;
+            viewportRect.offsetMin = new Vector2(6f, 6f);
+            viewportRect.offsetMax = new Vector2(-6f, -6f);
+            viewport.AddComponent<RectMask2D>();
+            var viewportImage = viewport.AddComponent<Image>();
+            viewportImage.color = new Color(0f, 0f, 0f, 0.001f);
+            viewportImage.raycastTarget = true;
+
+            var content = new GameObject(name + "_Content");
+            content.transform.SetParent(viewport.transform, false);
+            contentRect = content.AddComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0f, 1f);
+            contentRect.anchorMax = new Vector2(1f, 1f);
+            contentRect.pivot = new Vector2(0.5f, 1f);
+            contentRect.anchoredPosition = Vector2.zero;
+            contentRect.offsetMin = new Vector2(0f, 0f);
+            contentRect.offsetMax = new Vector2(0f, 0f);
+
+            var layout = content.AddComponent<VerticalLayoutGroup>();
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            layout.spacing = 8f;
+            layout.padding = new RectOffset(4, 4, 8, 8);
+
+            var fitter = content.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            scroll.viewport = viewportRect;
+            scroll.content = contentRect;
+            return scroll;
         }
 
         private void ClearList()

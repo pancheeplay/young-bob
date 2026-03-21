@@ -23,6 +23,7 @@ namespace YoungBob.Prototype.UI.Battle
         private readonly Image[] _threatSegmentFills = new Image[3];
         private readonly Text[] _threatSegmentLabels = new Text[3];
         private Text _threatLabel;
+        private Text _threatArrowLabel;
         private Text _nameLabel;
         private Text _hpLabel;
         private Text _armorLabel;
@@ -35,7 +36,7 @@ namespace YoungBob.Prototype.UI.Battle
         public BattleTargetFaction Faction { get; private set; }
         public bool IsAlive { get; private set; }
 
-        public void Initialize(Image background, Text nameLabel, Text hpLabel, RectTransform hpFillRect, Text armorLabel, Text statusLabel, Text secretLabel, RectTransform threatFillRoot, Image[] threatSegmentFills, Text[] threatSegmentLabels, Text threatLabel, Color baseColor, Image highlightBorder)
+        public void Initialize(Image background, Text nameLabel, Text hpLabel, RectTransform hpFillRect, Text armorLabel, Text statusLabel, Text secretLabel, RectTransform threatFillRoot, Image[] threatSegmentFills, Text[] threatSegmentLabels, Text threatLabel, Text threatArrowLabel, Color baseColor, Image highlightBorder)
         {
             _background = background;
             _nameLabel = nameLabel;
@@ -47,6 +48,7 @@ namespace YoungBob.Prototype.UI.Battle
             _secretLabel = secretLabel;
             _threatFillRoot = threatFillRoot;
             _threatLabel = threatLabel;
+            _threatArrowLabel = threatArrowLabel;
             for (var i = 0; i < _threatSegmentFills.Length; i++)
             {
                 _threatSegmentFills[i] = threatSegmentFills != null && i < threatSegmentFills.Length ? threatSegmentFills[i] : null;
@@ -55,9 +57,10 @@ namespace YoungBob.Prototype.UI.Battle
             _baseColor = baseColor;
             _highlightBorder = highlightBorder;
             if (_highlightBorder != null) _highlightBorder.gameObject.SetActive(false);
+            if (_threatArrowLabel != null) _threatArrowLabel.gameObject.SetActive(false);
         }
 
-        public void SetData(BattleTargetFaction faction, string unitId, string displayName, int hp, int maxHp, int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, int threatValue, int threatTier, string secretSummary, bool detailedMode, SlotHighlightMode highlightMode)
+        public void SetData(BattleTargetFaction faction, string unitId, string displayName, int hp, int maxHp, int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, int threatValue, int threatTier, string secretSummary, bool detailedMode, bool isThreatTarget, SlotHighlightMode highlightMode)
         {
             Faction = faction;
             UnitId = unitId;
@@ -98,6 +101,11 @@ namespace YoungBob.Prototype.UI.Battle
                 _secretLabel.text = secrets;
                 _secretLabel.gameObject.SetActive(!string.IsNullOrEmpty(secrets) && IsAlive);
             }
+
+            if (_threatArrowLabel != null)
+            {
+                _threatArrowLabel.gameObject.SetActive(IsAlive && isThreatTarget);
+            }
             
             if (IsAlive)
             {
@@ -123,6 +131,10 @@ namespace YoungBob.Prototype.UI.Battle
                 if (_threatLabel != null)
                 {
                     _threatLabel.gameObject.SetActive(false);
+                }
+                if (_threatArrowLabel != null)
+                {
+                    _threatArrowLabel.gameObject.SetActive(false);
                 }
                 if (_threatFillRoot != null)
                 {

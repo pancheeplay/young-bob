@@ -138,7 +138,8 @@ namespace YoungBob.Prototype.Battle
                 for (var i = 0; i < context.state.players.Count; i++)
                 {
                     var player = context.state.players[i];
-                    if (player != null && player.hp > 0)
+                    if (player != null && player.hp > 0
+                        && BattleTargetingRules.CanTargetPlayer(context.state, context.actingPlayer, context.definition, BattleTargetType.AllAllies, player))
                     {
                         targets.Add(EffectTargetRef.ForPlayer(player));
                     }

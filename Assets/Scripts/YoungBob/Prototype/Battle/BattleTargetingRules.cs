@@ -55,6 +55,11 @@ namespace YoungBob.Prototype.Battle
                 return false;
             }
 
+            if (RequiresTargetWithCards(card) && targetPlayer.hand.Count == 0)
+            {
+                return false;
+            }
+
             if (!BattleTargetResolver.IsPlayerDistanceInRange(card.rangeDistance, actingPlayer.area, targetPlayer.area))
             {
                 return false;
@@ -98,6 +103,30 @@ namespace YoungBob.Prototype.Battle
             {
                 return false;
             }
+        }
+
+        private static bool RequiresTargetWithCards(CardDefinition card)
+        {
+            if (card == null || card.effects == null || card.effects.Length == 0)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < card.effects.Length; i++)
+            {
+                var effect = card.effects[i];
+                if (effect == null || string.IsNullOrWhiteSpace(effect.op))
+                {
+                    continue;
+                }
+
+                if (string.Equals(effect.op, "CopyAndPlunder", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
