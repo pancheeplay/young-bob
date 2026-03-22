@@ -968,22 +968,21 @@ namespace YoungBob.Prototype.UI.Battle
             actorBodyImage.raycastTarget = false;
             actorBodyImage.color = new Color(color.r * 1.08f, color.g * 1.08f, color.b * 1.08f, color.a);
 
-            var actorBodyShade = UiFactory.CreatePanel(actorBody.transform, "Shade", new Color(0f, 0f, 0f, 0.15f), new Vector2(0f, 0f), new Vector2(1f, 0.38f), Vector2.zero, Vector2.zero);
+            var actorBodyShade = UiFactory.CreatePanel(actorBody.transform, "Shade", new Color(0f, 0f, 0f, 0.12f), new Vector2(0f, 0f), new Vector2(1f, 0.38f), Vector2.zero, Vector2.zero);
             actorBodyShade.GetComponent<Image>().raycastTarget = false;
 
             var isLocalPlayer = string.Equals(unitId, _session.LocalPlayerId, StringComparison.Ordinal);
             var actorHalfWidth = actorUnitWidth * 0.5f;
-            var actorMarker = UiFactory.CreateText(actorBody.transform, "ActorMarker", 34, TextAnchor.MiddleCenter, new Vector2(0f, 0.28f), new Vector2(1f, 0.9f), Vector2.zero, Vector2.zero);
-            actorMarker.text = resolvePlayerMarker(unitId);
-            actorMarker.fontStyle = FontStyle.Bold;
-            actorMarker.color = isLocalPlayer ? new Color(0.96f, 0.98f, 1f, 0.96f) : new Color(0.78f, 0.84f, 0.91f, 0.88f);
-            actorMarker.raycastTarget = false;
-            var actorNameBand = UiFactory.CreatePanel(actorBody.transform, "NameBand", new Color(0.03f, 0.05f, 0.08f, 0.68f), new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 24f));
-            actorNameBand.GetComponent<Image>().raycastTarget = false;
-            var nameLabel = UiFactory.CreateText(actorNameBand.transform, "Name", 15, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(6f, 0f), new Vector2(-6f, 0f));
-            nameLabel.color = new Color(0.94f, 0.96f, 0.98f, 0.98f);
-            nameLabel.fontStyle = FontStyle.Bold;
-            nameLabel.raycastTarget = false;
+            var silhouetteHead = UiFactory.CreatePanel(actorBody.transform, "SilhouetteHead", new Color(0.93f, 0.96f, 0.99f, 0.96f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-20f, 8f), new Vector2(20f, 48f));
+            silhouetteHead.GetComponent<Image>().raycastTarget = false;
+            var silhouetteBody = UiFactory.CreatePanel(actorBody.transform, "SilhouetteBody", new Color(0.93f, 0.96f, 0.99f, 0.92f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-9f, -26f), new Vector2(9f, 10f));
+            silhouetteBody.GetComponent<Image>().raycastTarget = false;
+            var silhouetteArms = UiFactory.CreatePanel(actorBody.transform, "SilhouetteArms", new Color(0.86f, 0.91f, 0.96f, 0.88f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-18f, -8f), new Vector2(18f, 0f));
+            silhouetteArms.GetComponent<Image>().raycastTarget = false;
+            var silhouetteLegLeft = UiFactory.CreatePanel(actorBody.transform, "SilhouetteLegLeft", new Color(0.86f, 0.91f, 0.96f, 0.82f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-10f, -40f), new Vector2(-2f, -24f));
+            silhouetteLegLeft.GetComponent<Image>().raycastTarget = false;
+            var silhouetteLegRight = UiFactory.CreatePanel(actorBody.transform, "SilhouetteLegRight", new Color(0.86f, 0.91f, 0.96f, 0.82f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(2f, -40f), new Vector2(10f, -24f));
+            silhouetteLegRight.GetComponent<Image>().raycastTarget = false;
 
             var localLine = UiFactory.CreatePanel(slotObject.transform, "LocalLine", isLocalPlayer ? new Color(0.98f, 0.99f, 1f, 0.82f) : new Color(1f, 1f, 1f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-actorHalfWidth, 2f), new Vector2(actorHalfWidth, 4f));
             var localLineImage = localLine.GetComponent<Image>();
@@ -999,9 +998,9 @@ namespace YoungBob.Prototype.UI.Battle
             infoRect.sizeDelta = new Vector2(150f, 118f);
             infoRect.anchoredPosition = new Vector2(0f, -8f);
             var infoBg = infoBase.AddComponent<Image>();
-            infoBg.color = new Color(0.05f, 0.08f, 0.11f, 0.9f);
+            infoBg.color = new Color(0.03f, 0.05f, 0.08f, 0.34f);
             infoBg.raycastTarget = false;
-            var infoBorder = UiFactory.CreatePanel(infoBase.transform, "InfoBorder", new Color(1f, 1f, 1f, 0.05f), Vector2.zero, Vector2.one, new Vector2(-1f, -1f), new Vector2(1f, 1f));
+            var infoBorder = UiFactory.CreatePanel(infoBase.transform, "InfoBorder", new Color(1f, 1f, 1f, 0.02f), Vector2.zero, Vector2.one, new Vector2(-1f, -1f), new Vector2(1f, 1f));
             infoBorder.GetComponent<Image>().raycastTarget = false;
             infoBorder.transform.SetAsFirstSibling();
 
@@ -1049,7 +1048,7 @@ namespace YoungBob.Prototype.UI.Battle
             borderObj.transform.SetAsFirstSibling();
 
             var slotView = slotObject.AddComponent<BattleUnitSlotView>();
-            slotView.Initialize(actorBodyImage, nameLabel, hpLabel, hpFill, null, statusLabel, secretLabel, threatBase.GetComponent<RectTransform>(), threatSegmentFills, new Text[3], null, threatArrow, color, borderObj.GetComponent<Image>(), localLine.GetComponent<Image>(), isLocalPlayer);
+            slotView.Initialize(actorBodyImage, null, hpLabel, hpFill, null, statusLabel, secretLabel, threatBase.GetComponent<RectTransform>(), threatSegmentFills, new Text[3], null, threatArrow, color, borderObj.GetComponent<Image>(), localLine.GetComponent<Image>(), isLocalPlayer);
             slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, vulnerableStacks, statuses, threatValue, threatTier, secretSummary, detailedMode, isThreatTarget, highlightMode);
             return slotView;
         }

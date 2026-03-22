@@ -81,7 +81,10 @@ namespace YoungBob.Prototype.UI.Battle
             UnitId = unitId;
             IsAlive = hp > 0;
             
-            _nameLabel.text = displayName;
+            if (_nameLabel != null)
+            {
+                _nameLabel.text = displayName;
+            }
             _hpLabel.text = $"{hp} / {maxHp}";
 
             UpdateThreatVisuals(threatValue, threatTier);
@@ -119,7 +122,7 @@ namespace YoungBob.Prototype.UI.Battle
             if (IsAlive)
             {
                 _background.color = _baseColor;
-                _nameLabel.color = Color.white;
+                if (_nameLabel != null) _nameLabel.color = Color.white;
                 _hpLabel.color = Color.white;
                 if (_localLine != null)
                 {
@@ -139,7 +142,7 @@ namespace YoungBob.Prototype.UI.Battle
             else
             {
                 _background.color = new Color(0.12f, 0.12f, 0.12f, 0.9f);
-                _nameLabel.color = new Color(0.4f, 0.4f, 0.4f);
+                if (_nameLabel != null) _nameLabel.color = new Color(0.4f, 0.4f, 0.4f);
                 _hpLabel.color = new Color(0.4f, 0.4f, 0.4f);
                 _hpLabel.text = "已阵亡";
                 if (_threatLabel != null)
@@ -291,7 +294,7 @@ namespace YoungBob.Prototype.UI.Battle
         {
             var sb = new StringBuilder();
             var totalVulnerable = Math.Max(0, vulnerableStacks);
-            if (armor > 0) sb.Append(detailedMode ? "护甲" : "甲").Append(armor).Append(' ');
+            if (armor > 0) sb.Append("护甲").Append(armor).Append(' ');
             if (charge > 0) sb.Append(detailedMode ? "蓄力" : "⚡").Append(charge).Append(' ');
             if (bonus > 0) sb.Append(detailedMode ? "增伤+" : "💥+").Append(bonus).Append(' ');
 
@@ -316,6 +319,10 @@ namespace YoungBob.Prototype.UI.Battle
                     else if (string.Equals(status.id, BattleStatusSystem.VulnerableStatusId, System.StringComparison.OrdinalIgnoreCase))
                     {
                         totalVulnerable += status.stacks;
+                    }
+                    else if (string.Equals(status.id, BattleStatusSystem.TempArmorStatusId, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
                     }
                     else if (IsSecretStatusId(status.id))
                     {
