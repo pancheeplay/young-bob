@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DotnetVerifier")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7e57ceabb8b2fd5fd5510347cd0ecf34c0d5e9db")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+185e675939e4a97eefbc1af4a4ade0c081f89177")]
 [assembly: System.Reflection.AssemblyProductAttribute("DotnetVerifier")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DotnetVerifier")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

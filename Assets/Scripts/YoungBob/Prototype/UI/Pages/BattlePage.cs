@@ -31,9 +31,11 @@ namespace YoungBob.Prototype.UI.Pages
             _canvas = parent.GetComponent<Canvas>();
             _topBarSection = new BattleTopBarSection(Root.transform, ToggleStatusMode, Session.EndBattleAndReturnToLobby);
             _stageSurfaceView = new BattleStageSurfaceView(Root.transform);
-            _logSection = new BattleLogSection(_stageSurfaceView.LogHost);
-            _handSection = new BattleHandSection(Root.transform, Session, _canvas, ToggleQuickChatWheel, SendQuickChat, Session.ToggleTurnReady);
+            
             _boardSection = new BattleBoardSection(_stageSurfaceView.BoardHost, Session);
+            _logSection = new BattleLogSection(_stageSurfaceView.LogHost);
+            
+            _handSection = new BattleHandSection(Root.transform, Session, _canvas, ToggleQuickChatWheel, SendQuickChat, Session.ToggleTurnReady);
             _targetingController = new BattleTargetingController(_canvas, Session, _boardSection, () => RenderBoard(_lastState), text => _handSection.SetTargetHint(text));
             _phaseBannerSection = new BattlePhaseBannerSection(Root.transform);
             _stageFxController = new BattleStageFxController(_canvas, Session, _boardSection);

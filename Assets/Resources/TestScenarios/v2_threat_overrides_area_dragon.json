@@ -62,6 +62,14 @@
     {
       "action": "end_turn",
       "actorPlayerId": "p2",
+      "snapshotTag": "after_end_turns"
+    },
+    {
+      "action": "begin_monster_turn",
+      "snapshotTag": "after_monster_turn_begin"
+    },
+    {
+      "action": "resolve_monster_turn",
       "snapshotTag": "after_monster_turn"
     }
   ],
@@ -119,6 +127,12 @@
       "actualPath": "after_monster_turn",
       "expected": "monster_action >> monster_gain_card >> apply_vulnerable",
       "message": "dragon skill resolves in the expected order on the threatened area"
+    },
+    {
+      "type": "phase_equals",
+      "actualPath": "after_monster_turn",
+      "expected": "PlayerTurnStart",
+      "message": "怪物行动后进入玩家回合开始阶段"
     }
   ]
 }

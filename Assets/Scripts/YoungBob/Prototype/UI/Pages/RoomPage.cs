@@ -27,7 +27,6 @@ namespace YoungBob.Prototype.UI.Pages
         private readonly Button _deckSelectButton;
         private readonly Text _deckSelectLabel;
         private readonly Text _deckSummaryText;
-        private readonly Button _chatButton;
         private readonly GameObject _quickChatMask;
         private readonly Button _startBattleButton;
         private readonly Button _leaveRoomButton;
@@ -102,7 +101,6 @@ namespace YoungBob.Prototype.UI.Pages
             _selectionPopup.Closed += () => { _selectorMode = SelectorMode.None; };
 
             _chatText = null;
-            _chatButton = null;
             _quickChatMask = null;
 
             Hide();

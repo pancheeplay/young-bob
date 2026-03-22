@@ -48,7 +48,19 @@
     {
       "action": "end_turn",
       "actorPlayerId": "p2",
+      "snapshotTag": "after_first_end_turns"
+    },
+    {
+      "action": "begin_monster_turn",
+      "snapshotTag": "after_first_monster_turn_begin"
+    },
+    {
+      "action": "resolve_monster_turn",
       "snapshotTag": "after_first_monster_turn"
+    },
+    {
+      "action": "begin_player_turn",
+      "snapshotTag": "after_first_player_turn"
     },
     {
       "action": "debug_add_card_to_hand",
@@ -71,6 +83,14 @@
     {
       "action": "end_turn",
       "actorPlayerId": "p2",
+      "snapshotTag": "after_second_end_turns"
+    },
+    {
+      "action": "begin_monster_turn",
+      "snapshotTag": "after_second_monster_turn_begin"
+    },
+    {
+      "action": "resolve_monster_turn",
       "snapshotTag": "after_second_monster_turn"
     }
   ],
@@ -98,6 +118,12 @@
       "field": "hp",
       "expectedInt": 24,
       "message": "Beta is not hit while east side has no aggro"
+    },
+    {
+      "type": "phase_equals",
+      "actualPath": "after_first_player_turn",
+      "expected": "PlayerTurn",
+      "message": "first monster turn resolves before the next player turn starts"
     },
     {
       "type": "player_field_equals",
@@ -138,6 +164,12 @@
       "actualPath": "after_second_monster_turn",
       "expected": "monster_action >> monster_hit",
       "message": "monster attack resolves after choosing the action"
+    },
+    {
+      "type": "phase_equals",
+      "actualPath": "after_second_monster_turn",
+      "expected": "PlayerTurnStart",
+      "message": "second monster turn ends at player turn start"
     }
   ]
 }

@@ -5,7 +5,6 @@ namespace YoungBob.Prototype.Multiplayer
 {
     public sealed class TapTapMultiplayerService : IMultiplayerService
     {
-        
         public event Action<string> Connected;
         public event Action<string> TransportError;
         public event Action<RoomJoinedEvent> RoomJoined;
@@ -24,43 +23,43 @@ namespace YoungBob.Prototype.Multiplayer
 
         public void Connect(string playerId, string displayName)
         {
-            throw new NotImplementedException(
-                "TapTap runtime is not available for the current compilation target. Switch to the TapTap minigame target, or enable editor debug mode for the package.");
+            throw CreateUnavailableException();
         }
 
         public void Disconnect()
         {
-            throw new NotImplementedException("TapTap runtime is not available for the current compilation target.");
+            throw CreateUnavailableException();
         }
 
         public void CreateRoom()
         {
-            throw new NotImplementedException("TapTap runtime is not available for the current compilation target.");
+            throw CreateUnavailableException();
         }
 
         public void MatchOrCreateRoom()
         {
-            throw new NotImplementedException("TapTap runtime is not available for the current compilation target.");
+            throw CreateUnavailableException();
         }
 
         public void RefreshRoomList()
         {
-            throw new NotImplementedException("TapTap runtime is not available for the current compilation target.");
+            RoomListUpdated?.Invoke(Array.Empty<RoomListItem>());
+            throw CreateUnavailableException();
         }
 
         public void JoinRoom(string roomId)
         {
-            throw new NotImplementedException("TapTap runtime is not available for the current compilation target.");
+            throw CreateUnavailableException();
         }
 
         public void LeaveRoom()
         {
-            throw new NotImplementedException("TapTap runtime is not available for the current compilation target.");
+            throw CreateUnavailableException();
         }
 
         public void Send(MultiplayerMessage message)
         {
-            throw new NotImplementedException("TapTap runtime is not available for the current compilation target.");
+            throw CreateUnavailableException();
         }
 
         public void RaiseConnected(string playerId)
@@ -76,6 +75,13 @@ namespace YoungBob.Prototype.Multiplayer
         public void RaiseMessageReceived(MultiplayerMessage message)
         {
             MessageReceived?.Invoke(message);
+        }
+
+        private NotImplementedException CreateUnavailableException()
+        {
+            const string message = "TapTap runtime is not available for the current compilation target.";
+            TransportError?.Invoke(message);
+            return new NotImplementedException(message);
         }
     }
 }

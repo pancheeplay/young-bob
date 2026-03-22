@@ -11,7 +11,7 @@ namespace YoungBob.Prototype.UI.Battle
 
         public BattleStageSurfaceView(Transform parent)
         {
-            var surface = UiFactory.CreatePanel(parent, "BattleStageSurface", new Color(0.04f, 0.06f, 0.09f, 0.96f), new Vector2(0f, 0.24f), new Vector2(1f, 0.82f), new Vector2(10f, 8f), new Vector2(-10f, -8f));
+            var surface = UiFactory.CreatePanel(parent, "BattleStageSurface", new Color(0.04f, 0.06f, 0.09f, 0.96f), new Vector2(0f, 0.25f), new Vector2(1f, 0.92f), Vector2.zero, Vector2.zero);
             SurfaceRect = surface.GetComponent<RectTransform>();
             var surfaceImage = surface.GetComponent<Image>();
             surfaceImage.type = Image.Type.Sliced;
@@ -20,16 +20,16 @@ namespace YoungBob.Prototype.UI.Battle
             surfaceGlow.transform.SetAsFirstSibling();
             surfaceGlow.GetComponent<Image>().raycastTarget = false;
 
-            var boardFrame = UiFactory.CreatePanel(surface.transform, "BoardFrame", Color.clear, new Vector2(0f, 0.42f), new Vector2(1f, 1f), new Vector2(6f, 6f), new Vector2(-6f, -2f));
+            var boardFrame = UiFactory.CreatePanel(surface.transform, "BoardFrame", Color.clear, new Vector2(0f, 0.4f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             boardFrame.GetComponent<Image>().raycastTarget = false;
             BoardHost = boardFrame.transform;
 
-            var logFrame = UiFactory.CreatePanel(surface.transform, "LogFrame", Color.clear, new Vector2(0f, 0f), new Vector2(1f, 0.42f), new Vector2(6f, 2f), new Vector2(-6f, -6f));
+            var logFrame = UiFactory.CreatePanel(surface.transform, "LogFrame", Color.clear, new Vector2(0f, 0f), new Vector2(1f, 0.4f), new Vector2(6f, 2f), new Vector2(-6f, -6f));
             logFrame.GetComponent<Image>().raycastTarget = false;
             LogHost = logFrame.transform;
 
-            var divider = UiFactory.CreatePanel(surface.transform, "Divider", new Color(0.55f, 0.65f, 0.75f, 0.12f), new Vector2(0.04f, 0.41f), new Vector2(0.96f, 0.414f), Vector2.zero, Vector2.zero);
-            divider.GetComponent<Image>().raycastTarget = false;
+            // var divider = UiFactory.CreatePanel(surface.transform, "Divider", new Color(0.55f, 0.65f, 0.75f, 0.12f), new Vector2(0.04f, 0.41f), new Vector2(0.96f, 0.414f), Vector2.zero, Vector2.zero);
+            // divider.GetComponent<Image>().raycastTarget = false;
         }
     }
 }

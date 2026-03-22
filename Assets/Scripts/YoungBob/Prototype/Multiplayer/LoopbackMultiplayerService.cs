@@ -28,6 +28,12 @@ namespace YoungBob.Prototype.Multiplayer
 
         public void Connect(string playerId, string displayName)
         {
+            if (string.IsNullOrWhiteSpace(playerId))
+            {
+                TransportError?.Invoke("Loopback connect requires a player id.");
+                return;
+            }
+
             _localPlayerId = playerId;
             _localDisplayName = displayName;
             Connected?.Invoke(_localPlayerId);

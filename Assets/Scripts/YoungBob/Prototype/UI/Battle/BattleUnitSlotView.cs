@@ -27,7 +27,6 @@ namespace YoungBob.Prototype.UI.Battle
         private Text _threatArrowLabel;
         private Text _nameLabel;
         private Text _hpLabel;
-        private Text _armorLabel;
         private Text _secretLabel;
         private Image _localLine;
         private RectTransform _localLineRect;
@@ -51,7 +50,6 @@ namespace YoungBob.Prototype.UI.Battle
             _hpLabel = hpLabel;
             _hpFillRect = hpFillRect;
             if (_hpFillRect != null) _hpFillImage = _hpFillRect.GetComponent<Image>();
-            _armorLabel = armorLabel;
             _statusLabel = statusLabel;
             _secretLabel = secretLabel;
             _threatFillRoot = threatFillRoot;
@@ -99,15 +97,9 @@ namespace YoungBob.Prototype.UI.Battle
                 }
             }
 
-            if (_armorLabel != null)
-            {
-                _armorLabel.text = armor > 0 ? (detailedMode ? "护甲 " + armor : "🛡️ " + armor) : "";
-                _armorLabel.gameObject.SetActive(armor > 0);
-            }
-
             if (_statusLabel != null)
             {
-                var status = BuildStatusText(charge, bonus, vulnerableStacks, statuses, detailedMode);
+                var status = BuildStatusText(armor, charge, bonus, vulnerableStacks, statuses, detailedMode);
                 _statusLabel.text = status;
                 _statusLabel.gameObject.SetActive(!string.IsNullOrEmpty(status) && IsAlive);
             }
@@ -129,11 +121,6 @@ namespace YoungBob.Prototype.UI.Battle
                 _background.color = _baseColor;
                 _nameLabel.color = Color.white;
                 _hpLabel.color = Color.white;
-                if (_armorLabel != null) 
-                {
-                    _armorLabel.color = new Color(0.6f, 0.8f, 1f);
-                    _armorLabel.gameObject.SetActive(armor > 0);
-                }
                 if (_localLine != null)
                 {
                     _localLine.gameObject.SetActive(_isLocalPlayer);
@@ -168,7 +155,6 @@ namespace YoungBob.Prototype.UI.Battle
                     _threatFillRoot.gameObject.SetActive(false);
                 }
                 
-                if (_armorLabel != null) _armorLabel.gameObject.SetActive(false);
                 if (_statusLabel != null) _statusLabel.gameObject.SetActive(false);
                 if (_secretLabel != null) _secretLabel.gameObject.SetActive(false);
                 if (_localLine != null) _localLine.gameObject.SetActive(false);
@@ -301,10 +287,11 @@ namespace YoungBob.Prototype.UI.Battle
             }
         }
 
-        private static string BuildStatusText(int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, bool detailedMode)
+        private static string BuildStatusText(int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, bool detailedMode)
         {
             var sb = new StringBuilder();
             var totalVulnerable = Math.Max(0, vulnerableStacks);
+            if (armor > 0) sb.Append(detailedMode ? "护甲" : "甲").Append(armor).Append(' ');
             if (charge > 0) sb.Append(detailedMode ? "蓄力" : "⚡").Append(charge).Append(' ');
             if (bonus > 0) sb.Append(detailedMode ? "增伤+" : "💥+").Append(bonus).Append(' ');
 
