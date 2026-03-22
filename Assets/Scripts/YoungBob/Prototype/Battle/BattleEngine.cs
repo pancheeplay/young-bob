@@ -30,7 +30,6 @@ namespace YoungBob.Prototype.Battle
             };
 
             ResolveInitialStageAndEncounter(setup, state, out var openingEncounterId, out var openingMonsterDefinition);
-            state.currentPrompt = BuildTeamTurnPrompt(state);
 
             foreach (var participant in setup.players)
             {
@@ -185,7 +184,6 @@ namespace YoungBob.Prototype.Battle
             }
 
             state.phase = BattlePhase.MonsterTurnResolve;
-            state.currentPrompt = BuildMonsterTurnResolvePrompt(state);
             result.events.Add(new BattleEvent
             {
                 eventId = "monster_turn_start",
@@ -301,13 +299,11 @@ namespace YoungBob.Prototype.Battle
 
             if (!BattleTargetResolver.HaveAllAlivePlayersEnded(state.players))
             {
-                state.currentPrompt = "等待队友结束回合";
                 result.success = true;
                 return result;
             }
 
             state.phase = BattlePhase.MonsterTurnStart;
-            state.currentPrompt = BuildMonsterTurnPrompt(state);
             result.events.Add(new BattleEvent
             {
                 eventId = "monster_turn_pending",
@@ -327,7 +323,6 @@ namespace YoungBob.Prototype.Battle
             }
 
             player.hasEndedTurn = false;
-            state.currentPrompt = BuildTeamTurnPrompt(state);
             result.events.Add(new BattleEvent
             {
                 eventId = "player_cancel_end_turn",
@@ -339,12 +334,9 @@ namespace YoungBob.Prototype.Battle
 
         private void RunMonsterTurn(BattleState state, BattleCommandResult result)
         {
-            state.currentPrompt = BuildMonsterTurnResolvePrompt(state);
-
             if (state.monster == null)
             {
                 state.phase = BattlePhase.Defeat;
-                state.currentPrompt = "失败";
                 result.events.Add(new BattleEvent { eventId = "no_monster" });
                 return;
             }
@@ -374,13 +366,11 @@ namespace YoungBob.Prototype.Battle
             if (BattleTargetResolver.AllPlayersDead(state.players))
             {
                 state.phase = BattlePhase.Defeat;
-                state.currentPrompt = "失败";
                 result.events.Add(new BattleEvent { eventId = "team_defeated" });
                 return;
             }
 
             state.phase = BattlePhase.PlayerTurnStart;
-            state.currentPrompt = BuildPlayerTurnStartPrompt(state);
             result.events.Add(new BattleEvent
             {
                 eventId = "player_turn_pending",
@@ -420,7 +410,6 @@ namespace YoungBob.Prototype.Battle
 
             BattleStatusSystem.TickPoisonOnPlayersAtTurnStart(state, result);
 
-            state.currentPrompt = BuildTeamTurnPrompt(state);
             result.events.Add(new BattleEvent
             {
                 eventId = "round_start",
@@ -468,7 +457,6 @@ namespace YoungBob.Prototype.Battle
             if (encounterIds == null || encounterIds.Length == 0)
             {
                 state.phase = BattlePhase.Victory;
-                state.currentPrompt = "胜利";
                 result.events.Add(new BattleEvent
                 {
                     eventId = "stage_cleared",
@@ -482,7 +470,6 @@ namespace YoungBob.Prototype.Battle
             if (!hasNextEncounter)
             {
                 state.phase = BattlePhase.Victory;
-                state.currentPrompt = "关卡完成";
                 result.events.Add(new BattleEvent
                 {
                     eventId = "encounter_cleared",
@@ -512,7 +499,6 @@ namespace YoungBob.Prototype.Battle
             }
 
             state.phase = BattlePhase.PlayerTurnStart;
-            state.currentPrompt = BuildPlayerTurnStartPrompt(state);
             result.events.Add(new BattleEvent
             {
                 eventId = "encounter_cleared",
@@ -525,32 +511,6 @@ namespace YoungBob.Prototype.Battle
                 amount = state.stageEncounterIndex + 1,
                 amount2 = encounterIds.Length
             });
-        }
-
-        private string BuildTeamTurnPrompt(BattleState state)
-        {
-            var encounterTotal = state.stageEncounterIds == null ? 0 : state.stageEncounterIds.Length;
-            if (encounterTotal <= 0)
-            {
-                return "队伍回合";
-            }
-
-            return "队伍回合 - 遭遇 " + (state.stageEncounterIndex + 1) + "/" + encounterTotal;
-        }
-
-        private string BuildMonsterTurnPrompt(BattleState state)
-        {
-            return "敌方回合";
-        }
-
-        private string BuildMonsterTurnResolvePrompt(BattleState state)
-        {
-            return "敌人正在行动";
-        }
-
-        private string BuildPlayerTurnStartPrompt(BattleState state)
-        {
-            return "我方回合开始";
         }
 
         private void ResolveInitialStageAndEncounter(

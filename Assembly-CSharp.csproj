@@ -125,6 +125,7 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/App/PrototypeSessionController.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/UiFactory.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/RoomListUI.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/Battle/BattleUiTextMapper.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/MoveData.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/App/SessionPayloadParser.cs" />
     <Compile Include="Assets/TapOnlineBattleDemo/Scripts/FrameRateStats.cs" />

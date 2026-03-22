@@ -190,7 +190,6 @@ namespace YoungBob.Prototype.Battle
             }
 
             state.phase = BattlePhase.Victory;
-            state.currentPrompt = "胜利";
             result.events.Add(new BattleEvent
             {
                 eventId = "stage_cleared",

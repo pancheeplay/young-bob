@@ -30,8 +30,11 @@ namespace YoungBob.Prototype.UI.Battle
         private Text _armorLabel;
         private Text _secretLabel;
         private Image _localLine;
+        private RectTransform _localLineRect;
         private Color _baseColor;
         private Color _localLineBaseColor;
+        private Vector2 _localLineBaseOffsetMin;
+        private Vector2 _localLineBaseOffsetMax;
         private bool _isLocalPlayer;
         private float _damagePulseUntilTime;
 
@@ -62,8 +65,14 @@ namespace YoungBob.Prototype.UI.Battle
             _baseColor = baseColor;
             _highlightBorder = highlightBorder;
             _localLine = localLine;
+            _localLineRect = localLine != null ? localLine.rectTransform : null;
             _isLocalPlayer = isLocalPlayer;
             _localLineBaseColor = _localLine != null ? _localLine.color : Color.clear;
+            if (_localLineRect != null)
+            {
+                _localLineBaseOffsetMin = _localLineRect.offsetMin;
+                _localLineBaseOffsetMax = _localLineRect.offsetMax;
+            }
             if (_highlightBorder != null) _highlightBorder.gameObject.SetActive(false);
             if (_threatArrowLabel != null) _threatArrowLabel.gameObject.SetActive(false);
         }
@@ -129,6 +138,11 @@ namespace YoungBob.Prototype.UI.Battle
                 {
                     _localLine.gameObject.SetActive(_isLocalPlayer);
                     _localLine.color = _localLineBaseColor;
+                    if (_localLineRect != null)
+                    {
+                        _localLineRect.offsetMin = _localLineBaseOffsetMin;
+                        _localLineRect.offsetMax = _localLineBaseOffsetMax;
+                    }
                 }
                 if (_hpFillRect != null && _hpFillRect.parent != null) _hpFillRect.parent.gameObject.SetActive(true);
                 
@@ -183,11 +197,17 @@ namespace YoungBob.Prototype.UI.Battle
 
         private void Update()
         {
-            if (_localLine != null && _isLocalPlayer && IsAlive)
+            if (_localLine != null && _localLineRect != null && _isLocalPlayer && IsAlive)
             {
-                var pulse = 0.72f + 0.28f * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.6f));
+                var normalized = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.35f);
+                var widthScale = Mathf.Lerp(0.5f, 1f, normalized);
+                var halfWidth = (_localLineBaseOffsetMax.x - _localLineBaseOffsetMin.x) * 0.5f * widthScale;
+                _localLineRect.offsetMin = new Vector2(-halfWidth, _localLineBaseOffsetMin.y);
+                _localLineRect.offsetMax = new Vector2(halfWidth, _localLineBaseOffsetMax.y);
+
+                var pulse = 0.86f + 0.14f * normalized;
                 var color = _localLineBaseColor;
-                color.a = _localLineBaseColor.a * pulse;
+                color.a = Mathf.Clamp01(_localLineBaseColor.a * pulse);
                 _localLine.color = color;
             }
 

@@ -198,7 +198,6 @@ namespace YoungBob.Prototype.Battle
         public int randomSeed;
         public int turnIndex;
         public BattlePhase phase;
-        public string currentPrompt;
         public List<PlayerBattleState> players = new List<PlayerBattleState>();
         public MonsterBattleState monster;
         public List<string> loot = new List<string>();

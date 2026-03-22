@@ -14,22 +14,21 @@ namespace YoungBob.Prototype.UI.Battle
         public Button DiscardPileButton { get; private set; }
         public Button ExhaustPileButton { get; private set; }
         public Button EndTurnButton { get; private set; }
-        public Text EndTurnStateText { get; private set; }
         public RectTransform EndTurnReadyRoot { get; private set; }
         public Text EffectTargetHintText { get; private set; }
         public RectTransform QuickChatAnchor { get; private set; }
 
         public BattleHandPanelView(Transform parent, UnityEngine.Events.UnityAction toggleQuickChat, UnityEngine.Events.UnityAction endTurn)
         {
-            var root = UiFactory.CreatePanel(parent, "BattleHandPanel", new Color(0.05f, 0.07f, 0.1f, 0.92f), new Vector2(0f, 0.04f), new Vector2(1f, 0.26f), new Vector2(10f, 8f), new Vector2(-10f, -2f));
+            var root = UiFactory.CreatePanel(parent, "BattleHandPanel", new Color(0.05f, 0.07f, 0.1f, 0.92f), new Vector2(0f, 0f), new Vector2(1f, 0.25f), new Vector2(10f, 8f), new Vector2(-10f, -8f));
             HandPanelRect = root.GetComponent<RectTransform>();
             root.GetComponent<Image>().type = Image.Type.Sliced;
 
-            var topGlow = UiFactory.CreatePanel(root.transform, "TopGlow", new Color(0.31f, 0.63f, 0.75f, 0.06f), new Vector2(0f, 0.72f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            var topGlow = UiFactory.CreatePanel(root.transform, "TopGlow", new Color(0.31f, 0.63f, 0.75f, 0.06f), new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             topGlow.transform.SetAsFirstSibling();
             topGlow.GetComponent<Image>().raycastTarget = false;
 
-            var controlBar = UiFactory.CreatePanel(root.transform, "ControlBar", new Color(0.08f, 0.11f, 0.15f, 0.96f), new Vector2(0f, 0.68f), new Vector2(1f, 1f), new Vector2(8f, 8f), new Vector2(-8f, -6f));
+            var controlBar = UiFactory.CreatePanel(root.transform, "ControlBar", new Color(0.08f, 0.11f, 0.15f, 0.96f), new Vector2(0f, 0.7f), new Vector2(1f, 1f), new Vector2(8f, 8f), new Vector2(-8f, -6f));
             controlBar.GetComponent<Image>().type = Image.Type.Sliced;
 
             EnergyLabel = UiFactory.CreateText(controlBar.transform, "EnergyLabel", 30, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(0.32f, 1f), new Vector2(16f, 0f), new Vector2(0f, 0f));
@@ -44,7 +43,7 @@ namespace YoungBob.Prototype.UI.Battle
             actionLayout.childForceExpandWidth = false;
             actionLayout.childForceExpandHeight = false;
             actionLayout.spacing = 8f;
-            actionLayout.padding = new RectOffset(0, 0, 6, 6);
+            actionLayout.padding = new RectOffset(0, 0, 10, 10);
 
             ChatButton = UiFactory.CreateButton(actionRow.transform, "QuickChatButton", "聊天", toggleQuickChat);
             ChatButton.image.color = new Color(0.13f, 0.23f, 0.31f, 0.96f);
@@ -59,15 +58,10 @@ namespace YoungBob.Prototype.UI.Battle
             EndTurnButton = UiFactory.CreateButton(actionRow.transform, "EndTurn", "结束回合", endTurn);
             EndTurnButton.image.color = new Color(0.12f, 0.43f, 0.26f, 0.98f);
             var endTurnRect = EndTurnButton.GetComponent<RectTransform>();
-            endTurnRect.sizeDelta = new Vector2(214f, 64f);
+            endTurnRect.sizeDelta = new Vector2(196f, 52f);
             var endTurnText = EndTurnButton.GetComponentInChildren<Text>();
             endTurnText.fontSize = UiFactory.ScaleFontSize(24);
             endTurnText.color = new Color(0.96f, 0.98f, 0.97f, 0.98f);
-
-            EndTurnStateText = UiFactory.CreateText(EndTurnButton.transform, "State", 11, TextAnchor.LowerCenter, Vector2.zero, Vector2.one, new Vector2(0f, 0f), new Vector2(0f, 4f));
-            EndTurnStateText.color = new Color(0.9f, 0.96f, 0.92f, 0.8f);
-            EndTurnStateText.text = string.Empty;
-            EndTurnStateText.raycastTarget = false;
 
             var readyRootObj = new GameObject("ReadyMarkers");
             readyRootObj.transform.SetParent(EndTurnButton.transform, false);
@@ -78,7 +72,7 @@ namespace YoungBob.Prototype.UI.Battle
             EndTurnReadyRoot.anchoredPosition = new Vector2(-8f, 8f);
             EndTurnReadyRoot.sizeDelta = new Vector2(110f, 24f);
 
-            var handShelf = UiFactory.CreatePanel(root.transform, "HandShelf", new Color(0.07f, 0.1f, 0.13f, 0.62f), new Vector2(0f, 0f), new Vector2(1f, 0.66f), new Vector2(8f, 8f), new Vector2(-8f, -4f));
+            var handShelf = UiFactory.CreatePanel(root.transform, "HandShelf", new Color(0.07f, 0.1f, 0.13f, 0.62f), new Vector2(0f, 0f), new Vector2(1f, 0.7f), new Vector2(8f, 8f), new Vector2(-8f, -8f));
             handShelf.GetComponent<Image>().raycastTarget = false;
             handShelf.transform.SetAsFirstSibling();
 
@@ -86,9 +80,9 @@ namespace YoungBob.Prototype.UI.Battle
             handViewport.transform.SetParent(root.transform, false);
             var viewportRect = handViewport.AddComponent<RectTransform>();
             viewportRect.anchorMin = new Vector2(0f, 0f);
-            viewportRect.anchorMax = new Vector2(1f, 0.68f);
+            viewportRect.anchorMax = new Vector2(1f, 0.7f);
             viewportRect.offsetMin = new Vector2(8f, 8f);
-            viewportRect.offsetMax = new Vector2(-8f, -4f);
+            viewportRect.offsetMax = new Vector2(-8f, -8f);
             handViewport.AddComponent<RectMask2D>();
 
             var handContent = UiFactory.CreatePanel(handViewport.transform, "HandContent", Color.clear, new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
@@ -96,7 +90,7 @@ namespace YoungBob.Prototype.UI.Battle
             handContentRect.pivot = new Vector2(0.5f, 0.5f);
             var handLayout = handContent.AddComponent<HorizontalLayoutGroup>();
             handLayout.spacing = -18f;
-            handLayout.padding = new RectOffset(30, 30, 10, 10);
+            handLayout.padding = new RectOffset(26, 26, 10, 4);
             handLayout.childAlignment = TextAnchor.LowerCenter;
             handLayout.childControlWidth = false;
             handLayout.childControlHeight = false;
@@ -104,7 +98,7 @@ namespace YoungBob.Prototype.UI.Battle
             handLayout.childForceExpandHeight = false;
             HandContainer = handContent.transform;
 
-            EffectTargetHintText = UiFactory.CreateText(parent, "EffectTargetHint", 16, TextAnchor.MiddleCenter, new Vector2(0.18f, 0.252f), new Vector2(0.82f, 0.28f), Vector2.zero, Vector2.zero);
+            EffectTargetHintText = UiFactory.CreateText(parent, "EffectTargetHint", 16, TextAnchor.MiddleCenter, new Vector2(0.18f, 0.286f), new Vector2(0.82f, 0.312f), Vector2.zero, Vector2.zero);
             EffectTargetHintText.color = new Color(0.84f, 0.9f, 0.96f, 0.94f);
             EffectTargetHintText.text = string.Empty;
             EffectTargetHintText.raycastTarget = false;

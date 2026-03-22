@@ -38,13 +38,13 @@ namespace YoungBob.Prototype.UI.Battle
                 return;
             }
 
-            var turnType = resolvePhaseTitle(state.phase);
-            var color = resolvePhaseColor(state.phase);
             var encounterTotal = state.stageEncounterIds == null ? 0 : state.stageEncounterIds.Length;
             var encounterText = encounterTotal > 0
-                ? $"<size=20>关卡 {state.stageId}  遭遇 {state.stageEncounterIndex + 1}/{encounterTotal}</size>\n"
-                : string.Empty;
-            _view.SummaryText.text = $"<color={color}>{turnType}</color>  -  第 {state.turnIndex} 回合\n{encounterText}<size=18>{state.currentPrompt}</size>";
+                ? $"{state.stageId} - {state.stageEncounterIndex + 1} / {encounterTotal}"
+                : state.stageId;
+            var phaseColor = resolvePhaseColor(state.phase);
+            var prompt = BattleUiTextMapper.GetTopBarPrompt(state);
+            _view.SummaryText.text = $"{encounterText}\n第 {state.turnIndex} 回合\n<color={phaseColor}>{prompt}</color>";
             _view.PlayerMarkerText.text = resolvePlayerMarker(localPlayerId);
             _view.PlayerNameText.text = localPlayer == null ? "未入场" : localPlayer.displayName;
             _view.PlayerHpText.text = localPlayer == null ? string.Empty : $"生命 {localPlayer.hp} / {localPlayer.maxHp}";
@@ -138,15 +138,18 @@ namespace YoungBob.Prototype.UI.Battle
 
         public BattlePhaseBannerSection(Transform parent)
         {
-            _mask = UiFactory.CreatePanel(parent, "PhaseBannerMask", new Color(0.03f, 0.04f, 0.06f, 0.78f), new Vector2(0f, 0.45f), new Vector2(1f, 0.91f), Vector2.zero, Vector2.zero);
+            _mask = UiFactory.CreatePanel(parent, "PhaseBannerMask", new Color(0f, 0f, 0f, 0f), new Vector2(0.3f, 0.922f), new Vector2(0.73f, 0.982f), Vector2.zero, Vector2.zero);
             _mask.transform.SetAsLastSibling();
-            var panel = UiFactory.CreatePanel(_mask.transform, "PhaseBannerPanel", new Color(0.11f, 0.14f, 0.18f, 0.96f), new Vector2(0.16f, 0.28f), new Vector2(0.84f, 0.72f), Vector2.zero, Vector2.zero);
+            var rectMask = _mask.AddComponent<RectMask2D>();
+            rectMask.padding = Vector4.zero;
+            var panel = UiFactory.CreatePanel(_mask.transform, "PhaseBannerPanel", new Color(0.09f, 0.13f, 0.17f, 0.94f), new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             _panelRect = panel.GetComponent<RectTransform>();
-            _title = UiFactory.CreateText(panel.transform, "Title", 40, TextAnchor.MiddleCenter, new Vector2(0f, 0.45f), new Vector2(1f, 0.82f), new Vector2(20f, 0f), new Vector2(-20f, 0f));
+            _title = UiFactory.CreateText(panel.transform, "Title", 22, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(12f, 0f), new Vector2(-12f, 0f));
             _title.fontStyle = FontStyle.Bold;
             _title.supportRichText = true;
-            _detail = UiFactory.CreateText(panel.transform, "Detail", 24, TextAnchor.MiddleCenter, new Vector2(0.08f, 0.14f), new Vector2(0.92f, 0.44f), Vector2.zero, Vector2.zero);
+            _detail = UiFactory.CreateText(panel.transform, "Detail", 14, TextAnchor.MiddleCenter, new Vector2(0.1f, 0f), new Vector2(0.9f, 0f), Vector2.zero, Vector2.zero);
             _detail.supportRichText = true;
+            _detail.gameObject.SetActive(false);
             _animator = _mask.AddComponent<BattlePhaseBannerAnimator>();
             _animator.Initialize(_mask.GetComponent<Image>(), panel.GetComponent<Image>(), _panelRect, _title, _detail);
             _mask.SetActive(false);
@@ -175,7 +178,7 @@ namespace YoungBob.Prototype.UI.Battle
             var title = $"<color={resolvePhaseColor(state.phase)}>{resolvePhaseTitle(state.phase)}</color>";
             var shouldReplay = state.phase != _lastPhase;
             _lastPhase = state.phase;
-            _animator.Show(title, state.currentPrompt, shouldReplay);
+            _animator.Show(title, string.Empty, shouldReplay);
             _mask.transform.SetAsLastSibling();
         }
     }
@@ -187,6 +190,7 @@ namespace YoungBob.Prototype.UI.Battle
         private RectTransform _panelRect;
         private Text _title;
         private Text _detail;
+        private Image _sweepImage;
         private float _showUntilTime;
         private bool _visible;
 
@@ -197,6 +201,12 @@ namespace YoungBob.Prototype.UI.Battle
             _panelRect = panelRect;
             _title = title;
             _detail = detail;
+            var sweepObj = UiFactory.CreatePanel(_panelRect.transform, "Sweep", new Color(0.92f, 0.97f, 1f, 0.14f), new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
+            _sweepImage = sweepObj.GetComponent<Image>();
+            _sweepImage.raycastTarget = false;
+            var sweepRect = sweepObj.GetComponent<RectTransform>();
+            sweepRect.pivot = new Vector2(0f, 0.5f);
+            sweepRect.sizeDelta = new Vector2(84f, 0f);
         }
 
         public void Show(string title, string detail, bool replay)
@@ -225,15 +235,11 @@ namespace YoungBob.Prototype.UI.Battle
             }
 
             var target = _visible && Time.unscaledTime <= _showUntilTime ? 1f : 0f;
-            var current = _maskImage.color.a / 0.78f;
+            var current = _panelImage.color.a / 0.94f;
             var next = Mathf.Lerp(current, target, 1f - Mathf.Exp(-10f * Time.unscaledDeltaTime));
 
-            var maskColor = _maskImage.color;
-            maskColor.a = 0.78f * next;
-            _maskImage.color = maskColor;
-
             var panelColor = _panelImage.color;
-            panelColor.a = 0.96f * next;
+            panelColor.a = 0.94f * next;
             _panelImage.color = panelColor;
 
             if (_title != null)
@@ -251,8 +257,19 @@ namespace YoungBob.Prototype.UI.Battle
             }
 
             var anchored = _panelRect.anchoredPosition;
-            anchored.y = Mathf.Lerp(22f, 0f, next);
+            anchored.y = Mathf.Lerp(-8f, 0f, next);
             _panelRect.anchoredPosition = anchored;
+
+            if (_sweepImage != null && next > 0.05f)
+            {
+                var sweepRect = _sweepImage.rectTransform;
+                var sweepProgress = Mathf.Repeat(Time.unscaledTime * 1.4f, 1.2f);
+                sweepRect.anchorMin = new Vector2(-0.22f + sweepProgress, 0f);
+                sweepRect.anchorMax = new Vector2(-0.02f + sweepProgress, 1f);
+                var sweepColor = _sweepImage.color;
+                sweepColor.a = 0.14f * next;
+                _sweepImage.color = sweepColor;
+            }
 
             if (next < 0.02f && (!_visible || Time.unscaledTime > _showUntilTime))
             {
@@ -287,7 +304,6 @@ namespace YoungBob.Prototype.UI.Battle
         public Button ChatButton => _view.ChatButton;
         public Text ChatButtonLabel => _view.ChatButtonLabel;
         public Button EndTurnButton => _view.EndTurnButton;
-        public Text EndTurnStateText => _view.EndTurnStateText;
         public RectTransform EndTurnReadyRoot => _view.EndTurnReadyRoot;
 
         public BattleHandSection(
@@ -311,6 +327,7 @@ namespace YoungBob.Prototype.UI.Battle
             _view.ExhaustPileButton.onClick.AddListener(() => OpenPilePopup(PileView.Exhaust));
 
             _pilePopupMask = UiFactory.CreatePanel(parent, "PilePopupMask", new Color(0f, 0f, 0f, 0.82f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            _pilePopupMask.transform.SetAsLastSibling();
             var popupWindow = UiFactory.CreatePanel(_pilePopupMask.transform, "PilePopupWindow", new Color(0.09f, 0.12f, 0.15f, 1f), new Vector2(0.06f, 0.09f), new Vector2(0.94f, 0.89f), Vector2.zero, Vector2.zero);
             _pilePopupTitle = UiFactory.CreateText(popupWindow.transform, "Title", 28, TextAnchor.MiddleLeft, new Vector2(0f, 0.9f), new Vector2(0.8f, 1f), new Vector2(24f, 0f), new Vector2(0f, 0f));
             _pilePopupTitle.fontStyle = FontStyle.Bold;
@@ -481,11 +498,6 @@ namespace YoungBob.Prototype.UI.Battle
             Func<BattlePhase, string> resolvePhaseTitle)
         {
             ClearContainer(_view.EndTurnReadyRoot);
-            if (state == null || state.players == null)
-            {
-                _view.EndTurnStateText.text = string.Empty;
-                return;
-            }
 
             var localReady = false;
             var markerIndex = 0;
@@ -514,17 +526,14 @@ namespace YoungBob.Prototype.UI.Battle
             if (state.phase == BattlePhase.PlayerTurn && localReady)
             {
                 _view.EndTurnButton.GetComponentInChildren<Text>().text = "取消结束";
-                _view.EndTurnStateText.text = "等待队友";
             }
             else if (state.phase == BattlePhase.PlayerTurn)
             {
                 _view.EndTurnButton.GetComponentInChildren<Text>().text = "结束回合";
-                _view.EndTurnStateText.text = "准备完毕后结束";
             }
             else
             {
                 _view.EndTurnButton.GetComponentInChildren<Text>().text = resolvePhaseTitle(state.phase);
-                _view.EndTurnStateText.text = state.currentPrompt;
             }
         }
 
@@ -549,6 +558,7 @@ namespace YoungBob.Prototype.UI.Battle
         private void ShowPopup(PlayerBattleState player, Action<PlayerBattleState, Transform> renderer)
         {
             _popupContentRenderer = renderer;
+            _pilePopupMask.transform.SetAsLastSibling();
             _pilePopupMask.SetActive(true);
             RefreshPopup(player);
         }
@@ -636,6 +646,7 @@ namespace YoungBob.Prototype.UI.Battle
 
     internal sealed class BattleBoardSection
     {
+        private const float ActorUnitWidth = 52f;
         private readonly PrototypeSessionController _session;
         private readonly RectTransform _monsterPanelRect;
         private readonly Transform _monsterContainer;
@@ -675,16 +686,13 @@ namespace YoungBob.Prototype.UI.Battle
         {
             _session = session;
 
-            var boardPanel = UiFactory.CreatePanel(parent, "BoardPanel", new Color(0.04f, 0.06f, 0.09f, 0.98f), new Vector2(0f, 0.45f), new Vector2(1f, 0.91f), new Vector2(10f, 0f), new Vector2(-10f, 0f));
+            var boardPanel = UiFactory.CreatePanel(parent, "BoardPanel", new Color(0.04f, 0.06f, 0.09f, 0.98f), new Vector2(0f, 0.5f), new Vector2(1f, 0.9f), new Vector2(10f, 0f), new Vector2(-10f, 0f));
             _boardPanelRect = boardPanel.GetComponent<RectTransform>();
             boardPanel.GetComponent<Image>().type = Image.Type.Sliced;
 
-            var upperGlow = UiFactory.CreatePanel(boardPanel.transform, "UpperGlow", new Color(0.3f, 0.53f, 0.64f, 0.08f), new Vector2(0f, 0.48f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-            upperGlow.transform.SetAsFirstSibling();
-            upperGlow.GetComponent<Image>().raycastTarget = false;
-
-            var stageMist = UiFactory.CreatePanel(boardPanel.transform, "StageMist", new Color(0.18f, 0.28f, 0.33f, 0.08f), new Vector2(0.08f, 0.22f), new Vector2(0.92f, 0.7f), Vector2.zero, Vector2.zero);
-            stageMist.GetComponent<Image>().raycastTarget = false;
+            // var upperGlow = UiFactory.CreatePanel(boardPanel.transform, "UpperGlow", new Color(0.3f, 0.53f, 0.64f, 0.08f), new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            // upperGlow.transform.SetAsFirstSibling();
+            // upperGlow.GetComponent<Image>().raycastTarget = false;
 
             CreateAreaDropZone(boardPanel.transform, "DropZone_West", BattleArea.West, new Vector2(0f, 0f), new Vector2(0.5f, 1f));
             CreateAreaDropZone(boardPanel.transform, "DropZone_East", BattleArea.East, new Vector2(0.5f, 0f), new Vector2(1f, 1f));
@@ -699,8 +707,6 @@ namespace YoungBob.Prototype.UI.Battle
 
             var ground = UiFactory.CreatePanel(boardPanel.transform, "Ground", new Color(0.07f, 0.09f, 0.12f, 0.92f), new Vector2(0f, 0f), new Vector2(1f, 0.3f), Vector2.zero, Vector2.zero);
             ground.GetComponent<Image>().raycastTarget = false;
-            var horizonGlow = UiFactory.CreatePanel(boardPanel.transform, "HorizonGlow", new Color(0.82f, 0.9f, 0.96f, 0.08f), new Vector2(0.08f, 0.287f), new Vector2(0.92f, 0.322f), Vector2.zero, Vector2.zero);
-            horizonGlow.GetComponent<Image>().raycastTarget = false;
             var horizonLine = UiFactory.CreatePanel(boardPanel.transform, "Horizon", new Color(0.95f, 0.97f, 1f, 0.24f), new Vector2(0.05f, 0.3f), new Vector2(0.95f, 0.304f), Vector2.zero, Vector2.zero);
             horizonLine.GetComponent<Image>().raycastTarget = false;
 
@@ -750,8 +756,7 @@ namespace YoungBob.Prototype.UI.Battle
             {
                 float ratio = state.monster.coreMaxHp > 0 ? Mathf.Clamp01((float)state.monster.coreHp / state.monster.coreMaxHp) : 0f;
                 _monsterHpFillRect.anchorMax = new Vector2(ratio, 1f);
-                string pose = !string.IsNullOrEmpty(state.monster.currentPoseId) ? $" [{state.monster.currentPoseId}]" : "";
-                _monsterHpText.text = $"怪物生命：{state.monster.coreHp} / {state.monster.coreMaxHp}{pose}";
+                _monsterHpText.text = $"怪物生命：{state.monster.coreHp} / {state.monster.coreMaxHp}";
                 _monsterActionHintText.text = BuildMonsterActionHint(state.monster);
                 _monsterStatusHintText.text = BuildMonsterStatusesText(state.monster.statuses, detailedMode);
             }
@@ -769,7 +774,7 @@ namespace YoungBob.Prototype.UI.Battle
                 var player = state.players[i];
                 var container = player.area == BattleArea.East ? _eastPlayerContainer : _westPlayerContainer;
                 var secretSummary = BuildPlayerSecretSummary(player, detailedMode);
-                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, 0, player.statuses, player.threatValue, player.threatTier, secretSummary, new Color(0.09f, 0.15f, 0.19f, 0.98f), detailedMode, string.Equals(currentThreatTargetId, player.playerId, StringComparison.Ordinal), SlotHighlightMode.None, resolvePlayerMarker);
+                var slot = CreateUnitSlot(container, BattleTargetFaction.Allies, player.playerId, player.displayName, player.hp, player.maxHp, player.armor, player.attackChargeStage, player.nextAttackBonus, 0, player.statuses, player.threatValue, player.threatTier, secretSummary, new Color(0.09f, 0.15f, 0.19f, 0.98f), detailedMode, string.Equals(currentThreatTargetId, player.playerId, StringComparison.Ordinal), SlotHighlightMode.None, resolvePlayerMarker, ActorUnitWidth);
                 int previousHp;
                 if (_lastPlayerHpById.TryGetValue(player.playerId, out previousHp) && player.hp < previousHp)
                 {
@@ -919,7 +924,7 @@ namespace YoungBob.Prototype.UI.Battle
             }
         }
 
-        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, int threatValue, int threatTier, string secretSummary, Color color, bool detailedMode, bool isThreatTarget, SlotHighlightMode highlightMode, Func<string, string> resolvePlayerMarker)
+        private BattleUnitSlotView CreateUnitSlot(Transform parent, BattleTargetFaction faction, string unitId, string name, int hp, int maxHp, int armor, int charge, int bonus, int vulnerableStacks, List<BattleStatusState> statuses, int threatValue, int threatTier, string secretSummary, Color color, bool detailedMode, bool isThreatTarget, SlotHighlightMode highlightMode, Func<string, string> resolvePlayerMarker, float actorUnitWidth)
         {
             var slotObject = new GameObject("UnitSlot_" + unitId);
             slotObject.transform.SetParent(parent, false);
@@ -929,18 +934,26 @@ namespace YoungBob.Prototype.UI.Battle
             rect.pivot = new Vector2(0.5f, 0f);
             rect.sizeDelta = new Vector2(142f, 188f);
 
-            var bg = slotObject.AddComponent<Image>();
-            bg.color = color;
-            bg.type = Image.Type.Sliced;
+            var hitbox = slotObject.AddComponent<Image>();
+            hitbox.color = new Color(1f, 1f, 1f, 0.001f);
+            hitbox.type = Image.Type.Sliced;
+
+            var actorBody = UiFactory.CreatePanel(slotObject.transform, "ActorBody", color, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-actorUnitWidth * 0.5f, 0f), new Vector2(actorUnitWidth * 0.5f, 116f));
+            var actorBodyImage = actorBody.GetComponent<Image>();
+            actorBodyImage.type = Image.Type.Sliced;
+            actorBodyImage.raycastTarget = false;
 
             var isLocalPlayer = string.Equals(unitId, _session.LocalPlayerId, StringComparison.Ordinal);
-            var actorMarker = UiFactory.CreateText(slotObject.transform, "ActorMarker", 34, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.74f), new Vector2(0.5f, 0.94f), new Vector2(-28f, 0f), new Vector2(28f, 0f));
+            var actorHalfWidth = actorUnitWidth * 0.5f;
+            var actorMarker = UiFactory.CreateText(slotObject.transform, "ActorMarker", 34, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-actorHalfWidth, 8f), new Vector2(actorHalfWidth, 44f));
             actorMarker.text = resolvePlayerMarker(unitId);
             actorMarker.fontStyle = FontStyle.Bold;
             actorMarker.color = isLocalPlayer ? new Color(0.96f, 0.98f, 1f, 0.96f) : new Color(0.78f, 0.84f, 0.91f, 0.88f);
             actorMarker.raycastTarget = false;
-            var localLine = UiFactory.CreatePanel(slotObject.transform, "LocalLine", isLocalPlayer ? new Color(0.96f, 0.98f, 1f, 0.34f) : new Color(1f, 1f, 1f, 0f), new Vector2(0.08f, -0.02f), new Vector2(0.92f, 0.02f), Vector2.zero, Vector2.zero);
-            localLine.GetComponent<Image>().raycastTarget = false;
+            var localLine = UiFactory.CreatePanel(slotObject.transform, "LocalLine", isLocalPlayer ? new Color(0.98f, 0.99f, 1f, 0.82f) : new Color(1f, 1f, 1f, 0f), new Vector2(0.5f, 0.02f), new Vector2(0.5f, 0.02f), new Vector2(-actorHalfWidth, -1f), new Vector2(actorHalfWidth, 1f));
+            var localLineImage = localLine.GetComponent<Image>();
+            localLineImage.raycastTarget = false;
+            localLineImage.type = Image.Type.Sliced;
 
             var infoBase = new GameObject("Info");
             infoBase.transform.SetParent(slotObject.transform, false);
@@ -963,8 +976,7 @@ namespace YoungBob.Prototype.UI.Battle
                 var fill = UiFactory.CreatePanel(segment.transform, "Fill", new Color(0.34f, 0.85f, 0.54f, 0.95f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
                 threatSegmentFills[i] = fill.GetComponent<Image>();
             }
-            var threatArrow = UiFactory.CreateText(slotObject.transform, "ThreatArrow", 18, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
-            threatArrow.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 14f);
+            var threatArrow = UiFactory.CreateText(slotObject.transform, "ThreatArrow", 18, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-16f, 44f), new Vector2(16f, 68f));
             threatArrow.text = "▼";
             threatArrow.color = new Color(0.94f, 0.35f, 0.38f, 0.96f);
             var (hpBarBg, hpFill) = UiFactory.CreateProgressBar(infoBase.transform, "HPBar", faction == BattleTargetFaction.Allies ? new Color(0.32f, 0.85f, 0.54f) : new Color(0.84f, 0.24f, 0.26f), new Vector2(110f, 14f));
@@ -982,7 +994,7 @@ namespace YoungBob.Prototype.UI.Battle
             borderObj.transform.SetAsFirstSibling();
 
             var slotView = slotObject.AddComponent<BattleUnitSlotView>();
-            slotView.Initialize(bg, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, secretLabel, threatBase.GetComponent<RectTransform>(), threatSegmentFills, new Text[3], null, threatArrow, color, borderObj.GetComponent<Image>(), localLine.GetComponent<Image>(), isLocalPlayer);
+            slotView.Initialize(actorBodyImage, nameLabel, hpLabel, hpFill, armorLabel, statusLabel, secretLabel, threatBase.GetComponent<RectTransform>(), threatSegmentFills, new Text[3], null, threatArrow, color, borderObj.GetComponent<Image>(), localLine.GetComponent<Image>(), isLocalPlayer);
             slotView.SetData(faction, unitId, name, hp, maxHp, armor, charge, bonus, vulnerableStacks, statuses, threatValue, threatTier, secretSummary, detailedMode, isThreatTarget, highlightMode);
             return slotView;
         }
@@ -996,7 +1008,7 @@ namespace YoungBob.Prototype.UI.Battle
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.sizeDelta = ResolvePartSize(part);
             var image = slotObject.AddComponent<Image>();
-            var label = UiFactory.CreateText(slotObject.transform, "Label", 18, TextAnchor.MiddleCenter, new Vector2(0f, -0.5f), new Vector2(1f, 0f), Vector2.zero, Vector2.zero);
+            var label = UiFactory.CreateText(slotObject.transform, "Label", 16, TextAnchor.MiddleCenter, new Vector2(0f, -0.5f), new Vector2(1f, 0f), Vector2.zero, Vector2.zero);
             label.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -20f);
             var borderObj = UiFactory.CreatePanel(slotObject.transform, "Highlight", new Color(1f, 0.85f, 0f, 1f), Vector2.zero, Vector2.one, new Vector2(-4f, -4f), new Vector2(4f, 4f));
             borderObj.transform.SetAsFirstSibling();
@@ -1051,12 +1063,7 @@ namespace YoungBob.Prototype.UI.Battle
         {
             if (monster == null) return string.Empty;
             var pose = string.IsNullOrEmpty(monster.currentPoseId) ? "待机" : monster.currentPoseId;
-            if (monster.hasActiveSkill && monster.activeSkill != null)
-            {
-                var windup = monster.activeSkill.remainingWindup > 0 ? $"（蓄力{monster.activeSkill.remainingWindup}）" : "";
-                return $"动作：{monster.activeSkill.displayName}{windup}  |  姿态：{pose}";
-            }
-            return $"动作：待机  |  姿态：{pose}";
+            return $"姿态：{pose}";
         }
 
         private static string BuildMonsterStatusesText(List<BattleStatusState> statuses, bool detailedMode)

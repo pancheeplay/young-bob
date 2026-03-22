@@ -14,18 +14,18 @@ namespace YoungBob.Prototype.UI.Battle
 
         public BattleTopBarView(Transform parent, UnityEngine.Events.UnityAction toggleStatusMode, UnityEngine.Events.UnityAction exitBattle)
         {
-            var root = UiFactory.CreatePanel(parent, "BattleTopBar", new Color(0.04f, 0.06f, 0.09f, 0.9f), new Vector2(0f, 0.91f), new Vector2(1f, 1f), new Vector2(10f, 8f), new Vector2(-10f, -10f));
+            var root = UiFactory.CreatePanel(parent, "BattleTopBar", new Color(0.04f, 0.06f, 0.09f, 0.9f), new Vector2(0f, 0.92f), new Vector2(1f, 1f), new Vector2(10f, 8f), new Vector2(-10f, -10f));
             var rootImage = root.GetComponent<Image>();
             rootImage.raycastTarget = false;
             rootImage.type = Image.Type.Sliced;
 
-            var rootGlow = UiFactory.CreatePanel(root.transform, "TopGlow", new Color(0.45f, 0.74f, 0.86f, 0.08f), new Vector2(0f, 0.54f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            var rootGlow = UiFactory.CreatePanel(root.transform, "TopGlow", new Color(0.45f, 0.74f, 0.86f, 0.08f), new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             rootGlow.transform.SetAsFirstSibling();
             rootGlow.GetComponent<Image>().raycastTarget = false;
 
-            var leftPanel = UiFactory.CreatePanel(root.transform, "LocalPlayerPanel", new Color(0.07f, 0.11f, 0.15f, 0.78f), new Vector2(0f, 0f), new Vector2(0.3f, 1f), new Vector2(8f, 8f), new Vector2(-6f, -8f));
+            var leftPanel = UiFactory.CreatePanel(root.transform, "LocalPlayerPanel", new Color(0.04f, 0.06f, 0.09f, 0.01f), new Vector2(0f, 0f), new Vector2(0.3f, 1f), new Vector2(8f, 8f), new Vector2(-6f, -8f));
             leftPanel.GetComponent<Image>().raycastTarget = false;
-            leftPanel.GetComponent<Image>().type = Image.Type.Sliced;
+            leftPanel.GetComponent<Image>().enabled = false;
 
             var markerBase = UiFactory.CreatePanel(leftPanel.transform, "MarkerBase", new Color(0.94f, 0.97f, 1f, 0.05f), new Vector2(0f, 0.1f), new Vector2(0f, 0.9f), new Vector2(16f, 0f), new Vector2(88f, 0f));
             markerBase.GetComponent<Image>().type = Image.Type.Sliced;
@@ -42,7 +42,7 @@ namespace YoungBob.Prototype.UI.Battle
             PlayerHpText = UiFactory.CreateText(leftPanel.transform, "PlayerHp", 18, TextAnchor.MiddleLeft, new Vector2(0f, 0.16f), new Vector2(1f, 0.46f), new Vector2(102f, 0f), new Vector2(-12f, 0f));
             PlayerHpText.color = new Color(0.58f, 0.89f, 0.71f, 0.96f);
 
-            SummaryText = UiFactory.CreateText(root.transform, "Summary", 19, TextAnchor.MiddleCenter, new Vector2(0.31f, 0.12f), new Vector2(0.72f, 0.88f), new Vector2(12f, 0f), new Vector2(-12f, 0f));
+            SummaryText = UiFactory.CreateText(root.transform, "Summary", 17, TextAnchor.MiddleCenter, new Vector2(0.31f, 0.14f), new Vector2(0.72f, 0.86f), new Vector2(12f, 0f), new Vector2(-12f, 0f));
             SummaryText.supportRichText = true;
             SummaryText.fontStyle = FontStyle.Normal;
             SummaryText.color = new Color(0.88f, 0.92f, 0.96f, 0.92f);

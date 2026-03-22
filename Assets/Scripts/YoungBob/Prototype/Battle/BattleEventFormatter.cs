@@ -41,7 +41,7 @@ namespace YoungBob.Prototype.Battle
             var actor = richText ? BattleTextHelper.Actor(battleEvent.actor) : battleEvent.actor;
             var target = richText ? BattleTextHelper.Unit(battleEvent.target) : battleEvent.target;
             var card = richText ? BattleTextHelper.Card(battleEvent.cardId) : battleEvent.cardId;
-            var status = richText ? BattleTextHelper.Card(battleEvent.statusId) : battleEvent.statusId;
+            var status = richText ? BattleTextHelper.Status(battleEvent.statusId) : battleEvent.statusId;
             var amountDamage = richText ? BattleTextHelper.DamageText(battleEvent.amount) : (battleEvent.amount + "点伤害");
             var amountHeal = richText ? BattleTextHelper.HealText(battleEvent.amount) : (battleEvent.amount + "点治疗");
             var amountArmor = richText ? BattleTextHelper.ArmorText(battleEvent.amount) : (battleEvent.amount + "点护甲");
@@ -150,7 +150,7 @@ namespace YoungBob.Prototype.Battle
                 case "secret_counter":
                     return target + " 触发奥秘 " + status + "，对 " + actor + " 造成 " + amountDamage + "。";
                 case "secret_gain_strength":
-                    return target + " 触发奥秘 " + status + "，获得 " + BattleTextHelper.Card(BattleStatusSystem.StrengthStatusId) + " x" + battleEvent.amount + "（持续1回合）。";
+                    return target + " 触发奥秘 " + status + "，获得 " + BattleTextHelper.Status(BattleStatusSystem.StrengthStatusId) + " x" + battleEvent.amount + "（持续1回合）。";
                 case "secret_gain_armor":
                     return target + " 触发奥秘 " + status + "，获得 " + amountArmor + "（当前护甲 " + battleEvent.amount2 + "）。";
                 case "no_monster":
@@ -220,7 +220,7 @@ namespace YoungBob.Prototype.Battle
 
             var target = richText ? BattleTextHelper.Unit(battleEvent.target) : battleEvent.target;
             var card = richText ? BattleTextHelper.Card(battleEvent.cardId) : battleEvent.cardId;
-            var status = richText ? BattleTextHelper.Card(battleEvent.statusId) : battleEvent.statusId;
+            var status = richText ? BattleTextHelper.Status(battleEvent.statusId) : battleEvent.statusId;
             var damage = richText ? BattleTextHelper.DamageText(battleEvent.amount) : (battleEvent.amount + "点伤害");
             var heal = richText ? BattleTextHelper.HealText(battleEvent.amount) : (battleEvent.amount + "点治疗");
             var armor = richText ? BattleTextHelper.ArmorText(battleEvent.amount) : (battleEvent.amount + "点护甲");

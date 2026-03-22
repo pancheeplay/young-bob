@@ -5,7 +5,7 @@ namespace YoungBob.Prototype.UI
 {
     internal static class UiFactory
     {
-        private const float GlobalFontScale = 1.3f;
+        private const float GlobalFontScale = 1.5f;
         private static Font _defaultFont;
 
         public static int ScaleFontSize(int fontSize)
@@ -123,7 +123,7 @@ namespace YoungBob.Prototype.UI
             bgImage.raycastTarget = true;
 
             // Height/Distance Labels (Top corners) - decorative, no raycasts
-            var heightTag = CreateText(bg.transform, "HeightTag", 14, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0.5f, 1f), new Vector2(8f, -25f), new Vector2(0f, -5f));
+            var heightTag = CreateText(bg.transform, "HeightTag", 12, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0.5f, 1f), new Vector2(8f, -25f), new Vector2(0f, -5f));
             heightTag.text = cardDef.rangeHeights ?? "";
             heightTag.color = new Color(0.9f, 0.9f, 1f);
             heightTag.fontStyle = FontStyle.Bold;
@@ -138,7 +138,7 @@ namespace YoungBob.Prototype.UI
             // Header/Title area - decorative
             var header = CreatePanel(bg.transform, "Header", new Color(0f, 0f, 0f, 0.3f), new Vector2(0f, 0.72f), new Vector2(1f, 0.9f), Vector2.zero, Vector2.zero);
             header.GetComponent<Image>().raycastTarget = false;
-            var titleText = CreateText(header.transform, "Title", 22, TextAnchor.MiddleCenter);
+            var titleText = CreateText(header.transform, "Title", 18, TextAnchor.MiddleCenter);
             titleText.text = cardDef.name;
             titleText.fontStyle = FontStyle.Bold;
             titleText.color = Color.white;
@@ -149,9 +149,9 @@ namespace YoungBob.Prototype.UI
             iconRoot.GetComponent<Image>().raycastTarget = false;
 
             // Description area - decorative
-            var descArea = CreatePanel(bg.transform, "DescArea", new Color(0f, 0f, 0f, 0.4f), new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.42f), Vector2.zero, Vector2.zero);
+            var descArea = CreatePanel(bg.transform, "DescArea", new Color(0f, 0f, 0f, 0.4f), new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.6f), Vector2.zero, Vector2.zero);
             descArea.GetComponent<Image>().raycastTarget = false;
-            var descText = CreateText(descArea.transform, "Description", 17, TextAnchor.MiddleCenter);
+            var descText = CreateText(descArea.transform, "Description", 16, TextAnchor.MiddleCenter);
             descText.text = BuildEffectSummary(cardDef);
             descText.color = new Color(0.95f, 0.95f, 0.95f);
             descText.raycastTarget = false;
@@ -160,7 +160,7 @@ namespace YoungBob.Prototype.UI
             var costPanel = CreatePanel(bg.transform, "Cost", new Color(0.15f, 0.4f, 0.8f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(-10f, -40f), new Vector2(30f, 0f));
             costPanel.GetComponent<Image>().raycastTarget = false;
             var effectiveCost = energyCostOverride ?? cardDef.energyCost;
-            var costText = CreateText(costPanel.transform, "CostText", 24, TextAnchor.MiddleCenter);
+            var costText = CreateText(costPanel.transform, "CostText", 22, TextAnchor.MiddleCenter);
             costText.text = effectiveCost.ToString();
             costText.fontStyle = FontStyle.Bold;
             costText.raycastTarget = false;
