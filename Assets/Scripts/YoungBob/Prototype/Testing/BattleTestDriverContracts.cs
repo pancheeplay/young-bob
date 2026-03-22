@@ -55,8 +55,14 @@ namespace YoungBob.Prototype.Testing
         DriverActionResult StartBattle(string hostPlayerId);
         DriverActionResult PlayCard(string actorPlayerId, string cardInstanceId, BattleTargetFaction targetFaction, string targetUnitId, BattleArea targetArea);
         DriverActionResult EndTurn(string actorPlayerId);
+        DriverActionResult BeginMonsterTurn();
+        DriverActionResult ResolveMonsterTurn();
+        DriverActionResult BeginPlayerTurn();
         DriverActionResult DebugDamageMonster(int amount);
         DriverActionResult DebugSetPlayerHp(string playerId, int hp);
+        DriverActionResult DebugSetPlayerArmor(string playerId, int armor);
+        DriverActionResult DebugClearHand(string actorPlayerId);
+        DriverActionResult DebugAddCardToHand(string actorPlayerId, string cardId);
         DriverActionResult Snapshot(string tag);
     }
 }

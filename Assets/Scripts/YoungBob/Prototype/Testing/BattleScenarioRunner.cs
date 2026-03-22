@@ -85,6 +85,15 @@ namespace YoungBob.Prototype.Testing
                 case "end_turn":
                     return ApplySnapshotTagOverride(_driver.EndTurn(step.actorPlayerId), step.snapshotTag);
 
+                case "begin_monster_turn":
+                    return ApplySnapshotTagOverride(_driver.BeginMonsterTurn(), step.snapshotTag);
+
+                case "resolve_monster_turn":
+                    return ApplySnapshotTagOverride(_driver.ResolveMonsterTurn(), step.snapshotTag);
+
+                case "begin_player_turn":
+                    return ApplySnapshotTagOverride(_driver.BeginPlayerTurn(), step.snapshotTag);
+
                 case "snapshot":
                     return _driver.Snapshot(string.IsNullOrWhiteSpace(step.snapshotTag) ? "snapshot" : step.snapshotTag);
 
@@ -93,6 +102,15 @@ namespace YoungBob.Prototype.Testing
 
                 case "debug_set_player_hp":
                     return ApplySnapshotTagOverride(_driver.DebugSetPlayerHp(step.targetUnitId, step.debugValue), step.snapshotTag);
+
+                case "debug_set_player_armor":
+                    return ApplySnapshotTagOverride(_driver.DebugSetPlayerArmor(step.targetUnitId, step.debugValue), step.snapshotTag);
+
+                case "debug_clear_hand":
+                    return ApplySnapshotTagOverride(_driver.DebugClearHand(step.actorPlayerId), step.snapshotTag);
+
+                case "debug_add_card_to_hand":
+                    return ApplySnapshotTagOverride(_driver.DebugAddCardToHand(step.actorPlayerId, step.cardId), step.snapshotTag);
 
                 default:
                     return new DriverActionResult { success = false, error = "Unknown step action: " + step.action };

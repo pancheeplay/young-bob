@@ -14,6 +14,7 @@ namespace YoungBob.Prototype.UI.Pages
     {
         private readonly Canvas _canvas;
         private readonly BattleTopBarSection _topBarSection;
+        private readonly BattleStageSurfaceView _stageSurfaceView;
         private readonly BattleLogSection _logSection;
         private readonly BattleHandSection _handSection;
         private readonly BattleBoardSection _boardSection;
@@ -29,9 +30,10 @@ namespace YoungBob.Prototype.UI.Pages
         {
             _canvas = parent.GetComponent<Canvas>();
             _topBarSection = new BattleTopBarSection(Root.transform, ToggleStatusMode, Session.EndBattleAndReturnToLobby);
-            _logSection = new BattleLogSection(Root.transform);
+            _stageSurfaceView = new BattleStageSurfaceView(Root.transform);
+            _logSection = new BattleLogSection(_stageSurfaceView.LogHost);
             _handSection = new BattleHandSection(Root.transform, Session, _canvas, ToggleQuickChatWheel, SendQuickChat, Session.ToggleTurnReady);
-            _boardSection = new BattleBoardSection(Root.transform, Session);
+            _boardSection = new BattleBoardSection(_stageSurfaceView.BoardHost, Session);
             _targetingController = new BattleTargetingController(_canvas, Session, _boardSection, () => RenderBoard(_lastState), text => _handSection.SetTargetHint(text));
             _phaseBannerSection = new BattlePhaseBannerSection(Root.transform);
             _stageFxController = new BattleStageFxController(_canvas, Session, _boardSection);
@@ -42,10 +44,12 @@ namespace YoungBob.Prototype.UI.Pages
 
         public void Render(BattleState state)
         {
+            var previousState = _lastState;
             _lastState = state;
             RenderSummary(state);
             RenderBoard(state);
             RenderHand(state);
+            MaybePlayEncounterTransition(previousState, state);
             RenderPhaseBanner(state);
         }
 
@@ -53,7 +57,7 @@ namespace YoungBob.Prototype.UI.Pages
         {
             var localPlayer = Session.GetLocalBattlePlayer();
             _topBarSection.Render(state, localPlayer, Session.LocalPlayerId, ResolvePhaseTitle, ResolvePhaseColor, ResolvePlayerMarker);
-            _topBarSection.StatusModeButton.GetComponentInChildren<Text>().text = _isDetailedStatusMode ? "模式: 详" : "模式: 简";
+            _topBarSection.StatusModeButton.GetComponentInChildren<Text>().text = _isDetailedStatusMode ? "☑ 详细信息" : "☐ 详细信息";
             _topBarSection.StatusModeButton.interactable = state != null;
             _topBarSection.ExitBattleButton.interactable = state != null;
             _handSection.ChatButton.interactable = state != null;
@@ -87,6 +91,31 @@ namespace YoungBob.Prototype.UI.Pages
         public void PlayBattleEvents(IReadOnlyList<BattleEvent> battleEvents)
         {
             _stageFxController.PlayEvents(battleEvents);
+        }
+
+        private void MaybePlayEncounterTransition(BattleState previousState, BattleState currentState)
+        {
+            if (previousState == null || currentState == null)
+            {
+                return;
+            }
+
+            if (!string.Equals(previousState.stageId, currentState.stageId, StringComparison.Ordinal))
+            {
+                var mapText = string.IsNullOrWhiteSpace(currentState.stageName) ? currentState.stageId : currentState.stageName;
+                _phaseBannerSection.ShowTransientMessage("进入新战斗", "<i>" + mapText + "</i>", 0.9f);
+                return;
+            }
+
+            if (previousState.stageEncounterIndex != currentState.stageEncounterIndex)
+            {
+                var encounterTotal = currentState.stageEncounterIds == null ? 0 : currentState.stageEncounterIds.Length;
+                var mapText = string.IsNullOrWhiteSpace(currentState.stageName) ? currentState.stageId : currentState.stageName;
+                var detail = encounterTotal > 0
+                    ? "<i>" + mapText + "</i> <color=#D7DCE2>" + currentState.stageEncounterIndex + "/" + encounterTotal + "</color>"
+                    : "<i>" + mapText + "</i>";
+                _phaseBannerSection.ShowTransientMessage("结算阶段", detail, 0.9f);
+            }
         }
 
         private void RenderBoard(BattleState state)
@@ -159,7 +188,7 @@ namespace YoungBob.Prototype.UI.Pages
         private void ToggleStatusMode()
         {
             _isDetailedStatusMode = !_isDetailedStatusMode;
-            _topBarSection.StatusModeButton.GetComponentInChildren<Text>().text = _isDetailedStatusMode ? "模式: 详" : "模式: 简";
+            _topBarSection.StatusModeButton.GetComponentInChildren<Text>().text = _isDetailedStatusMode ? "☑ 详细信息" : "☐ 详细信息";
             if (_lastState != null)
             {
                 RenderBoard(_lastState);

@@ -373,8 +373,7 @@ namespace YoungBob.Prototype.Battle
 
         private static int GetStrengthBonus(PlayerBattleState player)
         {
-            return BattleStatusSystem.GetStacks(player.statuses, BattleStatusSystem.StrengthStatusId)
-                + BattleStatusSystem.GetStacks(player.statuses, BattleStatusSystem.TempStrengthStatusId);
+            return BattleStatusSystem.GetStacks(player.statuses, BattleStatusSystem.StrengthStatusId);
         }
 
         private interface ICardEffectHandler
@@ -506,11 +505,24 @@ namespace YoungBob.Prototype.Battle
 
                     var amount = Math.Max(0, effect.amount);
                     targets[i].Player.armor += amount;
+                    if (effect.durationKind != BattleStatusDurationKind.Permanent)
+                    {
+                        BattleStatusSystem.AddStacks(
+                            targets[i].Player.statuses,
+                            BattleStatusSystem.TempArmorStatusId,
+                            amount,
+                            effect.durationKind,
+                            effect.durationTurns);
+                    }
+
                     context.result.events.Add(new BattleEvent
                     {
                         eventId = "gain_armor",
                         target = targets[i].Player.displayName,
-                        amount = amount
+                        amount = amount,
+                        amount2 = targets[i].Player.armor,
+                        durationKind = effect.durationKind,
+                        durationTurns = effect.durationTurns
                     });
                     opCount += 1;
                 }
@@ -542,12 +554,19 @@ namespace YoungBob.Prototype.Battle
                             continue;
                         }
 
-                        BattleStatusSystem.AddStacks(targets[i].Player.statuses, BattleStatusSystem.VulnerableStatusId, amount);
+                        BattleStatusSystem.AddStacks(
+                            targets[i].Player.statuses,
+                            BattleStatusSystem.VulnerableStatusId,
+                            amount,
+                            effect.durationKind,
+                            effect.durationTurns);
                         context.result.events.Add(new BattleEvent
                         {
                             eventId = "apply_vulnerable",
                             target = targets[i].Player.displayName,
-                            amount = amount
+                            amount = amount,
+                            durationKind = effect.durationKind,
+                            durationTurns = effect.durationTurns
                         });
                         opCount += 1;
                     }
@@ -560,26 +579,40 @@ namespace YoungBob.Prototype.Battle
                     var target = targets[i];
                     if (target.IsPlayer)
                     {
-                        var total = BattleStatusSystem.AddStacks(target.Player.statuses, effect.statusId, amount);
+                        var total = BattleStatusSystem.AddStacks(
+                            target.Player.statuses,
+                            effect.statusId,
+                            amount,
+                            effect.durationKind,
+                            effect.durationTurns);
                         context.result.events.Add(new BattleEvent
                         {
                             eventId = "apply_status",
                             target = target.Player.displayName,
                             statusId = effect.statusId,
                             amount = amount,
-                            amount2 = total
+                            amount2 = total,
+                            durationKind = effect.durationKind,
+                            durationTurns = effect.durationTurns
                         });
                     }
                     else
                     {
-                        var total = BattleStatusSystem.AddStacks(context.state.monster == null ? null : context.state.monster.statuses, effect.statusId, amount);
+                        var total = BattleStatusSystem.AddStacks(
+                            context.state.monster == null ? null : context.state.monster.statuses,
+                            effect.statusId,
+                            amount,
+                            effect.durationKind,
+                            effect.durationTurns);
                         context.result.events.Add(new BattleEvent
                         {
                             eventId = "apply_status",
                             target = context.state.monster == null ? "怪物" : context.state.monster.displayName,
                             statusId = effect.statusId,
                             amount = amount,
-                            amount2 = total
+                            amount2 = total,
+                            durationKind = effect.durationKind,
+                            durationTurns = effect.durationTurns
                         });
                     }
 
@@ -645,14 +678,21 @@ namespace YoungBob.Prototype.Battle
                         return false;
                     }
 
-                    var total = BattleStatusSystem.AddStacks(target.Player.statuses, effect.statusId, amount);
+                    var total = BattleStatusSystem.AddStacks(
+                        target.Player.statuses,
+                        effect.statusId,
+                        amount,
+                        effect.durationKind,
+                        effect.durationTurns);
                     context.result.events.Add(new BattleEvent
                     {
                         eventId = "gain_secret",
                         target = target.Player.displayName,
                         statusId = effect.statusId,
                         amount = amount,
-                        amount2 = total
+                        amount2 = total,
+                        durationKind = effect.durationKind,
+                        durationTurns = effect.durationTurns
                     });
                     opCount += 1;
                 }

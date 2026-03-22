@@ -33,7 +33,7 @@ namespace YoungBob.Prototype.Scene
                 uiManager = FindObjectOfType<YoungBobUiManager>();
             }
 
-            var dataRepository = GameDataRepository.LoadFromResources();
+            var dataRepository = UnityGameDataRepositoryLoader.LoadFromResources();
             var battleEngine = new BattleEngine(dataRepository);
             IMultiplayerService multiplayer = transportMode == TransportMode.DebugRelay
                 ? new DebugRelayMultiplayerService(debugRelayUrl)

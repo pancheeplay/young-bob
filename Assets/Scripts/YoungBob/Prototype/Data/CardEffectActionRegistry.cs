@@ -17,6 +17,9 @@ namespace YoungBob.Prototype.Data
         public CardEffectValueKind[] ArgumentKinds;
         public int NumericArgumentStartIndex;
         public string SymbolArgumentError;
+        public bool SupportsDurationSuffix;
+        public YoungBob.Prototype.Battle.BattleStatusDurationKind DefaultDurationKind;
+        public int DefaultDurationTurns;
 
         public int Arity => ArgumentKinds == null ? 0 : ArgumentKinds.Length;
     }
@@ -29,7 +32,16 @@ namespace YoungBob.Prototype.Data
                 ["damage"] = AmountAction("damage", "Damage"),
                 ["heal"] = AmountAction("heal", "Heal"),
                 ["draw"] = AmountAction("draw", "Draw"),
-                ["gain-armor"] = AmountAction("gain-armor", "GainArmor"),
+                ["gain-armor"] = new CardEffectActionMetadata
+                {
+                    Name = "gain-armor",
+                    RuntimeOp = "GainArmor",
+                    ArgumentKinds = new[] { CardEffectValueKind.Target, CardEffectValueKind.Number },
+                    NumericArgumentStartIndex = 1,
+                    SupportsDurationSuffix = true,
+                    DefaultDurationKind = YoungBob.Prototype.Battle.BattleStatusDurationKind.UntilTurnStart,
+                    DefaultDurationTurns = 1
+                },
                 ["lose-hp"] = AmountAction("lose-hp", "LoseHp"),
                 ["modify-threat"] = AmountAction("modify-threat", "ModifyThreat"),
                 ["modify-energy"] = AmountAction("modify-energy", "ModifyEnergy"),
@@ -39,7 +51,10 @@ namespace YoungBob.Prototype.Data
                     RuntimeOp = "ApplyStatus",
                     ArgumentKinds = new[] { CardEffectValueKind.Target, CardEffectValueKind.Symbol, CardEffectValueKind.Number },
                     NumericArgumentStartIndex = 2,
-                    SymbolArgumentError = "apply-status 的状态参数必须是 symbol。"
+                    SymbolArgumentError = "apply-status 的状态参数必须是 symbol。",
+                    SupportsDurationSuffix = true,
+                    DefaultDurationKind = YoungBob.Prototype.Battle.BattleStatusDurationKind.Permanent,
+                    DefaultDurationTurns = 0
                 },
                 ["add-secret"] = new CardEffectActionMetadata
                 {
@@ -47,7 +62,10 @@ namespace YoungBob.Prototype.Data
                     RuntimeOp = "AddSecret",
                     ArgumentKinds = new[] { CardEffectValueKind.Target, CardEffectValueKind.Symbol, CardEffectValueKind.Number },
                     NumericArgumentStartIndex = 2,
-                    SymbolArgumentError = "add-secret 的状态参数必须是 symbol。"
+                    SymbolArgumentError = "add-secret 的状态参数必须是 symbol。",
+                    SupportsDurationSuffix = true,
+                    DefaultDurationKind = YoungBob.Prototype.Battle.BattleStatusDurationKind.Permanent,
+                    DefaultDurationTurns = 0
                 },
                 ["copy-and-plunder"] = new CardEffectActionMetadata
                 {

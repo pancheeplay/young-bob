@@ -197,7 +197,12 @@ namespace YoungBob.Prototype.Battle
                 return;
             }
 
-            var totalStrength = BattleStatusSystem.AddStacks(target.statuses, BattleStatusSystem.TempStrengthStatusId, stacks);
+            var totalStrength = BattleStatusSystem.AddStacks(
+                target.statuses,
+                BattleStatusSystem.StrengthStatusId,
+                stacks,
+                BattleStatusDurationKind.UntilTurnStart,
+                1);
             result.events.Add(new BattleEvent
             {
                 eventId = "secret_gain_strength",
@@ -205,7 +210,9 @@ namespace YoungBob.Prototype.Battle
                 statusId = BattleStatusSystem.SecretStrengthOnHitStatusId,
                 cardId = attackName,
                 amount = stacks,
-                amount2 = totalStrength
+                amount2 = totalStrength,
+                durationKind = BattleStatusDurationKind.UntilTurnStart,
+                durationTurns = 1
             });
         }
 
@@ -218,6 +225,12 @@ namespace YoungBob.Prototype.Battle
             }
 
             target.armor += stacks;
+            BattleStatusSystem.AddStacks(
+                target.statuses,
+                BattleStatusSystem.TempArmorStatusId,
+                stacks,
+                BattleStatusDurationKind.UntilTurnStart,
+                1);
             result.events.Add(new BattleEvent
             {
                 eventId = "secret_gain_armor",
@@ -225,7 +238,9 @@ namespace YoungBob.Prototype.Battle
                 statusId = BattleStatusSystem.SecretArmorOnHitStatusId,
                 cardId = attackName,
                 amount = stacks,
-                amount2 = target.armor
+                amount2 = target.armor,
+                durationKind = BattleStatusDurationKind.UntilTurnStart,
+                durationTurns = 1
             });
         }
 

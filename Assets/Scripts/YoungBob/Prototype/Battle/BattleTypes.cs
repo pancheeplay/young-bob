@@ -88,6 +88,14 @@ namespace YoungBob.Prototype.Battle
     }
 
     [Serializable]
+    public enum BattleStatusDurationKind
+    {
+        Permanent = 0,
+        UntilTurnStart = 1,
+        TurnCount = 2
+    }
+
+    [Serializable]
     public sealed class BattleCardState
     {
         public string instanceId;
@@ -100,6 +108,8 @@ namespace YoungBob.Prototype.Battle
     {
         public string id;
         public int stacks;
+        public BattleStatusDurationKind durationKind;
+        public int durationTurns;
     }
 
     [Serializable]
@@ -226,6 +236,8 @@ namespace YoungBob.Prototype.Battle
         public int amount2;
         public int turn;
         public BattleArea area;
+        public BattleStatusDurationKind durationKind;
+        public int durationTurns;
     }
 
     [Serializable]

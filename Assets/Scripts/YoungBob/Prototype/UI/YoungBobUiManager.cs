@@ -22,7 +22,6 @@ namespace YoungBob.Prototype.Scene
         private Text _statusText;
         private Coroutine _autoRefreshCoroutine;
         private Coroutine _battlePhaseAdvanceCoroutine;
-        private RuntimeConsolePanel _consolePanel;
 
         private LobbyPage _lobbyPage;
         private RoomPage _roomPage;
@@ -37,7 +36,6 @@ namespace YoungBob.Prototype.Scene
             _lobbyPage = new LobbyPage(_canvas.transform, _session);
             _roomPage = new RoomPage(_canvas.transform, _session);
             _battlePage = new BattlePage(_canvas.transform, _session);
-            _consolePanel = new RuntimeConsolePanel(_canvas.transform);
 
             _session.StatusChanged += HandleStatusChanged;
             _session.BattleNarrationAdded += HandleBattleNarrationAdded;
@@ -48,7 +46,6 @@ namespace YoungBob.Prototype.Scene
             _session.BattleStateChanged += HandleBattleStateChanged;
             _session.BattleEventsCommitted += HandleBattleEventsCommitted;
             _session.StageSelectionChanged += HandleStageSelectionChanged;
-            Application.logMessageReceived += HandleUnityLog;
 
             ShowLobby();
             HandleStatusChanged(_session.AvailabilityText);
@@ -82,8 +79,6 @@ namespace YoungBob.Prototype.Scene
                 _session.BattleEventsCommitted -= HandleBattleEventsCommitted;
                 _session.StageSelectionChanged -= HandleStageSelectionChanged;
             }
-
-            Application.logMessageReceived -= HandleUnityLog;
         }
 
         private void HandleStatusChanged(string message)
@@ -305,35 +300,5 @@ namespace YoungBob.Prototype.Scene
             _statusText.supportRichText = true;
         }
 
-
-        private bool _isLogging;
-        private void HandleUnityLog(string condition, string stackTrace, LogType type)
-        {
-            if (_isLogging) return;
-            _isLogging = true;
-            try
-            {
-                var prefix = "[" + type + "] ";
-                var message = prefix + condition;
-                if (type == LogType.Exception && !string.IsNullOrEmpty(stackTrace))
-                {
-                    message += "\n" + stackTrace;
-                }
-
-                AppendConsole(message);
-            }
-            finally
-            {
-                _isLogging = false;
-            }
-        }
-
-        private void AppendConsole(string message)
-        {
-            if (_consolePanel != null)
-            {
-                _consolePanel.Append(message);
-            }
-        }
     }
 }

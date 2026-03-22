@@ -109,6 +109,7 @@ public sealed class ScenarioAssertion
     public string cardId = string.Empty;
     public string statusId = string.Empty;
     public string field = string.Empty;
+    public string durationKind = string.Empty;
     public string eventId = string.Empty;
     public string actor = string.Empty;
     public string target = string.Empty;

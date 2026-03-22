@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using UnityEngine;
 using YoungBob.Prototype.Battle;
 
 namespace YoungBob.Prototype.Data
@@ -13,6 +11,8 @@ namespace YoungBob.Prototype.Data
         public string target;
         public string destinationId;
         public string statusId;
+        public BattleStatusDurationKind durationKind;
+        public int durationTurns;
         public string scaleBy;
         public string pileFrom;
         public int amount;
@@ -61,41 +61,35 @@ namespace YoungBob.Prototype.Data
     [Serializable]
     internal sealed class CardCatalog
     {
-        public CardDefinition[] cards;
+        public CardDefinition[] cards = Array.Empty<CardDefinition>();
     }
 
     [Serializable]
     internal sealed class EncounterCatalog
     {
-        public EncounterDefinition[] encounters;
+        public EncounterDefinition[] encounters = Array.Empty<EncounterDefinition>();
     }
 
     [Serializable]
     internal sealed class DeckCatalog
     {
-        public DeckDefinition[] decks;
+        public DeckDefinition[] decks = Array.Empty<DeckDefinition>();
     }
 
     [Serializable]
     internal sealed class MonsterCatalog
     {
-        public MonsterDefinition[] monsters;
+        public MonsterDefinition[] monsters = Array.Empty<MonsterDefinition>();
     }
 
     [Serializable]
     internal sealed class StageCatalog
     {
-        public StageDefinition[] stages;
+        public StageDefinition[] stages = Array.Empty<StageDefinition>();
     }
 
     public sealed class GameDataRepository
     {
-        private const string CardsResourcePath = "GameData/cards";
-        private const string EncountersResourcePath = "GameData/encounters";
-        private const string DecksResourcePath = "GameData/decks";
-        private const string MonstersResourcePath = "GameData/monsters";
-        private const string StagesResourcePath = "GameData/stages";
-
         private readonly Dictionary<string, CardDefinition> _cards;
         private readonly Dictionary<string, EncounterDefinition> _encounters;
         private readonly Dictionary<string, DeckDefinition> _decks;
@@ -122,37 +116,34 @@ namespace YoungBob.Prototype.Data
             _stagesById = stagesById;
         }
 
-        public static GameDataRepository LoadFromResources()
+        internal static GameDataRepository Create(
+            CardDefinition[] cards,
+            EncounterDefinition[] encounters,
+            DeckDefinition[] decks,
+            MonsterDefinition[] monsters,
+            StageDefinition[] stages)
         {
-            var cards = LoadCatalog<CardCatalog, CardDefinition>(
-                CardsResourcePath,
-                catalog => catalog.cards,
-                item => item.id);
-            InitializeCards(cards);
-            var encounters = LoadCatalog<EncounterCatalog, EncounterDefinition>(
-                EncountersResourcePath,
-                catalog => catalog.encounters,
-                item => item.id);
-            var decks = LoadCatalog<DeckCatalog, DeckDefinition>(
-                DecksResourcePath,
-                catalog => catalog.decks,
-                item => item.id);
-            var deckList = LoadArrayCatalog<DeckCatalog, DeckDefinition>(
-                DecksResourcePath,
-                catalog => catalog.decks);
-            var monsters = LoadCatalog<MonsterCatalog, MonsterDefinition>(
-                MonstersResourcePath,
-                catalog => catalog.monsters,
-                item => item.monsterId);
-            var stages = LoadArrayCatalog<StageCatalog, StageDefinition>(
-                StagesResourcePath,
-                catalog => catalog.stages);
+            var cardLookup = BuildLookup(cards, item => item.id);
+            InitializeCards(cardLookup);
 
-            ValidateEncounterMonsterReferences(encounters, monsters);
-            var stagesById = BuildStageLookup(stages);
-            ValidateStageEncounters(stages, encounters);
+            var encounterLookup = BuildLookup(encounters, item => item.id);
+            var deckLookup = BuildLookup(decks, item => item.id);
+            var deckList = new List<DeckDefinition>(decks ?? Array.Empty<DeckDefinition>());
+            var monsterLookup = BuildLookup(monsters, item => item.monsterId);
+            var stageList = new List<StageDefinition>(stages ?? Array.Empty<StageDefinition>());
 
-            return new GameDataRepository(cards, encounters, decks, deckList, monsters, stages, stagesById);
+            ValidateEncounterMonsterReferences(encounterLookup, monsterLookup);
+            var stagesById = BuildStageLookup(stageList);
+            ValidateStageEncounters(stageList, encounterLookup);
+
+            return new GameDataRepository(
+                cardLookup,
+                encounterLookup,
+                deckLookup,
+                deckList,
+                monsterLookup,
+                stageList,
+                stagesById);
         }
 
         public CardDefinition GetCard(string id)
@@ -226,18 +217,22 @@ namespace YoungBob.Prototype.Data
             return _deckList;
         }
 
-        private static Dictionary<string, TItem> LoadCatalog<TCatalog, TItem>(
-            string resourcePath,
-            Func<TCatalog, TItem[]> selector,
-            Func<TItem, string> keySelector)
+        private static Dictionary<string, TItem> BuildLookup<TItem>(TItem[] items, Func<TItem, string> keySelector)
         {
-            var json = LoadJson(resourcePath);
-            var catalog = JsonUtility.FromJson<TCatalog>(json);
-            var items = selector(catalog) ?? Array.Empty<TItem>();
-            var result = new Dictionary<string, TItem>(items.Length);
-            foreach (var item in items)
+            var result = new Dictionary<string, TItem>();
+            foreach (var item in items ?? Array.Empty<TItem>())
             {
+                if (item == null)
+                {
+                    continue;
+                }
+
                 var key = keySelector(item);
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
                 result[key] = item;
             }
 
@@ -262,16 +257,6 @@ namespace YoungBob.Prototype.Data
                 card.parsedEffects = CardEffectCompiler.Compile(card.effectsSExpr);
                 CardEffectDslValidator.Validate(card.parsedEffects);
             }
-        }
-
-        private static List<TItem> LoadArrayCatalog<TCatalog, TItem>(
-            string resourcePath,
-            Func<TCatalog, TItem[]> selector)
-        {
-            var json = LoadJson(resourcePath);
-            var catalog = JsonUtility.FromJson<TCatalog>(json);
-            var items = selector(catalog) ?? Array.Empty<TItem>();
-            return new List<TItem>(items);
         }
 
         private static void ValidateEncounterMonsterReferences(
@@ -342,19 +327,6 @@ namespace YoungBob.Prototype.Data
                     }
                 }
             }
-        }
-
-        private static string LoadJson(string resourcePath)
-        {
-            var textAsset = Resources.Load<TextAsset>(resourcePath);
-            if (textAsset != null)
-            {
-                return textAsset.text;
-            }
-
-            throw new FileNotFoundException(
-                "Missing game data file in Resources/" + resourcePath,
-                resourcePath);
         }
     }
 }

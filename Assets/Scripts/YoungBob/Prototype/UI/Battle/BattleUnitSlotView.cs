@@ -320,12 +320,11 @@ namespace YoungBob.Prototype.UI.Battle
 
                     if (string.Equals(status.id, BattleStatusSystem.PoisonStatusId, System.StringComparison.OrdinalIgnoreCase))
                     {
-                        sb.Append(detailedMode ? "中毒" : "☠").Append(status.stacks).Append(' ');
+                        sb.Append(BattleStatusSystem.BuildStatusLabel(status, detailedMode)).Append(' ');
                     }
-                    else if (string.Equals(status.id, BattleStatusSystem.StrengthStatusId, System.StringComparison.OrdinalIgnoreCase)
-                        || string.Equals(status.id, BattleStatusSystem.TempStrengthStatusId, System.StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(status.id, BattleStatusSystem.StrengthStatusId, System.StringComparison.OrdinalIgnoreCase))
                     {
-                        sb.Append(detailedMode ? "力量" : "💪").Append(status.stacks).Append(' ');
+                        sb.Append(BattleStatusSystem.BuildStatusLabel(status, detailedMode)).Append(' ');
                     }
                     else if (string.Equals(status.id, BattleStatusSystem.VulnerableStatusId, System.StringComparison.OrdinalIgnoreCase))
                     {
@@ -337,7 +336,7 @@ namespace YoungBob.Prototype.UI.Battle
                     }
                     else
                     {
-                        sb.Append(ResolveStatusDisplayName(status.id, detailedMode)).Append(status.stacks).Append(' ');
+                        sb.Append(BattleStatusSystem.BuildStatusLabel(status, detailedMode)).Append(' ');
                     }
                 }
             }
@@ -364,7 +363,7 @@ namespace YoungBob.Prototype.UI.Battle
                     }
 
                     var name = ResolveSecretDisplayName(status.id, detailedMode);
-                    lines.Add((detailedMode ? "奥秘 " : "奥 ") + name + " x" + status.stacks);
+                    lines.Add((detailedMode ? "奥秘 " : "奥 ") + name + " x" + status.stacks + BuildDurationSuffix(status, detailedMode));
                 }
             }
 
@@ -429,8 +428,7 @@ namespace YoungBob.Prototype.UI.Battle
                 return detailedMode ? "中毒" : "☠";
             }
 
-            if (string.Equals(statusId, BattleStatusSystem.StrengthStatusId, System.StringComparison.OrdinalIgnoreCase)
-                || string.Equals(statusId, BattleStatusSystem.TempStrengthStatusId, System.StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(statusId, BattleStatusSystem.StrengthStatusId, System.StringComparison.OrdinalIgnoreCase))
             {
                 return detailedMode ? "力量" : "💪";
             }
@@ -441,6 +439,16 @@ namespace YoungBob.Prototype.UI.Battle
             }
 
             return statusId + ":";
+        }
+
+        private static string BuildDurationSuffix(BattleStatusState status, bool detailedMode)
+        {
+            if (status == null)
+            {
+                return string.Empty;
+            }
+
+            return BattleStatusSystem.BuildDurationSuffix(status.durationKind, status.durationTurns, detailedMode);
         }
     }
 }

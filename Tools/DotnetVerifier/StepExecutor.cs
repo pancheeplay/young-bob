@@ -9,6 +9,9 @@ internal sealed class StepExecutor
         _handlers = new Dictionary<string, Func<BattleEngine, BattleState, ScenarioStep, StepResult>>(StringComparer.OrdinalIgnoreCase)
         {
             { "end_turn", ExecuteEndTurn },
+            { "begin_monster_turn", ExecuteBeginMonsterTurn },
+            { "resolve_monster_turn", ExecuteResolveMonsterTurn },
+            { "begin_player_turn", ExecuteBeginPlayerTurn },
             { "play_card", ExecutePlayCard },
             { "snapshot", ExecuteSnapshot },
             { "debug_damage_monster", ExecuteDebugDamageMonster },
@@ -36,6 +39,33 @@ internal sealed class StepExecutor
             commandId = Guid.NewGuid().ToString("N"),
             actorPlayerId = step.actorPlayerId,
             action = "end_turn"
+        });
+    }
+
+    private static StepResult ExecuteBeginMonsterTurn(BattleEngine engine, BattleState state, ScenarioStep step)
+    {
+        return Apply(engine, state, new BattleCommand
+        {
+            commandId = Guid.NewGuid().ToString("N"),
+            action = "begin_monster_turn"
+        });
+    }
+
+    private static StepResult ExecuteResolveMonsterTurn(BattleEngine engine, BattleState state, ScenarioStep step)
+    {
+        return Apply(engine, state, new BattleCommand
+        {
+            commandId = Guid.NewGuid().ToString("N"),
+            action = "resolve_monster_turn"
+        });
+    }
+
+    private static StepResult ExecuteBeginPlayerTurn(BattleEngine engine, BattleState state, ScenarioStep step)
+    {
+        return Apply(engine, state, new BattleCommand
+        {
+            commandId = Guid.NewGuid().ToString("N"),
+            action = "begin_player_turn"
         });
     }
 

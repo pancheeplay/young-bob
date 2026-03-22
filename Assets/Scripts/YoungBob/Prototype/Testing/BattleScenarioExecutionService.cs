@@ -14,7 +14,7 @@ namespace YoungBob.Prototype.Testing
             }
 
             var scenario = BattleScenarioLoader.LoadSingleFromResources(resourcePath);
-            var dataRepository = GameDataRepository.LoadFromResources();
+            var dataRepository = UnityGameDataRepositoryLoader.LoadFromResources();
             var driver = new InProcessBattleTestDriver(dataRepository);
             var runner = new BattleScenarioRunner(driver);
             return runner.Execute(scenario);

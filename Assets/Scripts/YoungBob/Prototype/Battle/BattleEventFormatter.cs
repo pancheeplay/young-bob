@@ -106,15 +106,15 @@ namespace YoungBob.Prototype.Battle
                 case "heal":
                     return target + " 恢复了 " + amountHeal + "。";
                 case "gain_armor":
-                    return target + " 获得了 " + amountArmor + "。";
+                    return target + " 获得了 " + amountArmor + DurationSuffix(richText, battleEvent) + "。";
                 case "lose_armor":
                     return target + " 失去了 " + amountArmor + "。";
                 case "apply_status":
-                    return target + " 获得 " + status + " x" + battleEvent.amount + "（总计 " + battleEvent.amount2 + "）。";
+                    return target + " 获得 " + status + " x" + battleEvent.amount + "（总计 " + battleEvent.amount2 + "）" + DurationSuffix(richText, battleEvent) + "。";
                 case "threat_change":
                     return target + " 仇恨变化 " + (battleEvent.amount >= 0 ? "+" : string.Empty) + battleEvent.amount + "（仇恨值 " + battleEvent.amount2 + "，层级 " + battleEvent.turn + "）。";
                 case "gain_secret":
-                    return target + " 获得奥秘 " + status + " x" + battleEvent.amount + "（总计 " + battleEvent.amount2 + "）。";
+                    return target + " 获得奥秘 " + status + " x" + battleEvent.amount + "（总计 " + battleEvent.amount2 + "）" + DurationSuffix(richText, battleEvent) + "。";
                 case "move_area":
                     return actor + " 移动到了 " + area + "。";
                 case "refund_energy":
@@ -122,7 +122,7 @@ namespace YoungBob.Prototype.Battle
                 case "damage_by_armor":
                     return target + " 受到" + amountDamage + "，来自护甲冲击。";
                 case "apply_vulnerable":
-                    return target + " 获得易伤 x" + battleEvent.amount + "。";
+                    return target + " 获得易伤 x" + battleEvent.amount + DurationSuffix(richText, battleEvent) + "。";
                 case "modify_energy":
                     return target + " 能量变化 " + battleEvent.amount + "。";
                 case "lose_hp":
@@ -150,9 +150,9 @@ namespace YoungBob.Prototype.Battle
                 case "secret_counter":
                     return target + " 触发奥秘 " + status + "，对 " + actor + " 造成 " + amountDamage + "。";
                 case "secret_gain_strength":
-                    return target + " 触发奥秘 " + status + "，获得 " + BattleTextHelper.Status(BattleStatusSystem.StrengthStatusId) + " x" + battleEvent.amount + "（持续1回合）。";
+                    return target + " 触发奥秘 " + status + "，获得 " + BattleTextHelper.Status(BattleStatusSystem.StrengthStatusId) + " x" + battleEvent.amount + DurationSuffix(richText, battleEvent) + "。";
                 case "secret_gain_armor":
-                    return target + " 触发奥秘 " + status + "，获得 " + amountArmor + "（当前护甲 " + battleEvent.amount2 + "）。";
+                    return target + " 触发奥秘 " + status + "，获得 " + amountArmor + DurationSuffix(richText, battleEvent) + "。";
                 case "no_monster":
                     return "当前没有怪物。";
                 case "team_defeated":
@@ -175,6 +175,27 @@ namespace YoungBob.Prototype.Battle
                 default:
                     return "未知";
             }
+        }
+
+        private static string DurationSuffix(bool richText, BattleEvent battleEvent)
+        {
+            if (battleEvent == null || battleEvent.durationKind == BattleStatusDurationKind.Permanent)
+            {
+                return string.Empty;
+            }
+
+            var suffix = BattleStatusSystem.BuildDurationSuffix(battleEvent.durationKind, battleEvent.durationTurns, true);
+            if (string.IsNullOrEmpty(suffix))
+            {
+                return string.Empty;
+            }
+
+            if (richText)
+            {
+                return suffix;
+            }
+
+            return suffix.Replace("（", "(").Replace("）", ")");
         }
 
         private static string TryFormatCombinedCardPlay(IReadOnlyList<BattleEvent> battleEvents, bool richText)
@@ -236,11 +257,11 @@ namespace YoungBob.Prototype.Battle
                 case "heal":
                     return target + "恢复" + heal;
                 case "gain_armor":
-                    return target + "获得" + armor;
+                    return target + "获得" + armor + DurationSuffix(richText, battleEvent);
                 case "apply_status":
-                    return target + "获得" + status + " x" + battleEvent.amount;
+                    return target + "获得" + status + " x" + battleEvent.amount + DurationSuffix(richText, battleEvent);
                 case "apply_vulnerable":
-                    return target + "获得易伤 x" + battleEvent.amount;
+                    return target + "获得易伤 x" + battleEvent.amount + DurationSuffix(richText, battleEvent);
                 case "modify_energy":
                     return target + "能量变化" + battleEvent.amount;
                 case "lose_hp":
@@ -256,7 +277,7 @@ namespace YoungBob.Prototype.Battle
                 case "exhaust_card":
                     return target + "消耗了" + card;
                 case "gain_secret":
-                    return target + "获得奥秘 " + status + " x" + battleEvent.amount;
+                    return target + "获得奥秘 " + status + " x" + battleEvent.amount + DurationSuffix(richText, battleEvent);
                 case "threat_change":
                     return target + "仇恨变化" + (battleEvent.amount >= 0 ? "+" : string.Empty) + battleEvent.amount;
                 case "part_broken":

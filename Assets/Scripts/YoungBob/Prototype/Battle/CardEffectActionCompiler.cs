@@ -18,7 +18,9 @@ namespace YoungBob.Prototype.Battle
                 return false;
             }
 
-            if (action.Arguments.Length != metadata.Arity)
+            var acceptsDurationSuffix = metadata.SupportsDurationSuffix;
+            if (action.Arguments.Length != metadata.Arity
+                && !(acceptsDurationSuffix && action.Arguments.Length == metadata.Arity + 1))
             {
                 error = action.Head + " 需要 " + metadata.Arity + " 个参数。";
                 return false;
@@ -26,7 +28,9 @@ namespace YoungBob.Prototype.Battle
 
             effect = new CardEffectDefinition
             {
-                op = metadata.RuntimeOp
+                op = metadata.RuntimeOp,
+                durationKind = metadata.DefaultDurationKind,
+                durationTurns = metadata.DefaultDurationTurns
             };
 
             for (var i = 0; i < metadata.ArgumentKinds.Length; i++)
@@ -78,7 +82,9 @@ namespace YoungBob.Prototype.Battle
                 op = prototype.op,
                 target = prototype.target,
                 destinationId = prototype.destinationId,
-                statusId = prototype.statusId
+                statusId = prototype.statusId,
+                durationKind = prototype.durationKind,
+                durationTurns = prototype.durationTurns
             };
 
             if (!CardEffectActionRegistry.TryGet(action.Head, out var metadata))
@@ -101,8 +107,112 @@ namespace YoungBob.Prototype.Battle
                             target));
                     }
 
+                    if (metadata.SupportsDurationSuffix && action.Arguments.Length > metadata.Arity)
+                    {
+                        if (!TryMaterializeDuration(context, action.Arguments[metadata.Arity], target, out var durationKind, out var durationTurns, out var durationError))
+                        {
+                            return effect;
+                        }
+
+                        effect.durationKind = durationKind;
+                        effect.durationTurns = durationTurns;
+                    }
+
                     return effect;
             }
+        }
+
+        private static bool TryMaterializeDuration(
+            CardEffectExecutionContext context,
+            SExpressionNode node,
+            CardEffectTargetRef target,
+            out BattleStatusDurationKind durationKind,
+            out int durationTurns,
+            out string error)
+        {
+            durationKind = BattleStatusDurationKind.Permanent;
+            durationTurns = 0;
+            error = null;
+
+            if (node is SExpressionNumberNode number)
+            {
+                durationKind = BattleStatusDurationKind.TurnCount;
+                durationTurns = Math.Max(1, (int)Math.Round(number.Value));
+                return true;
+            }
+
+            if (node is SExpressionSymbolNode symbol)
+            {
+                return TryParseDurationSymbol(symbol.Value, out durationKind, out durationTurns, out error);
+            }
+
+            if (node is SExpressionListNode list)
+            {
+                if (string.Equals(list.Head, "until-turn-start", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(list.Head, "until-next-turn-start", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(list.Head, "until-owner-turn-start", StringComparison.OrdinalIgnoreCase))
+                {
+                    durationKind = BattleStatusDurationKind.UntilTurnStart;
+                    durationTurns = 1;
+                    return true;
+                }
+
+                if (string.Equals(list.Head, "permanent", StringComparison.OrdinalIgnoreCase))
+                {
+                    durationKind = BattleStatusDurationKind.Permanent;
+                    durationTurns = 0;
+                    return true;
+                }
+
+                if (string.Equals(list.Head, "turns", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(list.Head, "duration", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (list.Arguments == null || list.Arguments.Length != 1)
+                    {
+                        error = "duration 需要 1 个参数。";
+                        return false;
+                    }
+
+                    durationKind = BattleStatusDurationKind.TurnCount;
+                    durationTurns = Math.Max(1, (int)Math.Round(CardEffectEvaluator.EvaluateNumber(context, list.Arguments[0], target)));
+                    return true;
+                }
+            }
+
+            error = "无法识别的持续时间表达式。";
+            return false;
+        }
+
+        private static bool TryParseDurationSymbol(string value, out BattleStatusDurationKind durationKind, out int durationTurns, out string error)
+        {
+            durationKind = BattleStatusDurationKind.Permanent;
+            durationTurns = 0;
+            error = null;
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                error = "持续时间参数不能为空。";
+                return false;
+            }
+
+            if (string.Equals(value, "permanent", StringComparison.OrdinalIgnoreCase))
+            {
+                durationKind = BattleStatusDurationKind.Permanent;
+                durationTurns = 0;
+                return true;
+            }
+
+            if (string.Equals(value, "until-turn-start", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "until-next-turn-start", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "until-owner-turn-start", StringComparison.OrdinalIgnoreCase))
+            {
+                durationKind = BattleStatusDurationKind.UntilTurnStart;
+                durationTurns = 1;
+                return true;
+            }
+
+            error = "未知持续时间符号：" + value;
+            return false;
         }
 
         private static string ConvertTarget(SExpressionNode node, out string error)

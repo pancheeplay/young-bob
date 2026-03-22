@@ -82,7 +82,18 @@ namespace YoungBob.Prototype.Data
                 throw new InvalidOperationException("未知 DSL 动作：" + list.Head);
             }
 
-            RequireArity(list, metadata.Arity);
+            if (metadata.SupportsDurationSuffix)
+            {
+                if (list.Arguments.Length != metadata.Arity && list.Arguments.Length != metadata.Arity + 1)
+                {
+                    throw new InvalidOperationException(list.Head + " 需要 " + metadata.Arity + " 个参数。");
+                }
+            }
+            else
+            {
+                RequireArity(list, metadata.Arity);
+            }
+
             for (var i = 0; i < metadata.ArgumentKinds.Length; i++)
             {
                 switch (metadata.ArgumentKinds[i])
@@ -102,13 +113,63 @@ namespace YoungBob.Prototype.Data
                             {
                                 throw new InvalidOperationException("未知位移目的地：" + symbol);
                             }
-                        }
+                    }
 
                         break;
                     }
                     default:
                         throw new InvalidOperationException("未知 DSL 参数类型。");
                 }
+            }
+
+            if (metadata.SupportsDurationSuffix && list.Arguments.Length > metadata.Arity)
+            {
+                ValidateDurationSuffix(list.Arguments[metadata.Arity]);
+            }
+        }
+
+        private static void ValidateDurationSuffix(SExpressionNode node)
+        {
+            if (node is SExpressionNumberNode)
+            {
+                return;
+            }
+
+            if (node is SExpressionSymbolNode symbol)
+            {
+                if (string.IsNullOrWhiteSpace(symbol.Value))
+                {
+                    throw new InvalidOperationException("持续时间参数不能为空。");
+                }
+
+                switch (symbol.Value)
+                {
+                    case "until-turn-start":
+                    case "until-next-turn-start":
+                    case "until-owner-turn-start":
+                    case "permanent":
+                        return;
+                }
+
+                throw new InvalidOperationException("未知持续时间符号：" + symbol.Value);
+            }
+
+            var list = RequireList(node, "持续时间表达式无效。");
+            switch (list.Head)
+            {
+                case "turns":
+                case "duration":
+                    RequireArity(list, 1);
+                    ValidateNumericExpr(list.Arguments[0]);
+                    return;
+                case "until-turn-start":
+                case "until-next-turn-start":
+                case "until-owner-turn-start":
+                case "permanent":
+                    RequireArity(list, 0);
+                    return;
+                default:
+                    throw new InvalidOperationException("不支持的持续时间表达式：" + list.Head);
             }
         }
 

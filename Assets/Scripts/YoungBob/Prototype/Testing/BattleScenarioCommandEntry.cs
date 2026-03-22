@@ -16,7 +16,7 @@ namespace YoungBob.Prototype.Testing
             try
             {
                 var args = Environment.GetCommandLineArgs();
-                var scenario = GetArgValue(args, "--scenario") ?? "TestScenarios/curse_single";
+                var scenario = GetArgValue(args, "--scenario") ?? "TestScenarios/v2_card_quick_jab_draw";
                 var reportPath = GetArgValue(args, "--report") ?? "/tmp/young-bob-scenario-report.json";
 
                 var report = BattleScenarioExecutionService.RunScenarioFromResources(scenario);

@@ -289,7 +289,6 @@ namespace YoungBob.Prototype.Battle
         private BattleCommandResult EndTurn(BattleState state, PlayerBattleState player)
         {
             var result = new BattleCommandResult();
-            BattleStatusSystem.ConsumeStacks(player, BattleStatusSystem.TempStrengthStatusId);
             player.hasEndedTurn = true;
             result.events.Add(new BattleEvent
             {
@@ -348,6 +347,7 @@ namespace YoungBob.Prototype.Battle
             }
 
             EnsureMonsterDefinition(state);
+            BattleStatusSystem.TickTurnStartDurations(state, false);
             BattleStatusSystem.TickPoisonOnMonsterAtTurnStart(state, result);
             if (state.monster != null && state.monster.coreHp <= 0)
             {
@@ -382,6 +382,7 @@ namespace YoungBob.Prototype.Battle
         {
             state.phase = BattlePhase.PlayerTurn;
             state.turnIndex += 1;
+            BattleStatusSystem.TickTurnStartDurations(state, true);
             BattleThreatSystem.ApplyThreatDecay(state);
             BattleTargetResolver.ResetTeamTurn(state.players);
             for (var i = 0; i < state.players.Count; i++)

@@ -18,6 +18,14 @@
     {
       "action": "end_turn",
       "actorPlayerId": "p1",
+      "snapshotTag": "after_end_turn"
+    },
+    {
+      "action": "begin_monster_turn",
+      "snapshotTag": "after_monster_turn_begin"
+    },
+    {
+      "action": "resolve_monster_turn",
       "snapshotTag": "after_monster_turn"
     }
   ],
@@ -42,6 +50,12 @@
       "actualPath": "after_monster_turn",
       "expected": "monster_gain_card >> apply_vulnerable",
       "message": "monster skill event order: add curse card then apply vulnerable"
+    },
+    {
+      "type": "phase_equals",
+      "actualPath": "after_monster_turn",
+      "expected": "PlayerTurnStart",
+      "message": "monster resolution ends at player turn start"
     }
   ]
 }

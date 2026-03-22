@@ -121,6 +121,7 @@
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/BattleTargetResolver.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Testing/BattleScenarioExecutionService.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Data/GameDataRepository.cs" />
+    <Compile Include="Assets/Scripts/YoungBob/Prototype/Data/UnityGameDataRepositoryLoader.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/Battle/CardEffectEvaluator.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/App/PrototypeSessionController.cs" />
     <Compile Include="Assets/Scripts/YoungBob/Prototype/UI/UiFactory.cs" />

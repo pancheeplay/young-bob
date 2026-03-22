@@ -122,18 +122,19 @@ namespace YoungBob.Prototype.UI
             var bgImage = bg.GetComponent<Image>();
             bgImage.raycastTarget = true;
 
-            // Height/Distance Labels (Top corners) - decorative, no raycasts
-            var heightTag = CreateText(bg.transform, "HeightTag", 12, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(0.5f, 1f), new Vector2(8f, -25f), new Vector2(0f, -5f));
-            heightTag.text = cardDef.rangeHeights ?? "";
-            heightTag.color = new Color(0.9f, 0.9f, 1f);
-            heightTag.fontStyle = FontStyle.Bold;
-            heightTag.raycastTarget = false;
+            // Target Labels (Top right) - decorative, no raycasts
+            var targetTag = CreateText(bg.transform, "TargetTag", 12, TextAnchor.UpperRight, new Vector2(0.4f, 1f), new Vector2(1f, 1f), new Vector2(8f, -25f), new Vector2(-8f, -5f));
+            targetTag.text = CardEffectTextFormatter.BuildCardTargetLabel(cardDef);
+            targetTag.color = new Color(0.92f, 0.97f, 1f, 0.98f);
+            targetTag.fontStyle = FontStyle.Bold;
+            targetTag.raycastTarget = false;
 
-            var distTag = CreateText(bg.transform, "DistTag", 14, TextAnchor.UpperRight, new Vector2(0.5f, 1f), new Vector2(1f, 1f), new Vector2(0f, -25f), new Vector2(-8f, -5f));
-            distTag.text = cardDef.rangeDistance ?? "";
-            distTag.color = new Color(1f, 0.9f, 0.7f);
-            distTag.fontStyle = FontStyle.Bold;
-            distTag.raycastTarget = false;
+            var targetRangeTag = CreateText(bg.transform, "TargetRangeTag", 10, TextAnchor.UpperRight, new Vector2(0.4f, 1f), new Vector2(1f, 1f), new Vector2(8f, -45f), new Vector2(-8f, -24f));
+            targetRangeTag.text = CardEffectTextFormatter.BuildCardTargetRangeLabel(cardDef);
+            targetRangeTag.color = new Color(0.88f, 0.9f, 0.95f, 0.78f);
+            targetRangeTag.fontStyle = FontStyle.Italic;
+            targetRangeTag.raycastTarget = false;
+            targetRangeTag.gameObject.SetActive(!string.IsNullOrWhiteSpace(targetRangeTag.text));
 
             // Header/Title area - decorative
             var header = CreatePanel(bg.transform, "Header", new Color(0f, 0f, 0f, 0.3f), new Vector2(0f, 0.72f), new Vector2(1f, 0.9f), Vector2.zero, Vector2.zero);

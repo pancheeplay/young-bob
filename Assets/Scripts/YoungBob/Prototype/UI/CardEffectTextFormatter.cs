@@ -2,12 +2,76 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
+using YoungBob.Prototype.Battle;
 using YoungBob.Prototype.Data;
 
 namespace YoungBob.Prototype.UI
 {
     internal static class CardEffectTextFormatter
     {
+        public static string BuildCardTargetLabel(CardDefinition cardDef)
+        {
+            var targetType = BattleTargetResolver.ParseTargetType(cardDef == null ? null : cardDef.targetType);
+            switch (targetType)
+            {
+                case BattleTargetType.Self:
+                    return "自身";
+                case BattleTargetType.SingleAlly:
+                    return "友方";
+                case BattleTargetType.AllAllies:
+                    return "全友方";
+                case BattleTargetType.OtherAlly:
+                    return "其他友方";
+                case BattleTargetType.MonsterPart:
+                    return "敌方";
+                case BattleTargetType.AllMonsterParts:
+                    return "全敌方";
+                case BattleTargetType.SingleUnit:
+                    return "单体";
+                case BattleTargetType.Area:
+                    return "区域";
+                default:
+                    return "目标";
+            }
+        }
+
+        public static string BuildCardTargetRangeLabel(CardDefinition cardDef)
+        {
+            if (cardDef == null)
+            {
+                return string.Empty;
+            }
+
+            var targetType = BattleTargetResolver.ParseTargetType(cardDef.targetType);
+            if (targetType != BattleTargetType.MonsterPart
+                && targetType != BattleTargetType.AllMonsterParts
+                && targetType != BattleTargetType.SingleUnit)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string>();
+            var heightLabel = ResolveHeightLabel(cardDef.rangeHeights);
+            if (!string.IsNullOrEmpty(heightLabel))
+            {
+                parts.Add(heightLabel);
+            }
+
+            var distanceLabel = ResolveDistanceLabel(cardDef.rangeDistance);
+            if (!string.IsNullOrEmpty(distanceLabel))
+            {
+                parts.Add(distanceLabel);
+            }
+
+            var zoneLabel = ResolveZoneLabel(cardDef.rangeZones);
+            if (parts.Count == 0 && !string.IsNullOrEmpty(zoneLabel))
+            {
+                parts.Add(zoneLabel);
+            }
+
+            return parts.Count == 0 ? string.Empty : string.Join(" · ", parts.ToArray());
+        }
+
         public static string BuildEffectSummary(CardDefinition cardDef)
         {
             if (cardDef == null || cardDef.parsedEffects == null)
@@ -119,14 +183,17 @@ namespace YoungBob.Prototype.UI
                 case "draw":
                     return BuildTargetedClause(list.Arguments[0], "抽" + FormatCardCount(list.Arguments[1]));
                 case "gain-armor":
-                    return BuildTargetedClause(list.Arguments[0], "获得" + FormatExpr(list.Arguments[1]) + "点护甲");
+                    return BuildTargetedClause(list.Arguments[0], "获得" + FormatExpr(list.Arguments[1]) + "点护甲" + ResolveActionDurationSuffix(list));
                 case "apply-status":
+                {
+                    var durationSuffix = ResolveActionDurationSuffix(list);
                     if (list.Arguments[1] is SExpressionSymbolNode status && string.Equals(status.Value, "Vulnerable", StringComparison.OrdinalIgnoreCase))
                     {
-                        return BuildTargetedClause(list.Arguments[0], "施加" + FormatExpr(list.Arguments[2]) + "层易伤");
+                        return BuildTargetedClause(list.Arguments[0], "施加" + FormatExpr(list.Arguments[2]) + "层易伤" + durationSuffix);
                     }
 
-                    return BuildTargetedClause(list.Arguments[0], "施加" + FormatExpr(list.Arguments[2]) + "层" + FormatExpr(list.Arguments[1]));
+                    return BuildTargetedClause(list.Arguments[0], "施加" + FormatExpr(list.Arguments[2]) + "层" + FormatExpr(list.Arguments[1]) + durationSuffix);
+                }
                 case "modify-energy":
                     return BuildTargetedClause(list.Arguments[0], BuildSignedText("能量", list.Arguments[1]));
                 case "lose-hp":
@@ -143,9 +210,80 @@ namespace YoungBob.Prototype.UI
                 case "exhaust-from-hand":
                     return BuildTargetedClause(list.Arguments[0], "消耗手牌中的" + FormatCardCount(list.Arguments[1]));
                 case "add-secret":
-                    return BuildTargetedClause(list.Arguments[0], "获得奥秘" + FormatExpr(list.Arguments[1]) + " x" + FormatExpr(list.Arguments[2]));
+                    return BuildTargetedClause(list.Arguments[0], "获得奥秘" + FormatExpr(list.Arguments[1]) + " x" + FormatExpr(list.Arguments[2]) + ResolveActionDurationSuffix(list));
                 default:
                     return BuildInlineActionSummary(list);
+            }
+        }
+
+        private static string ResolveActionDurationSuffix(SExpressionListNode action)
+        {
+            if (action == null || !CardEffectActionRegistry.TryGet(action.Head, out var metadata))
+            {
+                return string.Empty;
+            }
+
+            if (metadata.SupportsDurationSuffix && action.Arguments.Length > metadata.Arity)
+            {
+                return BuildDurationSuffix(action.Arguments[metadata.Arity]);
+            }
+
+            return BattleStatusSystem.BuildDurationSuffix(metadata.DefaultDurationKind, metadata.DefaultDurationTurns, true);
+        }
+
+        private static string ResolveHeightLabel(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || string.Equals(value, "Both", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            switch (value)
+            {
+                case "Ground":
+                    return "地面";
+                case "Air":
+                    return "空中";
+                default:
+                    return value;
+            }
+        }
+
+        private static string ResolveDistanceLabel(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || string.Equals(value, "Both", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            switch (value)
+            {
+                case "Near":
+                    return "近距";
+                case "Far":
+                    return "远距";
+                default:
+                    return value;
+            }
+        }
+
+        private static string ResolveZoneLabel(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || string.Equals(value, "Both", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            switch (value)
+            {
+                case "West":
+                    return "左侧";
+                case "Middle":
+                    return "中间";
+                case "East":
+                    return "右侧";
+                default:
+                    return value;
             }
         }
 
@@ -262,6 +400,59 @@ namespace YoungBob.Prototype.UI
             }
 
             return " (费用修正 " + FormatExpr(node) + ")";
+        }
+
+        private static string BuildDurationSuffix(SExpressionNode node)
+        {
+            if (node is SExpressionNumberNode number)
+            {
+                var turns = Mathf.Max(0, Mathf.RoundToInt((float)number.Value));
+                if (turns <= 0)
+                {
+                    return string.Empty;
+                }
+
+                if (turns == 1)
+                {
+                    return "（至下次行动开始）";
+                }
+
+                return "（持续" + turns + "回合）";
+            }
+
+            if (node is SExpressionSymbolNode symbol)
+            {
+                switch (symbol.Value)
+                {
+                    case "until-next-turn-start":
+                    case "until-turn-start":
+                    case "until-owner-turn-start":
+                    case "next-turn-start":
+                        return "（至下次行动开始）";
+                }
+            }
+
+            if (node is SExpressionListNode list)
+            {
+                if (string.Equals(list.Head, "turns", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(list.Head, "duration", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (list.Arguments != null && list.Arguments.Length == 1)
+                    {
+                        return BuildDurationSuffix(list.Arguments[0]);
+                    }
+                }
+
+                if (string.Equals(list.Head, "until-next-turn-start", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(list.Head, "until-turn-start", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(list.Head, "until-owner-turn-start", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "（至下次行动开始）";
+                }
+            }
+
+            var text = FormatExpr(node);
+            return string.IsNullOrEmpty(text) ? string.Empty : "（持续" + text + "）";
         }
 
         private static string FormatCardCount(SExpressionNode node)

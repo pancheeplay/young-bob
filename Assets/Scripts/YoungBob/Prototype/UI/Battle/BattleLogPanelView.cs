@@ -11,11 +11,11 @@ namespace YoungBob.Prototype.UI.Battle
 
         public BattleLogPanelView(Transform parent)
         {
-            var root = UiFactory.CreatePanel(parent, "BattleLogPanel", new Color(0.04f, 0.06f, 0.08f, 0.92f), new Vector2(0f, 0.25f), new Vector2(1f, 0.5f), new Vector2(10f, 6f), new Vector2(-10f, -2f));
+            var root = UiFactory.CreatePanel(parent, "BattleLogPanel", new Color(0.04f, 0.06f, 0.08f, 0.66f), new Vector2(0f, 0.25f), new Vector2(1f, 0.5f), new Vector2(10f, 6f), new Vector2(-10f, -2f));
             root.GetComponent<Image>().raycastTarget = false;
             root.GetComponent<Image>().type = Image.Type.Sliced;
 
-            var band = UiFactory.CreatePanel(root.transform, "BroadcastBand", new Color(0.08f, 0.13f, 0.17f, 0.74f), new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            var band = UiFactory.CreatePanel(root.transform, "BroadcastBand", new Color(0.08f, 0.13f, 0.17f, 0.58f), new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
             band.transform.SetAsFirstSibling();
             band.GetComponent<Image>().raycastTarget = false;
 

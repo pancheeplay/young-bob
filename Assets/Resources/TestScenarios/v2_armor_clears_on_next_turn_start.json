@@ -4,17 +4,13 @@
   "name": "V2 armor clears on next turn start",
   "setup": {
     "roomId": "v2_armor_clear_room",
-    "stageId": "stage_boss_debug",
+    "stageId": "stage_slime_training",
     "starterDeckId": "co_op_starter",
     "randomSeed": 20260320,
     "players": [
       {
         "playerId": "p1",
         "displayName": "Alpha"
-      },
-      {
-        "playerId": "p2",
-        "displayName": "Beta"
       }
     ]
   },
@@ -22,10 +18,6 @@
     {
       "action": "debug_clear_hand",
       "actorPlayerId": "p1"
-    },
-    {
-      "action": "debug_clear_hand",
-      "actorPlayerId": "p2"
     },
     {
       "action": "debug_add_card_to_hand",
@@ -47,8 +39,15 @@
       "snapshotTag": "after_p1_end_turn"
     },
     {
-      "action": "end_turn",
-      "actorPlayerId": "p2",
+      "action": "begin_monster_turn",
+      "snapshotTag": "after_monster_turn_begin"
+    },
+    {
+      "action": "resolve_monster_turn",
+      "snapshotTag": "after_monster_turn_resolve"
+    },
+    {
+      "action": "begin_player_turn",
       "snapshotTag": "after_round_restart"
     }
   ],
@@ -62,12 +61,47 @@
       "message": "iron wall grants armor"
     },
     {
+      "type": "player_status_duration_equals",
+      "actualPath": "after_gain_armor",
+      "playerId": "p1",
+      "statusId": "TempArmor",
+      "durationKind": "UntilTurnStart",
+      "expectedInt": 1,
+      "message": "temp armor uses the explicit until-turn-start duration"
+    },
+    {
       "type": "player_field_equals",
       "actualPath": "after_p1_end_turn",
       "playerId": "p1",
       "field": "armor",
       "expectedInt": 8,
       "message": "armor remains after ending the current turn"
+    },
+    {
+      "type": "phase_equals",
+      "actualPath": "after_p1_end_turn",
+      "expected": "MonsterTurnStart",
+      "message": "after team end turn the state enters monster turn start"
+    },
+    {
+      "type": "phase_equals",
+      "actualPath": "after_monster_turn_begin",
+      "expected": "MonsterTurnResolve",
+      "message": "begin_monster_turn advances to monster resolve"
+    },
+    {
+      "type": "player_field_equals",
+      "actualPath": "after_monster_turn_resolve",
+      "playerId": "p1",
+      "field": "armor",
+      "expectedInt": 5,
+      "message": "monster hit consumes armor before the turn-start cleanup"
+    },
+    {
+      "type": "phase_equals",
+      "actualPath": "after_monster_turn_resolve",
+      "expected": "PlayerTurnStart",
+      "message": "monster resolution ends at player turn start"
     },
     {
       "type": "player_field_equals",
@@ -78,13 +112,10 @@
       "message": "armor is removed at the start of the next turn"
     },
     {
-      "type": "event_contains",
+      "type": "phase_equals",
       "actualPath": "after_round_restart",
-      "eventId": "lose_armor",
-      "target": "Alpha",
-      "field": "amount",
-      "expectedInt": 8,
-      "message": "next turn start emits armor loss event"
+      "expected": "PlayerTurn",
+      "message": "begin_player_turn starts the next player phase"
     }
   ]
 }

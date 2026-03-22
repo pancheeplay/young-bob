@@ -39,12 +39,11 @@ namespace YoungBob.Prototype.UI.Battle
             }
 
             var encounterTotal = state.stageEncounterIds == null ? 0 : state.stageEncounterIds.Length;
-            var encounterText = encounterTotal > 0
-                ? $"{state.stageId} - {state.stageEncounterIndex + 1} / {encounterTotal}"
-                : state.stageId;
+            var mapText = string.IsNullOrWhiteSpace(state.stageName) ? state.stageId : state.stageName;
             var phaseColor = resolvePhaseColor(state.phase);
             var prompt = BattleUiTextMapper.GetTopBarPrompt(state);
-            _view.SummaryText.text = $"{encounterText}\n第 {state.turnIndex} 回合\n<color={phaseColor}>{prompt}</color>";
+            var progressText = encounterTotal > 0 ? state.stageEncounterIndex + "/" + encounterTotal : "0/0";
+            _view.SummaryText.text = $"<i><color=#C6D8E6>{mapText}</color></i> <color=#D7DCE2>{progressText}</color>\n第 {state.turnIndex} 回合 · <color={phaseColor}>{prompt}</color>";
             _view.PlayerMarkerText.text = resolvePlayerMarker(localPlayerId);
             _view.PlayerNameText.text = localPlayer == null ? "未入场" : localPlayer.displayName;
             _view.PlayerHpText.text = localPlayer == null ? string.Empty : $"生命 {localPlayer.hp} / {localPlayer.maxHp}";
@@ -135,6 +134,9 @@ namespace YoungBob.Prototype.UI.Battle
         private readonly Text _detail;
         private readonly BattlePhaseBannerAnimator _animator;
         private BattlePhase _lastPhase = (BattlePhase)(-1);
+        private string _overrideTitle;
+        private string _overrideDetail;
+        private float _overrideUntilTime;
 
         public BattlePhaseBannerSection(Transform parent)
         {
@@ -155,12 +157,34 @@ namespace YoungBob.Prototype.UI.Battle
             _mask.SetActive(false);
         }
 
+        public void ShowTransientMessage(string title, string detail, float durationSeconds)
+        {
+            _overrideTitle = title;
+            _overrideDetail = detail;
+            _overrideUntilTime = Time.unscaledTime + Mathf.Max(0.1f, durationSeconds);
+            _animator.Show(title, detail, true);
+            _mask.transform.SetAsLastSibling();
+        }
+
         public void Render(BattleState state, Func<BattlePhase, string> resolvePhaseTitle, Func<BattlePhase, string> resolvePhaseColor)
         {
             if (state == null)
             {
                 _mask.SetActive(false);
                 return;
+            }
+
+            if (!string.IsNullOrEmpty(_overrideTitle) && Time.unscaledTime <= _overrideUntilTime)
+            {
+                _animator.Show(_overrideTitle, _overrideDetail, false);
+                _mask.transform.SetAsLastSibling();
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(_overrideTitle) && Time.unscaledTime > _overrideUntilTime)
+            {
+                _overrideTitle = null;
+                _overrideDetail = null;
             }
 
             var showBanner = state.phase == BattlePhase.MonsterTurnStart
@@ -1074,10 +1098,14 @@ namespace YoungBob.Prototype.UI.Battle
             {
                 var status = statuses[i];
                 if (status == null || status.stacks <= 0 || string.IsNullOrWhiteSpace(status.id)) continue;
-                if (string.Equals(status.id, BattleStatusSystem.PoisonStatusId, StringComparison.OrdinalIgnoreCase)) parts.Add((detailedMode ? "中毒" : "☠") + status.stacks);
-                else if (string.Equals(status.id, BattleStatusSystem.StrengthStatusId, StringComparison.OrdinalIgnoreCase) || string.Equals(status.id, BattleStatusSystem.TempStrengthStatusId, StringComparison.OrdinalIgnoreCase)) parts.Add((detailedMode ? "力量" : "💪") + status.stacks);
-                else if (string.Equals(status.id, BattleStatusSystem.VulnerableStatusId, StringComparison.OrdinalIgnoreCase)) parts.Add((detailedMode ? "易伤" : "🎯") + status.stacks);
-                else parts.Add(status.id + ":" + status.stacks);
+                if (string.Equals(status.id, BattleStatusSystem.VulnerableStatusId, StringComparison.OrdinalIgnoreCase))
+                {
+                    parts.Add((detailedMode ? "易伤" : "🎯") + status.stacks + BuildDurationSuffix(status, detailedMode));
+                }
+                else
+                {
+                    parts.Add(BattleStatusSystem.BuildStatusLabel(status, detailedMode));
+                }
             }
             return parts.Count == 0 ? "<color=#9ca3af>状态：无</color>" : "<color=#cbd5e1>状态：" + string.Join(" ", parts) + "</color>";
         }
@@ -1102,6 +1130,16 @@ namespace YoungBob.Prototype.UI.Battle
         {
             if (string.IsNullOrWhiteSpace(statusId)) return false;
             return statusId.IndexOf("secret", StringComparison.OrdinalIgnoreCase) >= 0 || statusId.IndexOf("奥秘", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string BuildDurationSuffix(BattleStatusState status, bool detailedMode)
+        {
+            if (status == null)
+            {
+                return string.Empty;
+            }
+
+            return BattleStatusSystem.BuildDurationSuffix(status.durationKind, status.durationTurns, detailedMode);
         }
 
         private static SlotHighlightMode GetHighlightModeForArea(BattleState state, PrototypeSessionController session, CardDefinition cardDef, BattleTargetType targetType, BattleAreaDropZoneView zone, BattleAreaDropZoneView hoveredArea)

@@ -116,20 +116,22 @@ namespace YoungBob.Prototype.Testing
 
         public DriverActionResult EndTurn(string actorPlayerId)
         {
-            if (_state == null)
-            {
-                return Fail("Battle not started.");
-            }
+            return ApplyCommand("end_turn", "end_turn", actorPlayerId);
+        }
 
-            var result = _battleEngine.Apply(_state, new BattleCommand
-            {
-                commandId = Guid.NewGuid().ToString("N"),
-                actorPlayerId = actorPlayerId,
-                action = "end_turn"
-            });
+        public DriverActionResult BeginMonsterTurn()
+        {
+            return ApplyCommand("begin_monster_turn", "begin_monster_turn");
+        }
 
-            PumpAutomaticPhases(actorPlayerId, result);
-            return FromCommandResult(result, "end_turn");
+        public DriverActionResult ResolveMonsterTurn()
+        {
+            return ApplyCommand("resolve_monster_turn", "resolve_monster_turn");
+        }
+
+        public DriverActionResult BeginPlayerTurn()
+        {
+            return ApplyCommand("begin_player_turn", "begin_player_turn");
         }
 
         public DriverActionResult DebugDamageMonster(int amount)
@@ -179,6 +181,68 @@ namespace YoungBob.Prototype.Testing
             return Success("debug_set_player_hp");
         }
 
+        public DriverActionResult DebugSetPlayerArmor(string playerId, int armor)
+        {
+            if (_state == null)
+            {
+                return Fail("Battle not started.");
+            }
+
+            var player = _state.GetPlayer(playerId);
+            if (player == null)
+            {
+                return Fail("Player not found: " + playerId);
+            }
+
+            player.armor = Math.Max(0, armor);
+            return Success("debug_set_player_armor");
+        }
+
+        public DriverActionResult DebugClearHand(string actorPlayerId)
+        {
+            if (_state == null)
+            {
+                return Fail("Battle not started.");
+            }
+
+            var player = _state.GetPlayer(actorPlayerId);
+            if (player == null)
+            {
+                return Fail("Player not found: " + actorPlayerId);
+            }
+
+            while (player.hand.Count > 0)
+            {
+                var card = player.hand[0];
+                player.hand.RemoveAt(0);
+                player.discardPile.Add(card);
+            }
+
+            return Success("debug_clear_hand");
+        }
+
+        public DriverActionResult DebugAddCardToHand(string actorPlayerId, string cardId)
+        {
+            if (_state == null)
+            {
+                return Fail("Battle not started.");
+            }
+
+            var player = _state.GetPlayer(actorPlayerId);
+            if (player == null)
+            {
+                return Fail("Player not found: " + actorPlayerId);
+            }
+
+            if (string.IsNullOrWhiteSpace(cardId))
+            {
+                return Fail("Card id is empty.");
+            }
+
+            BattleMechanics.AddCardToHandOrDiscard(_state, player, cardId, forceIntoHand: true);
+            return Success("debug_add_card_to_hand");
+        }
+
         public DriverActionResult Snapshot(string tag)
         {
             if (_state == null)
@@ -226,64 +290,21 @@ namespace YoungBob.Prototype.Testing
             };
         }
 
-        private void PumpAutomaticPhases(string actorPlayerId, BattleCommandResult aggregateResult)
+        private DriverActionResult ApplyCommand(string action, string tag, string actorPlayerId = null)
         {
-            if (_state == null || aggregateResult == null || !aggregateResult.success)
+            if (_state == null)
             {
-                return;
+                return Fail("Battle not started.");
             }
 
-            while (_state.phase == BattlePhase.MonsterTurnStart
-                || _state.phase == BattlePhase.MonsterTurnResolve
-                || _state.phase == BattlePhase.PlayerTurnStart)
+            var result = _battleEngine.Apply(_state, new BattleCommand
             {
-                var action = ResolveAutoAdvanceAction(_state.phase);
-                if (string.IsNullOrWhiteSpace(action))
-                {
-                    return;
-                }
+                commandId = Guid.NewGuid().ToString("N"),
+                actorPlayerId = actorPlayerId,
+                action = action
+            });
 
-                var phaseResult = _battleEngine.Apply(_state, new BattleCommand
-                {
-                    commandId = Guid.NewGuid().ToString("N"),
-                    actorPlayerId = actorPlayerId,
-                    action = action
-                });
-
-                if (phaseResult == null)
-                {
-                    aggregateResult.success = false;
-                    aggregateResult.error = "Auto phase command returned null.";
-                    return;
-                }
-
-                if (phaseResult.events != null)
-                {
-                    aggregateResult.events.AddRange(phaseResult.events);
-                }
-
-                if (!phaseResult.success)
-                {
-                    aggregateResult.success = false;
-                    aggregateResult.error = phaseResult.error;
-                    return;
-                }
-            }
-        }
-
-        private static string ResolveAutoAdvanceAction(BattlePhase phase)
-        {
-            switch (phase)
-            {
-                case BattlePhase.MonsterTurnStart:
-                    return "begin_monster_turn";
-                case BattlePhase.MonsterTurnResolve:
-                    return "resolve_monster_turn";
-                case BattlePhase.PlayerTurnStart:
-                    return "begin_player_turn";
-                default:
-                    return null;
-            }
+            return FromCommandResult(result, tag);
         }
 
         private DriverSnapshot BuildSnapshot(string tag, BattleCommandResult commandResult)

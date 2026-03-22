@@ -42,6 +42,10 @@ internal static class AssertionEngine
                     EvaluatePlayerStatusEquals(report, assertion, i);
                     break;
 
+                case "player_status_duration_equals":
+                    EvaluatePlayerStatusDurationEquals(report, assertion, i);
+                    break;
+
                 case "player_hand_has_card":
                     EvaluatePlayerPileHasCard(report, assertion, i, "hand");
                     break;
@@ -309,7 +313,7 @@ internal static class AssertionEngine
             "hp" => player.hp,
             "armor" => player.armor,
             "energy" => player.energy,
-            "vulnerableStacks" => player.vulnerableStacks,
+            "vulnerableStacks" => YoungBob.Prototype.Battle.BattleStatusSystem.GetVulnerableStacks(player),
             "cardsPlayedThisTurn" => player.cardsPlayedThisTurn,
             "threatValue" => player.threatValue,
             "threatTier" => player.threatTier,
@@ -347,6 +351,40 @@ internal static class AssertionEngine
         if (actual != assertion.expectedInt)
         {
             report.failures.Add($"assertion[{index}] player {assertion.playerId} status {assertion.statusId} expected {assertion.expectedInt}, got {actual}");
+        }
+    }
+
+    private static void EvaluatePlayerStatusDurationEquals(ScenarioReport report, ScenarioAssertion assertion, int index)
+    {
+        if (!TryGetState(report, assertion.actualPath, index, out var state))
+        {
+            return;
+        }
+
+        var player = state.GetPlayer(assertion.playerId);
+        if (player == null)
+        {
+            report.failures.Add($"assertion[{index}] player not found: {assertion.playerId}");
+            return;
+        }
+
+        var status = player.statuses?.FirstOrDefault(item => item != null && string.Equals(item.id, assertion.statusId, StringComparison.OrdinalIgnoreCase));
+        if (status == null)
+        {
+            report.failures.Add($"assertion[{index}] player {assertion.playerId} status not found: {assertion.statusId}");
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(assertion.durationKind)
+            && !string.Equals(assertion.durationKind, status.durationKind.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            report.failures.Add($"assertion[{index}] player {assertion.playerId} status {assertion.statusId} durationKind expected {assertion.durationKind}, got {status.durationKind}");
+            return;
+        }
+
+        if (assertion.expectedInt >= 0 && status.durationTurns != assertion.expectedInt)
+        {
+            report.failures.Add($"assertion[{index}] player {assertion.playerId} status {assertion.statusId} durationTurns expected {assertion.expectedInt}, got {status.durationTurns}");
         }
     }
 

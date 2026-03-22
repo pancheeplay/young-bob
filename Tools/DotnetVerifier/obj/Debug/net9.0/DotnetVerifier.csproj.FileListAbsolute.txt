@@ -1,4 +1,3 @@
-/Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/bin/Debug/net9.0/DotnetVerifier
 /Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/bin/Debug/net9.0/DotnetVerifier.deps.json
 /Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/bin/Debug/net9.0/DotnetVerifier.runtimeconfig.json
 /Users/usr/Documents/unity_projects/young-bob/Tools/DotnetVerifier/bin/Debug/net9.0/DotnetVerifier.dll

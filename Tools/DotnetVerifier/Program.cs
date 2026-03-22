@@ -13,7 +13,7 @@ static int Run(string[] args)
         return 1;
     }
 
-    var repo = GameDataRepository.LoadFromDirectory(options.DataRoot);
+    var repo = JsonGameDataRepositoryLoader.LoadFromDirectory(options.DataRoot);
     var runner = new ScenarioRunner();
     var aggregate = new AggregateReport();
 
