@@ -105,6 +105,8 @@ namespace YoungBob.Prototype.App
         public event Action<IReadOnlyList<RoomListItem>> RoomListChanged;
         public event Action<BattleState> BattleStateChanged;
         public event Action<IReadOnlyList<BattleEvent>> BattleEventsCommitted;
+        public event Action<string> BattleNarrationAdded;
+        public event Action<string> BattleNoticeAdded;
         public event Action<string> LogAdded;
         public event Action<string> RoomChatAdded;
         public event Action StageSelectionChanged;
@@ -225,6 +227,7 @@ namespace YoungBob.Prototype.App
             if (_room == null)
             {
                 StatusChanged?.Invoke("请先加入房间。");
+                BattleNoticeAdded?.Invoke("开始关卡失败：房间为空。");
                 LogAdded?.Invoke("开始关卡已取消：房间为空。");
                 return;
             }
@@ -232,6 +235,7 @@ namespace YoungBob.Prototype.App
             if (!IsLocalHost)
             {
                 StatusChanged?.Invoke("只有房主才能开始关卡。");
+                BattleNoticeAdded?.Invoke("开始关卡失败：只有房主可以开始。");
                 LogAdded?.Invoke("开始关卡已取消：本地玩家不是房主。");
                 return;
             }
@@ -240,6 +244,7 @@ namespace YoungBob.Prototype.App
             if (selectedStage == null)
             {
                 StatusChanged?.Invoke("没有可用关卡。");
+                BattleNoticeAdded?.Invoke("开始关卡失败：没有可用关卡。");
                 LogAdded?.Invoke("开始关卡已取消：没有可用关卡。");
                 return;
             }
@@ -255,6 +260,7 @@ namespace YoungBob.Prototype.App
 
                 var missingText = missingNames.Count == 0 ? "其他玩家" : string.Join("、", missingNames.ToArray());
                 StatusChanged?.Invoke("等待所有玩家确认牌组...");
+                BattleNoticeAdded?.Invoke("开始关卡失败：等待 " + missingText + " 完成牌组选择。");
                 LogAdded?.Invoke("开始关卡已取消：等待 " + missingText + " 的牌组选择同步完成。");
                 return;
             }
@@ -529,6 +535,7 @@ namespace YoungBob.Prototype.App
         private void OnTransportError(string message)
         {
             StatusChanged?.Invoke(message);
+            BattleNoticeAdded?.Invoke(message);
             LogAdded?.Invoke(message);
         }
 
@@ -658,11 +665,13 @@ namespace YoungBob.Prototype.App
             }
             catch (Exception ex)
             {
+                BattleNoticeAdded?.Invoke("开始战斗失败： " + ex.Message);
                 LogAdded?.Invoke("battle.start 失败： " + ex.Message);
                 return;
             }
 
             var monsterName = CurrentBattleState.monster == null ? "未知" : CurrentBattleState.monster.displayName;
+            BattleNoticeAdded?.Invoke("战斗开始，对手为 " + monsterName + "。");
             LogAdded?.Invoke("战斗开始，对手为 " + monsterName + "。");
             BattleStateChanged?.Invoke(CurrentBattleState);
         }
@@ -681,12 +690,14 @@ namespace YoungBob.Prototype.App
 
             if (!string.Equals(payload.actorPlayerId, message.senderPlayerId, StringComparison.Ordinal))
             {
+                BattleNoticeAdded?.Invoke("行动失败：行动者与发送者不一致。");
                 LogAdded?.Invoke("拒绝指令：行动者与发送者不一致。");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(payload.action))
             {
+                BattleNoticeAdded?.Invoke("行动失败：操作为空。");
                 LogAdded?.Invoke("拒绝指令：操作为空。");
                 return;
             }
@@ -704,6 +715,7 @@ namespace YoungBob.Prototype.App
 
             if (!result.success && !string.IsNullOrEmpty(result.error))
             {
+                BattleNoticeAdded?.Invoke("行动失败： " + result.error);
                 LogAdded?.Invoke("拒绝指令： " + result.error);
                 return;
             }
@@ -746,6 +758,7 @@ namespace YoungBob.Prototype.App
                     var logText = logLines[i];
                     if (!string.IsNullOrWhiteSpace(logText))
                     {
+                        BattleNarrationAdded?.Invoke(logText);
                         LogAdded?.Invoke(logText);
                     }
                 }

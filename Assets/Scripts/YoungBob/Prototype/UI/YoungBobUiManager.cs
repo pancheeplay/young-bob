@@ -40,7 +40,8 @@ namespace YoungBob.Prototype.Scene
             _consolePanel = new RuntimeConsolePanel(_canvas.transform);
 
             _session.StatusChanged += HandleStatusChanged;
-            _session.LogAdded += HandleLogAdded;
+            _session.BattleNarrationAdded += HandleBattleNarrationAdded;
+            _session.BattleNoticeAdded += HandleBattleNoticeAdded;
             _session.RoomChatAdded += HandleRoomChatAdded;
             _session.RoomChanged += HandleRoomChanged;
             _session.RoomListChanged += HandleRoomListChanged;
@@ -72,7 +73,8 @@ namespace YoungBob.Prototype.Scene
             if (_session != null)
             {
                 _session.StatusChanged -= HandleStatusChanged;
-                _session.LogAdded -= HandleLogAdded;
+                _session.BattleNarrationAdded -= HandleBattleNarrationAdded;
+                _session.BattleNoticeAdded -= HandleBattleNoticeAdded;
                 _session.RoomChatAdded -= HandleRoomChatAdded;
                 _session.RoomChanged -= HandleRoomChanged;
                 _session.RoomListChanged -= HandleRoomListChanged;
@@ -92,11 +94,19 @@ namespace YoungBob.Prototype.Scene
             }
         }
 
-        private void HandleLogAdded(string message)
+        private void HandleBattleNarrationAdded(string message)
         {
-            if (_battlePage != null && IsBattleLogMessage(message))
+            if (_battlePage != null && !string.IsNullOrWhiteSpace(message))
             {
                 _battlePage.AppendBattleLog(message);
+            }
+        }
+
+        private void HandleBattleNoticeAdded(string message)
+        {
+            if (_battlePage != null && !string.IsNullOrWhiteSpace(message))
+            {
+                _battlePage.AppendBattleLog("<color=#F6C978>[系统]</color> " + message);
             }
         }
 
@@ -123,9 +133,9 @@ namespace YoungBob.Prototype.Scene
 
         private void HandleRoomChatAdded(string message)
         {
-            if (_battlePage != null)
+            if (_battlePage != null && !string.IsNullOrWhiteSpace(message))
             {
-                _battlePage.AppendBattleLog(message);
+                _battlePage.AppendBattleLog("<color=#7FD3FF>[聊天]</color> " + message);
             }
         }
 
@@ -324,23 +334,6 @@ namespace YoungBob.Prototype.Scene
             {
                 _consolePanel.Append(message);
             }
-        }
-
-        private static bool IsBattleLogMessage(string message)
-        {
-            if (string.IsNullOrEmpty(message))
-            {
-                return false;
-            }
-
-            // Exclude technical logs
-            if (message.StartsWith("[") || message.Contains("收到消息") || message.Contains("发送消息"))
-            {
-                return false;
-            }
-
-            // Allow everything else as it's likely a battle event or narratively relevant
-            return true;
         }
     }
 }
