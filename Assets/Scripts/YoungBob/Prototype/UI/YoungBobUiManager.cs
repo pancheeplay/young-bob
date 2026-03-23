@@ -13,7 +13,7 @@ namespace YoungBob.Prototype.Scene
 {
     public sealed class YoungBobUiManager : MonoBehaviour
     {
-        private const string DefaultUiFontPath = "Assets/TapOnlineBattleDemo/Fonts/Noto Barlow SemiBold.ttf";
+        private const string DefaultUiFontResourcePath = "Fonts/NotoSansSC-Regular";
 
         [SerializeField] private Font _defaultUiFont;
 
@@ -58,9 +58,7 @@ namespace YoungBob.Prototype.Scene
                 return _defaultUiFont;
             }
 
-#if UNITY_EDITOR
-            _defaultUiFont = UnityEditor.AssetDatabase.LoadAssetAtPath<Font>(DefaultUiFontPath);
-#endif
+            _defaultUiFont = Resources.Load<Font>(DefaultUiFontResourcePath);
             return _defaultUiFont;
         }
 

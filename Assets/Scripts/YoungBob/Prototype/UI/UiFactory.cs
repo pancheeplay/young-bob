@@ -22,7 +22,7 @@ namespace YoungBob.Prototype.UI
         {
             if (_defaultFont == null)
             {
-                _defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                _defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
             }
 
             return _defaultFont;
