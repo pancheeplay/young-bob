@@ -67,23 +67,21 @@ namespace YoungBob.Prototype.UI
             ClearList();
             if (items == null || items.Count == 0)
             {
-                var empty = UiFactory.CreateText(_listContent, "Empty", 20, TextAnchor.MiddleCenter);
+                var empty = UiFactory.CreateText(_listContent, "Empty", 20, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -120f), new Vector2(0f, 0f));
                 empty.text = string.IsNullOrWhiteSpace(emptyMessage) ? "没有可选项" : emptyMessage;
-                var layout = empty.gameObject.AddComponent<LayoutElement>();
-                layout.preferredHeight = 120f;
                 _listContentRect.sizeDelta = new Vector2(0f, 120f);
                 SetWindowHeightByContent(120f);
             }
             else
             {
-                var totalHeight = 8f;
+                var y = 8f;
                 for (var i = 0; i < items.Count; i++)
                 {
-                    totalHeight += BuildItemRow(items[i], i) + 8f;
+                    y += BuildItemRow(items[i], i, y) + 8f;
                 }
 
-                _listContentRect.sizeDelta = new Vector2(0f, totalHeight);
-                SetWindowHeightByContent(totalHeight);
+                _listContentRect.sizeDelta = new Vector2(0f, y);
+                SetWindowHeightByContent(y);
             }
 
             Canvas.ForceUpdateCanvases();
@@ -118,7 +116,7 @@ namespace YoungBob.Prototype.UI
             _listPanelRect.offsetMax = new Vector2(-20f, -12f);
         }
 
-        private float BuildItemRow(Item item, int index)
+        private float BuildItemRow(Item item, int index, float yTop)
         {
             if (item == null)
             {
@@ -132,16 +130,11 @@ namespace YoungBob.Prototype.UI
             rootRect.anchorMin = new Vector2(0f, 1f);
             rootRect.anchorMax = new Vector2(1f, 1f);
             rootRect.pivot = new Vector2(0.5f, 1f);
-            rootRect.offsetMin = new Vector2(8f, 0f);
-            rootRect.offsetMax = new Vector2(-8f, 0f);
+            rootRect.offsetMin = new Vector2(8f, -yTop - rowHeight);
+            rootRect.offsetMax = new Vector2(-8f, -yTop);
 
             var bg = root.AddComponent<Image>();
             bg.color = item.isSelected ? new Color(0.18f, 0.45f, 0.34f, 0.95f) : new Color(0.2f, 0.28f, 0.42f, 0.95f);
-
-            var layout = root.AddComponent<LayoutElement>();
-            layout.preferredHeight = rowHeight;
-            layout.minHeight = rowHeight;
-            layout.flexibleWidth = 1f;
 
             var button = root.AddComponent<Button>();
             button.targetGraphic = bg;
@@ -208,18 +201,6 @@ namespace YoungBob.Prototype.UI
             contentRect.anchoredPosition = Vector2.zero;
             contentRect.offsetMin = new Vector2(0f, 0f);
             contentRect.offsetMax = new Vector2(0f, 0f);
-
-            var layout = content.AddComponent<VerticalLayoutGroup>();
-            layout.childAlignment = TextAnchor.UpperCenter;
-            layout.childControlWidth = true;
-            layout.childControlHeight = false;
-            layout.childForceExpandWidth = true;
-            layout.childForceExpandHeight = false;
-            layout.spacing = 8f;
-            layout.padding = new RectOffset(4, 4, 8, 8);
-
-            var fitter = content.AddComponent<ContentSizeFitter>();
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             scroll.viewport = viewportRect;
             scroll.content = contentRect;
